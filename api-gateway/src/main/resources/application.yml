@@ -1,0 +1,42 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: risk-service
+          uri: lb://risk-service
+          predicates:
+            - Path=/api/internal/risk/**
+        - id: screening-service
+          uri: lb://screening-service
+          predicates:
+            - Path=/api/internal/screening/**
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**, /api/users/**, /api/permissions/**
+        - id: core-viewer
+          uri: lb://viewer-core
+          predicates:
+            - Path=/api/**, /login, /logout, /
+            # Fallback for UI assets ??
+            # Actually, the Frontend is currently bundled in Viewer. 
+            # If Viewer moves to 8083, Gateway at 8080 must proxy EVERYTHING deeper.
+            # So Path=/** might be needed as a catch-all route to Viewer.
+        - id: core-viewer-catchall
+          uri: lb://viewer-core
+          predicates:
+            - Path=/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/

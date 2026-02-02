@@ -1,0 +1,99 @@
+import apiClient from './apiClient';
+
+const API_BASE_URL = '/cases';
+
+export const caseService = {
+    getCases: async (page = 0) => {
+        const data = await apiClient.get(API_BASE_URL);
+        // Backend returns a plain list for now, wrap it to match expected pagination structure
+        return {
+            content: data,
+            totalPages: 1,
+            totalElements: data.length,
+            size: data.length,
+            number: 0
+        };
+    },
+
+    getCasesByClient: async (clientID) => {
+        return apiClient.get(`${API_BASE_URL}/client/${clientID}`);
+    },
+
+    getCaseDetails: async (id) => {
+        return apiClient.get(`${API_BASE_URL}/${id}`);
+    },
+
+    getCaseComments: async (id) => {
+        return apiClient.get(`${API_BASE_URL}/${id}/comments`);
+    },
+
+    getCaseDocuments: async (id) => {
+        return apiClient.get(`${API_BASE_URL}/${id}/documents`);
+    },
+
+    getCaseEvents: async (id) => {
+        return apiClient.get(`${API_BASE_URL}/${id}/events`);
+    },
+
+    transitionCase: async (id, action, comment) => {
+        try {
+            return await apiClient.post(`${API_BASE_URL}/${id}/transition`, { action, comment });
+        } catch (error) {
+            // Basic error handling wrapper if needed, or let apiClient throw
+            // If we need specific 400 handling:
+            if (error.message && error.message.includes('400')) {
+                throw new Error('Case validation failed. Ensure all mandatory requirements are met.');
+            }
+            throw error;
+        }
+    },
+
+    createCase: async (clientID, reason) => {
+        return apiClient.post(API_BASE_URL, { clientID, reason });
+    },
+
+    uploadDocument: async (caseId, formData) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/${caseId}/documents`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            }
+        });
+        if (!response.ok) throw new Error('Failed to upload document');
+    },
+
+    getUserTasks: async () => {
+        return apiClient.get(`${API_BASE_URL}/tasks`);
+    },
+
+    assignCase: async (id, assignee) => {
+        return apiClient.post(`${API_BASE_URL}/${id}/assign`, { assignee });
+    },
+
+    getUsersByRole: async (role) => {
+        return apiClient.get(`/users/role/${role}`);
+    },
+
+    getAllUsers: async () => {
+        return apiClient.get('/users');
+    },
+
+    // Admin Workflow
+    getAdminTasks: async () => {
+        return apiClient.get(`${API_BASE_URL}/admin/tasks`);
+    },
+
+    getAdminProcesses: async () => {
+        return apiClient.get(`${API_BASE_URL}/admin/processes`);
+    },
+
+    terminateProcess: async (id) => {
+        return apiClient.delete(`${API_BASE_URL}/admin/processes/${id}`);
+    },
+
+    deleteAllTasks: async () => {
+        return apiClient.delete(`${API_BASE_URL}/tasks`);
+    }
+};

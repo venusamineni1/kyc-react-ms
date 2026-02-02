@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://www.venus.com/kyc">
+
+    <process id="kycProcess" name="KYC Process" isExecutable="true">
+        <startEvent id="startEvent" name="Start" />
+        
+        <sequenceFlow sourceRef="startEvent" targetRef="kycAnalystTask" />
+        
+        <userTask id="kycAnalystTask" name="KYC Analyst Review" flowable:candidateGroups="KYC_ANALYST">
+            <documentation>Initial review by KYC Analyst</documentation>
+        </userTask>
+        
+        <sequenceFlow sourceRef="kycAnalystTask" targetRef="kycReviewerTask" />
+        
+        <userTask id="kycReviewerTask" name="KYC Reviewer Review" flowable:candidateGroups="KYC_REVIEWER">
+             <documentation>Second level review</documentation>
+        </userTask>
+        
+        <sequenceFlow sourceRef="kycReviewerTask" targetRef="afcReviewerTask" />
+        
+        <userTask id="afcReviewerTask" name="AFC Reviewer Review" flowable:candidateGroups="AFC_REVIEWER">
+             <documentation>AFC specialized review</documentation>
+        </userTask>
+        
+        <sequenceFlow sourceRef="afcReviewerTask" targetRef="acoReviewerTask" />
+        
+        <userTask id="acoReviewerTask" name="ACO Reviewer Review" flowable:candidateGroups="ACO_REVIEWER">
+             <documentation>Final compliance officer review</documentation>
+        </userTask>
+        
+        <sequenceFlow sourceRef="acoReviewerTask" targetRef="endEvent" />
+        
+        <endEvent id="endEvent" name="End" />
+    </process>
+
+</definitions>

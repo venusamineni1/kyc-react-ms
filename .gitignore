@@ -1,0 +1,29 @@
+# Maven
+target/
+*.jar
+*.war
+*.ear
+mvnw
+mvnw.cmd
+.mvn/
+
+# Node/JS
+node_modules/
+dist/
+build/
+.env
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Batch processing
+batch-data/
+upload/
+download/

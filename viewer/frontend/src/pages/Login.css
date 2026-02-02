@@ -1,0 +1,91 @@
+.login-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--background-gradient);
+    z-index: 1000;
+    /* Ensure it sits on top */
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.login-header h1 {
+    font-size: 2rem;
+    margin: 0 0 0.5rem 0;
+    text-align: center;
+}
+
+.login-header p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.login-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.login-form input {
+    width: 100%;
+    /* Fix input width */
+    box-sizing: border-box;
+    /* Ensure padding doesn't overflow */
+}
+
+.login-btn {
+    width: 100%;
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    padding: 0.8rem;
+}
+
+.error-message {
+    background: rgba(255, 99, 71, 0.2);
+    border: 1px solid tomato;
+    color: #ffcccb;
+    padding: 0.8rem;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* Decor blobs matching original intent but with CSS */
+.blob {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    filter: blur(60px);
+    z-index: -1;
+    pointer-events: none;
+}
+
+.blob-1 {
+    top: -50px;
+    right: -50px;
+    background: rgba(0, 255, 255, 0.2);
+}
+
+.blob-2 {
+    bottom: -50px;
+    left: -50px;
+    background: rgba(0, 100, 255, 0.2);
+}
