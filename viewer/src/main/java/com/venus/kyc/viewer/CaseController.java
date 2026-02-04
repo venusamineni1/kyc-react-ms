@@ -30,8 +30,10 @@ public class CaseController {
 
     private String getUserRole(Authentication authentication) {
         return authentication.getAuthorities().stream()
-                .findFirst()
                 .map(GrantedAuthority::getAuthority)
+                .filter(a -> a.startsWith("ROLE_"))
+                .map(a -> a.substring(5))
+                .findFirst()
                 .orElse("USER");
     }
 
@@ -72,9 +74,16 @@ public class CaseController {
 
     @GetMapping("/tasks")
     public List<Map<String, Object>> getMyTasks(Authentication authentication) {
-        String role = getUserRole(authentication);
-        List<String> groups = List.of(role);
+        List<String> groups = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
         return caseService.getUserTasks(authentication.getName(), groups);
+    }
+
+    @PostMapping("/tasks/{taskId}/complete")
+    public ResponseEntity<Void> completeTask(@PathVariable String taskId, Authentication authentication) {
+        caseService.completeTask(taskId, authentication.getName());
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/tasks")
@@ -100,18 +109,44 @@ public class CaseController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/{id}/timeline")
+    public List<CaseService.TimelineItem> getTimeline(@PathVariable Long id) {
+        Case c = caseRepository.findById(id).orElseThrow();
+        if (c.instanceID() == null || c.instanceID().isEmpty()) {
+            return List.of();
+        }
+        return caseService.getCaseTimeline(c.instanceID());
+    }
+
+    @GetMapping("/{id}/actions")
+    public List<Map<String, Object>> getAvailableActions(@PathVariable Long id) {
+        Case c = caseRepository.findById(id).orElseThrow();
+        if (c.instanceID() == null || c.instanceID().isEmpty() || !"CMMN".equals(c.workflowType())) {
+            return List.of();
+        }
+        return caseService.getAvailableDiscretionaryActions(c.instanceID());
+    }
+
+    @PostMapping("/{id}/actions/{actionId}")
+    public ResponseEntity<Void> triggerAction(@PathVariable Long id, @PathVariable String actionId,
+            @RequestBody Map<String, Object> variables, Authentication authentication) {
+        Case c = caseRepository.findById(id).orElseThrow();
+        if (c.instanceID() == null || c.instanceID().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        caseService.triggerDiscretionaryAction(c.instanceID(), actionId, variables);
+        caseRepository.addComment(id, authentication.getName(), "Triggered manual action: " + actionId, "SYSTEM");
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{id}/transition")
     public ResponseEntity<Void> transitionCase(@PathVariable Long id, @RequestBody Map<String, String> request,
             Authentication authentication) {
         String role = getUserRole(authentication);
-        boolean isAdmin = "ADMIN".equals(role);
 
-        List<String> groups;
-        if (isAdmin) {
-            groups = List.of("KYC_ANALYST", "KYC_REVIEWER", "AFC_REVIEWER", "ACO_REVIEWER");
-        } else {
-            groups = List.of(role);
-        }
+        List<String> groups = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
 
         List<Map<String, Object>> tasks = caseService.getUserTasks(authentication.getName(), groups);
 
@@ -187,6 +222,8 @@ public class CaseController {
             Authentication authentication) {
         Long clientID = Long.valueOf(request.get("clientID").toString());
         String reason = (String) request.get("reason");
+        boolean useCmmn = !request.containsKey("useCmmn") || Boolean.TRUE.equals(request.get("useCmmn"));
+
         String role = getUserRole(authentication);
 
         // Check for MANAGE_CASES permission
@@ -198,8 +235,9 @@ public class CaseController {
         }
 
         // Use new Service to start process
-        Long caseId = caseService.createCase(clientID, reason, authentication.getName());
-        caseRepository.addComment(caseId, authentication.getName(), "Case created via Workflow: " + reason, role);
+        Long caseId = caseService.createCase(clientID, reason, authentication.getName(), useCmmn);
+        String type = useCmmn ? "CMMN Case" : "Workflow";
+        caseRepository.addComment(caseId, authentication.getName(), "Case created via " + type + ": " + reason, role);
 
         userAuditService.log(authentication.getName(), "CREATE_CASE",
                 "Created case " + caseId + " for client " + clientID);
@@ -218,5 +256,10 @@ public class CaseController {
     @GetMapping("/{id}/events")
     public List<CaseEvent> getCaseEvents(@PathVariable Long id) {
         return eventService.getEventsForCase(id);
+    }
+
+    @GetMapping("/debug/all-tasks")
+    public List<Map<String, Object>> getAllTasksDebug() {
+        return caseService.getAllTasksDebug();
     }
 }

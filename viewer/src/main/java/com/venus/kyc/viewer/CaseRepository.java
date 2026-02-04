@@ -18,7 +18,7 @@ public class CaseRepository {
     public List<Case> findAll() {
         return jdbcClient.sql("""
                 SELECT c.CaseID, c.ClientID, cl.FirstName || ' ' || cl.LastName as clientName,
-                       c.CreatedDate, c.Reason, c.AssignedTo, c.Status
+                       c.CreatedDate, c.Reason, c.AssignedTo, c.Status, c.InstanceID, c.WorkflowType
                 FROM Cases c
                 JOIN Clients cl ON c.ClientID = cl.ClientID
                 """)
@@ -29,7 +29,7 @@ public class CaseRepository {
     public List<Case> findByClientId(Long clientID) {
         return jdbcClient.sql("""
                 SELECT c.CaseID, c.ClientID, cl.FirstName || ' ' || cl.LastName as clientName,
-                       c.CreatedDate, c.Reason, c.AssignedTo, c.Status
+                       c.CreatedDate, c.Reason, c.AssignedTo, c.Status, c.InstanceID, c.WorkflowType
                 FROM Cases c
                 JOIN Clients cl ON c.ClientID = cl.ClientID
                 WHERE c.ClientID = :clientID
@@ -43,7 +43,7 @@ public class CaseRepository {
     public Optional<Case> findById(Long id) {
         return jdbcClient.sql("""
                 SELECT c.CaseID, c.ClientID, cl.FirstName || ' ' || cl.LastName as clientName,
-                       c.CreatedDate, c.Reason, c.AssignedTo, c.Status
+                       c.CreatedDate, c.Reason, c.AssignedTo, c.Status, c.InstanceID, c.WorkflowType
                 FROM Cases c
                 JOIN Clients cl ON c.ClientID = cl.ClientID
                 WHERE c.CaseID = :id
@@ -101,16 +101,19 @@ public class CaseRepository {
                 .update();
     }
 
-    public Long create(Long clientID, String reason, String status, String assignedTo) {
+    public Long create(Long clientID, String reason, String status, String assignedTo, String instanceId,
+            String workflowType) {
         org.springframework.jdbc.support.KeyHolder keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
         jdbcClient.sql("""
-                INSERT INTO Cases (ClientID, Reason, Status, AssignedTo)
-                VALUES (:clientID, :reason, :status, :assignedTo)
+                INSERT INTO Cases (ClientID, Reason, Status, AssignedTo, InstanceID, WorkflowType)
+                VALUES (:clientID, :reason, :status, :assignedTo, :instanceId, :workflowType)
                 """)
                 .param("clientID", clientID)
                 .param("reason", reason)
                 .param("status", status)
                 .param("assignedTo", assignedTo)
+                .param("instanceId", instanceId)
+                .param("workflowType", workflowType)
                 .update(keyHolder, "CaseID");
         return keyHolder.getKey().longValue();
     }

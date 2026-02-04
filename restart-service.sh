@@ -62,7 +62,7 @@ esac
 echo -e "Restarting ${GREEN}$NAME${NC}..."
 
 # 1. Stop the service
-PID=$(lsof -t -i:$PORT)
+PID=$(lsof -t -i:$PORT -sTCP:LISTEN)
 if [ -n "$PID" ]; then
     echo "Stopping existing process (PID $PID) on port $PORT..."
     kill $PID

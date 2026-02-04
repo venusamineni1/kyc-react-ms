@@ -1,9 +1,10 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 const Modal = ({ isOpen, onClose, title, children, maxWidth = '600px' }) => {
     if (!isOpen) return null;
 
-    return (
+    const modalContent = (
         <div className="modal" style={{ display: 'block' }} onClick={onClose}>
             <div
                 className="modal-content"
@@ -24,6 +25,8 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = '600px' }) => {
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 };
 
 export default Modal;

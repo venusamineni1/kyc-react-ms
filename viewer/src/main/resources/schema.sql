@@ -118,6 +118,8 @@ CREATE TABLE IF NOT EXISTS Cases (
     Reason VARCHAR(255),
     AssignedTo VARCHAR(50),
     Status VARCHAR(50) NOT NULL,
+    InstanceID VARCHAR(100),
+    WorkflowType VARCHAR(20),
     FOREIGN KEY (ClientID) REFERENCES Clients(ClientID)
 );
 

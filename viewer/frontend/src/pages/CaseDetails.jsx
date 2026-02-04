@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import { useNotification } from '../contexts/NotificationContext';
+import CaseTimeline from '../components/CaseTimeline';
+import CaseActions from '../components/CaseActions';
 
 const CaseDetails = () => {
     const { id } = useParams();
@@ -21,6 +23,7 @@ const CaseDetails = () => {
     const [validationError, setValidationError] = useState(null);
     const [transitioning, setTransitioning] = useState(false);
     const [relatedCases, setRelatedCases] = useState([]);
+    const [timeline, setTimeline] = useState([]);
 
     // Modal States
     const [isDocModalOpen, setIsDocModalOpen] = useState(false);
@@ -54,6 +57,16 @@ const CaseDetails = () => {
             if (caseData.clientID) {
                 const related = await caseService.getCasesByClient(caseData.clientID);
                 setRelatedCases(related.filter(c => c.caseID !== parseInt(id)));
+            }
+
+            // Fetch CMMN Timeline if applicable
+            if (caseData.workflowType === 'CMMN') {
+                try {
+                    const timelineData = await caseService.getCaseTimeline(id);
+                    setTimeline(timelineData);
+                } catch (tErr) {
+                    console.error("Timeline Fetch Error:", tErr);
+                }
             }
         } catch (err) {
             setError(err.message);
@@ -306,6 +319,18 @@ const CaseDetails = () => {
                 </section>
             )}
 
+            {kycCase.workflowType === 'CMMN' && (
+                <>
+                    <section className="glass-section" style={{ marginTop: '1.5rem' }}>
+                        <h3>Case Progress (CMMN Timeline)</h3>
+                        <CaseTimeline items={timeline} />
+                    </section>
+                    <section className="glass-section" style={{ marginTop: '1.5rem' }}>
+                        <CaseActions id={id} onActionTriggered={loadCaseData} />
+                    </section>
+                </>
+            )}
+
             <section className="glass-section" style={{ marginTop: '1.5rem' }}>
                 <h3>Workflow Actions & Comments</h3>
                 <div style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '1.5rem' }}>
@@ -364,7 +389,7 @@ const CaseDetails = () => {
                         <input
                             type="file"
                             onChange={(e) => setUploadData({ ...uploadData, file: e.target.files[0] })}
-                            style={{ width: '100%', color: 'white' }}
+                            style={{ width: '100%', color: 'var(--text-color)' }}
                         />
                     </div>
                     <div>
@@ -372,7 +397,7 @@ const CaseDetails = () => {
                         <select
                             value={uploadData.category}
                             onChange={(e) => setUploadData({ ...uploadData, category: e.target.value })}
-                            style={{ width: '100%', padding: '0.5rem', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--glass-border)', borderRadius: '4px' }}
+                            style={{ width: '100%', padding: '0.5rem', background: 'var(--glass-bg)', color: 'var(--text-color)', border: '1px solid var(--glass-border)', borderRadius: '4px' }}
                         >
                             <option value="IDENTIFICATION">Identification</option>
                             <option value="PROOF_OF_ADDRESS">Proof of Address</option>
@@ -387,7 +412,7 @@ const CaseDetails = () => {
                             value={uploadData.comment}
                             onChange={(e) => setUploadData({ ...uploadData, comment: e.target.value })}
                             placeholder="Optional comment"
-                            style={{ width: '100%', padding: '0.5rem', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--glass-border)', borderRadius: '4px' }}
+                            style={{ width: '100%', padding: '0.5rem', background: 'var(--glass-bg)', color: 'var(--text-color)', border: '1px solid var(--glass-border)', borderRadius: '4px' }}
                         />
                     </div>
                     <Button onClick={handleUpload} disabled={uploading}>
@@ -413,10 +438,10 @@ const CaseDetails = () => {
                                 disabled={assigning}
                                 style={{
                                     padding: '0.75rem',
-                                    background: 'rgba(255,255,255,0.05)',
+                                    background: 'var(--glass-bg)',
                                     border: '1px solid var(--glass-border)',
                                     borderRadius: '0.5rem',
-                                    color: 'white',
+                                    color: 'var(--text-color)',
                                     cursor: 'pointer',
                                     textAlign: 'left',
                                     display: 'flex',

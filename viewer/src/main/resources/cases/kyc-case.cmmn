@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/cmmn"
+             xmlns:cmmndi="http://www.omg.org/spec/CMMN/20151109/CMMNDI"
+             xmlns:dc="http://www.omg.org/spec/CMMN/20151109/DC"
+             xmlns:di="http://www.omg.org/spec/CMMN/20151109/DI"
+             targetNamespace="http://www.venus.com/kyc">
+
+    <case id="kycCase" name="KYC Case Management (CMMN)">
+        <casePlanModel id="kycCasePlanModel" name="KYC Case">
+            
+            <!-- Standard Plan Items -->
+            <planItem id="pi_analystReview" name="Analyst Review" definitionRef="ht_analystReview"/>
+            
+            <planItem id="pi_reviewerReview" name="Reviewer Review" definitionRef="ht_reviewerReview">
+                <entryCriterion id="ec_reviewer" sentryRef="sentry_analystComplete"/>
+            </planItem>
+
+            <planItem id="pi_afcStandardReview" name="AFC Review (Standard)" definitionRef="ht_afcStandardReview">
+                <entryCriterion id="ec_afcStandard" sentryRef="sentry_reviewerComplete"/>
+            </planItem>
+
+            <planItem id="pi_acoReview" name="ACO Final Review" definitionRef="ht_acoReview">
+                <entryCriterion id="ec_aco" sentryRef="sentry_afcComplete"/>
+            </planItem>
+
+            <!-- Discretionary Plan Items -->
+            <planItem id="pi_evtComm" definitionRef="evtInitiateCommunication" />
+            <planItem id="pi_clientComm" name="Client Communication Task" definitionRef="ht_clientComm">
+                <entryCriterion id="ec_evtComm" sentryRef="sentry_evtComm" />
+            </planItem>
+
+            <planItem id="pi_evtChallenge" definitionRef="evtChallengeScreening" />
+            <planItem id="pi_afcDiscretionaryReview" name="AFC Screening Approval (Manual)" definitionRef="ht_afcDiscretionaryReview">
+                <entryCriterion id="ec_evtChallenge" sentryRef="sentry_evtChallenge" />
+            </planItem>
+
+            <planItem id="pi_evtOverride" definitionRef="evtOverrideRisk" />
+            <planItem id="pi_riskOverride" name="Risk Override Approval" definitionRef="ht_riskOverride">
+                <entryCriterion id="ec_evtOverride" sentryRef="sentry_evtOverride" />
+            </planItem>
+
+            <!-- Sentries -->
+            <sentry id="sentry_analystComplete">
+                <planItemOnPart id="onPart_analystComplete" sourceRef="pi_analystReview">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+            </sentry>
+
+            <sentry id="sentry_reviewerComplete">
+                <planItemOnPart id="onPart_reviewerComplete" sourceRef="pi_reviewerReview">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+            </sentry>
+
+            <sentry id="sentry_afcComplete">
+                <planItemOnPart id="onPart_afcComplete" sourceRef="pi_afcStandardReview">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+            </sentry>
+
+            <sentry id="sentry_evtComm">
+                <planItemOnPart id="onPart_evtComm" sourceRef="pi_evtComm">
+                    <standardEvent>occur</standardEvent>
+                </planItemOnPart>
+            </sentry>
+
+            <sentry id="sentry_evtChallenge">
+                <planItemOnPart id="onPart_evtChallenge" sourceRef="pi_evtChallenge">
+                    <standardEvent>occur</standardEvent>
+                </planItemOnPart>
+            </sentry>
+
+            <sentry id="sentry_evtOverride">
+                <planItemOnPart id="onPart_evtOverride" sourceRef="pi_evtOverride">
+                    <standardEvent>occur</standardEvent>
+                </planItemOnPart>
+            </sentry>
+
+            <!-- Definitions -->
+            <humanTask id="ht_analystReview" name="Analyst Review" flowable:candidateGroups="ROLE_KYC_ANALYST" />
+            <humanTask id="ht_reviewerReview" name="Reviewer Review" flowable:candidateGroups="ROLE_KYC_REVIEWER" />
+            <humanTask id="ht_afcStandardReview" name="AFC Review" flowable:candidateGroups="ROLE_AFC_REVIEWER" />
+            <humanTask id="ht_acoReview" name="ACO Final Review" flowable:candidateGroups="ROLE_ACO_REVIEWER" />
+
+            <!-- Discretionary Definitions -->
+            <userEventListener id="evtInitiateCommunication" name="Initiate Client Communication" />
+            <humanTask id="ht_clientComm" name="Request Additional Documentation" flowable:assignee="${initiator}">
+                <documentation>Requested Info: ${requestedInfo}, Due Date: ${dueDate}</documentation>
+            </humanTask>
+
+            <userEventListener id="evtChallengeScreening" name="Challenge Screening Hit" />
+            <humanTask id="ht_afcDiscretionaryReview" name="AFC Screening Approval" flowable:candidateGroups="ROLE_AFC_REVIEWER" />
+
+            <userEventListener id="evtOverrideRisk" name="Override Risk Assessment" />
+            <humanTask id="ht_riskOverride" name="Risk Override Peer Approval" flowable:candidateGroups="ROLE_KYC_REVIEWER" />
+
+        </casePlanModel>
+    </case>
+</definitions>

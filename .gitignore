@@ -27,3 +27,8 @@ logs/
 batch-data/
 upload/
 download/
+
+# Extras
+*.db
+*.txt
+viewer_tail.txt

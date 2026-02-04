@@ -26,7 +26,10 @@ CREATE TABLE IF NOT EXISTS UserAudits (
 -- Seed Data (Optional, but good for dev)
 MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('admin', '{noop}admin', 'ADMIN', TRUE);
 MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('user', '{noop}user', 'USER', TRUE);
-MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('analyst', '{noop}password', 'ANALYST', TRUE);
+MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('analyst', '{noop}password', 'KYC_ANALYST', TRUE);
+MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('reviewer', '{noop}password', 'KYC_REVIEWER', TRUE);
+MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('afc_user', '{noop}password', 'AFC_REVIEWER', TRUE);
+MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('aco_user', '{noop}password', 'ACO_REVIEWER', TRUE);
 
 -- Seed Permissions for Admin
 MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ADMIN', 'MANAGE_USERS');
@@ -37,5 +40,17 @@ MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VAL
 MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ADMIN', 'MANAGE_CASES');
 
 -- Seed Permissions for Analyst
-MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ANALYST', 'VIEW_CLIENTS');
-MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ANALYST', 'MANAGE_CASES');
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('KYC_ANALYST', 'VIEW_CLIENTS');
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('KYC_ANALYST', 'MANAGE_CASES');
+
+-- Seed Permissions for Reviewer
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('KYC_REVIEWER', 'VIEW_CLIENTS');
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('KYC_REVIEWER', 'MANAGE_CASES');
+
+-- Seed Permissions for AFC
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('AFC_REVIEWER', 'VIEW_CLIENTS');
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('AFC_REVIEWER', 'MANAGE_CASES');
+
+-- Seed Permissions for ACO
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ACO_REVIEWER', 'VIEW_CLIENTS');
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ACO_REVIEWER', 'MANAGE_CASES');

@@ -43,6 +43,7 @@ const TaskInbox = () => {
                     <thead>
                         <tr>
                             <th>Task Name</th>
+                            <th>Type</th>
                             <th>Case ID</th>
                             <th>Client ID</th>
                             <th>Created</th>
@@ -53,6 +54,11 @@ const TaskInbox = () => {
                         {tasks.map(task => (
                             <tr key={task.taskId}>
                                 <td>{task.name}</td>
+                                <td>
+                                    <span className={`status-badge ${task.workflowType === 'CMMN' ? 'active' : 'pending'}`}>
+                                        {task.workflowType || 'BPMN'}
+                                    </span>
+                                </td>
                                 <td>
                                     {task.caseId ? (
                                         <Link to={`/cases/${task.caseId}`}>#{task.caseId}</Link>

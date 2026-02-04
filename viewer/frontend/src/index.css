@@ -187,25 +187,36 @@ a:hover {
 /* Modal Styles */
 .modal {
   display: none;
+  /* Controlled by React prop isOpen but fallback to none */
   position: fixed;
-  z-index: 1000;
+  z-index: 9999;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
+  background-color: rgba(0, 0, 0, 0.85);
+  /* Slightly darker */
+  backdrop-filter: blur(10px);
+  /* Slightly stronger */
 }
 
 .modal-content {
-  background: var(--background-gradient);
+  background: var(--modal-bg);
+  background-color: var(--modal-bg);
+  /* Fallback */
   margin: 5% auto;
-  padding: 2rem;
-  border: 1px solid var(--glass-border);
-  width: 80%;
-  max-width: 600px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  padding: 2.5rem;
+  border: 1px solid var(--primary-color);
+  /* More distinct border */
+  width: 90%;
+  max-width: 650px;
+  border-radius: 20px;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 1001;
+  backdrop-filter: blur(25px);
+  /* Strong blur behind content */
+  -webkit-backdrop-filter: blur(25px);
 }
 
 /* Form Styles */

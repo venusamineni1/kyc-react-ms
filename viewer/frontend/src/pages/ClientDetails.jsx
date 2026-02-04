@@ -58,6 +58,7 @@ const ClientDetails = () => {
     const [creatingCase, setCreatingCase] = useState(false);
     const [runningAssessment, setRunningAssessment] = useState(false);
     const [viewQuestionnaireCaseId, setViewQuestionnaireCaseId] = useState(null);
+    const [useCmmn, setUseCmmn] = useState(false);
 
     const fetchDetails = async () => {
         setLoading(true);
@@ -97,10 +98,10 @@ const ClientDetails = () => {
         if (creatingCase) return;
         setCreatingCase(true);
         try {
-            const caseId = await caseService.createCase(id, caseReason);
+            const caseId = await caseService.createCase(id, caseReason, useCmmn);
             setIsCaseModalOpen(false);
             notify('Case created successfully', 'success');
-            navigate(`/ cases / ${caseId} `);
+            navigate(`/cases/${caseId}`);
         } catch (err) {
             notify('Failed to create case: ' + err.message, 'error');
         } finally {
@@ -477,6 +478,18 @@ const ClientDetails = () => {
                             <option value="Onboarding">Onboarding</option>
                             <option value="Ad-hoc Review">Ad-hoc Review</option>
                         </select>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <input
+                            type="checkbox"
+                            id="useCmmn"
+                            checked={useCmmn}
+                            onChange={(e) => setUseCmmn(e.target.checked)}
+                            style={{ cursor: 'pointer' }}
+                        />
+                        <label htmlFor="useCmmn" style={{ cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                            Use Case Management (CMMN)
+                        </label>
                     </div>
                     <Button onClick={handleCreateCase} disabled={creatingCase}>{creatingCase ? 'Creating...' : 'Create Case'}</Button>
                 </div>

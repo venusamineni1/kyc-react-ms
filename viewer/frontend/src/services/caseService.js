@@ -27,6 +27,18 @@ export const caseService = {
         return apiClient.get(`${API_BASE_URL}/${id}/comments`);
     },
 
+    getCaseTimeline: async (id) => {
+        return apiClient.get(`${API_BASE_URL}/${id}/timeline`);
+    },
+
+    getCaseActions: async (id) => {
+        return apiClient.get(`${API_BASE_URL}/${id}/actions`);
+    },
+
+    triggerCaseAction: async (id, actionId, variables = {}) => {
+        return apiClient.post(`${API_BASE_URL}/${id}/actions/${actionId}`, variables);
+    },
+
     getCaseDocuments: async (id) => {
         return apiClient.get(`${API_BASE_URL}/${id}/documents`);
     },
@@ -48,8 +60,8 @@ export const caseService = {
         }
     },
 
-    createCase: async (clientID, reason) => {
-        return apiClient.post(API_BASE_URL, { clientID, reason });
+    createCase: async (clientID, reason, useCmmn = false) => {
+        return apiClient.post(API_BASE_URL, { clientID, reason, useCmmn });
     },
 
     uploadDocument: async (caseId, formData) => {
