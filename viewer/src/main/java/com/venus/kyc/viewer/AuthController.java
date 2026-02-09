@@ -49,7 +49,7 @@ public class AuthController {
         // Validate password (plaintext for demo/dev as per requirement)
         if (!password.equals(user.password())) {
             // Optional: Log failed login attempt
-            // userAuditService.log(username, "LOGIN_FAILED", "Invalid password");
+           userAuditService.log(username, "LOGIN_FAILED", "Invalid password");
             return ResponseEntity.status(401).build();
         }
 
