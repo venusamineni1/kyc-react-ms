@@ -3,9 +3,6 @@ target/
 *.jar
 *.war
 *.ear
-mvnw
-mvnw.cmd
-.mvn/
 
 # Node/JS
 node_modules/

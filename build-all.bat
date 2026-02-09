@@ -1,28 +1,14 @@
 @echo off
 setlocal enabledelayedexpansion
 
-echo Starting build for all services...
+echo Building all services via Root POM...
 
-call :BuildService "service-registry"
-if %errorlevel% neq 0 exit /b %errorlevel%
-
-call :BuildService "api-gateway"
-if %errorlevel% neq 0 exit /b %errorlevel%
-
-call :BuildService "auth-service"
-if %errorlevel% neq 0 exit /b %errorlevel%
-
-call :BuildService "risk-service"
-if %errorlevel% neq 0 exit /b %errorlevel%
-
-call :BuildService "screening-service"
-if %errorlevel% neq 0 exit /b %errorlevel%
-
-call :BuildService "document-service"
-if %errorlevel% neq 0 exit /b %errorlevel%
-
-call :BuildService "viewer"
-if %errorlevel% neq 0 exit /b %errorlevel%
+REM Use the root maven wrapper to build everything defined in pom.xml
+call mvnw.cmd clean package -DskipTests
+if %errorlevel% neq 0 (
+    echo Backend build failed
+    exit /b 1
+)
 
 echo.
 echo All backend services built successfully!
@@ -46,19 +32,3 @@ cd ../..
 
 echo.
 echo Full stack build complete!
-goto :eof
-
-:BuildService
-set "SERVICE=%~1"
-echo.
-echo Building %SERVICE%...
-cd %SERVICE%
-call mvnw.cmd clean package -DskipTests
-if %errorlevel% neq 0 (
-    echo Failed to build %SERVICE%
-    cd ..
-    exit /b 1
-)
-echo %SERVICE% built successfully!
-cd ..
-exit /b 0
