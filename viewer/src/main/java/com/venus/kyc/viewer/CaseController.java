@@ -1,13 +1,11 @@
 package com.venus.kyc.viewer;
 
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -19,13 +17,15 @@ public class CaseController {
     private final CaseService caseService;
     private final EventService eventService;
     private final UserAuditService userAuditService;
+    private final DocumentService documentService;
 
     public CaseController(CaseRepository caseRepository, CaseService caseService,
-            EventService eventService, UserAuditService userAuditService) {
+            EventService eventService, UserAuditService userAuditService, DocumentService documentService) {
         this.caseRepository = caseRepository;
         this.caseService = caseService;
         this.eventService = eventService;
         this.userAuditService = userAuditService;
+        this.documentService = documentService;
     }
 
     private String getUserRole(Authentication authentication) {
@@ -43,7 +43,8 @@ public class CaseController {
     }
 
     @GetMapping("/{id}")
-    public Case getCase(@PathVariable Long id) {
+    public Case getCase(@PathVariable Long id, Authentication authentication) {
+        userAuditService.log(authentication.getName(), "VIEW_CASE", "Viewed Case ID: " + id);
         return caseRepository.findById(id).orElseThrow();
     }
 
@@ -59,7 +60,12 @@ public class CaseController {
 
     @GetMapping("/{id}/documents")
     public List<CaseDocument> getDocuments(@PathVariable Long id) {
-        return caseRepository.findDocumentsByCaseId(id);
+        return documentService.getDocuments(id);
+    }
+
+    @GetMapping("/{id}/documents/versions")
+    public List<CaseDocument> getDocumentVersions(@PathVariable Long id, @RequestParam String name) {
+        return documentService.getDocumentVersions(id, name);
     }
 
     @PostMapping("/migrate")
@@ -76,6 +82,7 @@ public class CaseController {
     public List<Map<String, Object>> getMyTasks(Authentication authentication) {
         List<String> groups = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
+                .map(a -> a.startsWith("ROLE_") ? a.substring(5) : a)
                 .toList();
         return caseService.getUserTasks(authentication.getName(), groups);
     }
@@ -99,7 +106,7 @@ public class CaseController {
 
     @GetMapping("/admin/processes")
     public List<Map<String, Object>> getAllProcesses(Authentication authentication) {
-        return caseService.getAllProcessInstances();
+        return caseService.getAllCaseInstances();
     }
 
     @DeleteMapping("/admin/processes/{id}")
@@ -136,6 +143,10 @@ public class CaseController {
         }
         caseService.triggerDiscretionaryAction(c.instanceID(), actionId, variables);
         caseRepository.addComment(id, authentication.getName(), "Triggered manual action: " + actionId, "SYSTEM");
+
+        userAuditService.log(authentication.getName(), "CREATE_TASK",
+                "Triggered discretionary action: " + actionId + " for case " + id);
+
         return ResponseEntity.ok().build();
     }
 
@@ -197,24 +208,29 @@ public class CaseController {
     }
 
     @PostMapping("/{id}/documents")
-    public ResponseEntity<Void> uploadDocument(
+    public ResponseEntity<String> uploadDocument(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file,
-            @RequestParam("category") String category,
-            @RequestParam("comment") String comment,
-            Authentication authentication) throws IOException {
-        caseRepository.addDocument(
-                id,
-                file.getOriginalFilename(),
-                category,
-                file.getContentType(),
-                authentication.getName(),
-                comment,
-                file.getBytes());
+            @RequestParam(value = "category", required = false, defaultValue = "General") String category,
+            @RequestParam(value = "comment", required = false, defaultValue = "") String comment,
+            @RequestParam(value = "documentName", required = false) String documentName,
+            Authentication authentication) {
+        try {
+            documentService.uploadDocument(
+                    id,
+                    file,
+                    category,
+                    comment,
+                    authentication.getName(),
+                    documentName);
 
-        userAuditService.log(authentication.getName(), "UPLOAD_DOCUMENT",
-                "Uploaded " + file.getOriginalFilename() + " to case " + id);
-        return ResponseEntity.ok().build();
+            userAuditService.log(authentication.getName(), "UPLOAD_DOCUMENT",
+                    "Uploaded " + file.getOriginalFilename() + " to case " + id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Upload failed: " + e.getMessage());
+        }
     }
 
     @PostMapping
@@ -222,7 +238,8 @@ public class CaseController {
             Authentication authentication) {
         Long clientID = Long.valueOf(request.get("clientID").toString());
         String reason = (String) request.get("reason");
-        boolean useCmmn = !request.containsKey("useCmmn") || Boolean.TRUE.equals(request.get("useCmmn"));
+        // Enforce CMMN
+        boolean useCmmn = true;
 
         String role = getUserRole(authentication);
 
@@ -235,8 +252,8 @@ public class CaseController {
         }
 
         // Use new Service to start process
-        Long caseId = caseService.createCase(clientID, reason, authentication.getName(), useCmmn);
-        String type = useCmmn ? "CMMN Case" : "Workflow";
+        Long caseId = caseService.createCase(clientID, reason, authentication.getName());
+        String type = "CMMN Case";
         caseRepository.addComment(caseId, authentication.getName(), "Case created via " + type + ": " + reason, role);
 
         userAuditService.log(authentication.getName(), "CREATE_CASE",
@@ -246,11 +263,7 @@ public class CaseController {
 
     @GetMapping("/documents/{docId}")
     public ResponseEntity<byte[]> downloadDocument(@PathVariable Long docId) {
-        CaseDocument doc = caseRepository.findDocumentById(docId).orElseThrow();
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(doc.mimeType()))
-                .header("Content-Disposition", "attachment; filename=\"" + doc.documentName() + "\"")
-                .body(doc.data());
+        return documentService.downloadDocument(docId);
     }
 
     @GetMapping("/{id}/events")

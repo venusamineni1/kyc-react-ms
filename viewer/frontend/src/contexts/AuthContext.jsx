@@ -42,7 +42,17 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const logout = async () => {
-        // No server-side logout for JWT (unless blacklisting). Just clear local state.
+        try {
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+        } catch (error) {
+            console.error('Logout failed', error);
+        }
+
         localStorage.removeItem('token');
         localStorage.removeItem('username');
         setUser(null);

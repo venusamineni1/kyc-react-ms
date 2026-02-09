@@ -70,12 +70,12 @@ function App() {
                           <Route path="/admin/questionnaire" element={<AdminQuestionnaire />} />
                           <Route path="/admin/workflow" element={<AdminWorkflowDashboard />} />
                           <Route path="/admin/audits" element={
-                            <ProtectedRoute requiredRole="ADMIN">
+                            <ProtectedRoute requiredPermission="MANAGE_AUDITS">
                               <AuditHistory />
                             </ProtectedRoute>
                           } />
                           <Route path="/admin/config" element={
-                            <ProtectedRoute requiredRole="ADMIN">
+                            <ProtectedRoute requiredPermission="MANAGE_CONFIG">
                               <Configuration />
                             </ProtectedRoute>
                           } />

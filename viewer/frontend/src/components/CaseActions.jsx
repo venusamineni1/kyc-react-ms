@@ -17,7 +17,7 @@ const CaseActions = ({ id, onActionTriggered }) => {
     const loadActions = async () => {
         try {
             const data = await caseService.getCaseActions(id);
-            setActions(data);
+            setActions(data || []);
         } catch (err) {
             console.error("Failed to load discretionary actions:", err);
         }
@@ -47,21 +47,45 @@ const CaseActions = ({ id, onActionTriggered }) => {
         }
     };
 
-    if (actions.length === 0) return null;
+    // Defined Discretionary Actions (from CMMN)
+    const ALL_ACTIONS = [
+        { definitionId: 'evtInitiateCommunication', name: 'Request Additional Documentation' },
+        { definitionId: 'evtChallengeScreening', name: 'Challenge Screening Hit' },
+        { definitionId: 'evtOverrideRisk', name: 'Override Risk Assessment' }
+    ];
+
+    if (loading && actions.length === 0) return <p>Loading actions...</p>;
 
     return (
         <div className="case-actions-container" style={{ marginTop: '1.5rem' }}>
             <h3 style={{ marginBottom: '1rem' }}>Discretionary Actions</h3>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                {actions.map(action => (
-                    <Button
-                        key={action.id}
-                        variant="secondary"
-                        onClick={() => handleOpenModal(action)}
-                    >
-                        {action.name}
-                    </Button>
-                ))}
+                {ALL_ACTIONS.map(defAction => {
+                    // Check if this action is currently available
+                    // The backend returns actions with their runtime ID and definitionId
+                    const availableAction = actions.find(a => a.definitionId === defAction.definitionId);
+                    const isAvailable = !!availableAction;
+
+                    return (
+                        <Button
+                            key={defAction.definitionId}
+                            variant={isAvailable ? "secondary" : "disabled"} // Assuming Button supports variant or we style it
+                            disabled={!isAvailable}
+                            onClick={() => isAvailable && handleOpenModal(availableAction)}
+                            style={{
+                                opacity: isAvailable ? 1 : 0.6,
+                                cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                border: isAvailable ? '1px solid var(--glass-border)' : '1px dashed rgba(255,255,255,0.2)',
+                                background: isAvailable ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.2)',
+                                color: isAvailable ? 'var(--text-color)' : 'rgba(255,255,255,0.4)',
+                                boxShadow: isAvailable ? 'none' : 'inset 0 0 5px rgba(0,0,0,0.2)'
+                            }}
+                            title={!isAvailable ? "This action is not currently available or has already been triggered" : ""}
+                        >
+                            {defAction.name}
+                        </Button>
+                    );
+                })}
             </div>
 
             {activeAction && (

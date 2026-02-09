@@ -12,7 +12,8 @@ const AuditHistory = () => {
                 const data = await auditService.getAudits();
                 setAudits(data);
             } catch (err) {
-                setError(err.message);
+                console.error("Failed to load audits:", err);
+                setError(err.message + (err.message.includes('403') ? " (Access Denied)" : ""));
             } finally {
                 setLoading(false);
             }

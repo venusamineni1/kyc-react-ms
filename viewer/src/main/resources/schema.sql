@@ -269,3 +269,18 @@ CREATE TABLE IF NOT EXISTS UserAudits (
     IPAddress VARCHAR(50),
     Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS Users (
+    Username VARCHAR(50) PRIMARY KEY,
+    Password VARCHAR(100),
+    Role VARCHAR(50),
+    Active BOOLEAN DEFAULT TRUE,
+    LastLogin TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS RolePermissions (
+    Role VARCHAR(50),
+    Permission VARCHAR(50),
+    PRIMARY KEY (Role, Permission)
+);
+

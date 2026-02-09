@@ -30,6 +30,7 @@ public class SecurityConfig {
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests((authorize) -> authorize
                                                 .requestMatchers("/", "/index.html", "/login.html", "/login",
+                                                                "/api/auth/login",
                                                                 "/style.css",
                                                                 "/assets/**",
                                                                 "/*.js", "/*.css", "/*.ico", "/*.png", "/*.jpg",
@@ -37,6 +38,7 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 // APIs that moved to auth-service will be routed by Gateway, but if
                                                 // someone calls viewer directly:
+                                                .requestMatchers("/api/users/me").authenticated()
                                                 .requestMatchers("/api/users/**").hasAuthority("MANAGE_USERS")
                                                 .requestMatchers("/api/permissions/**")
                                                 .hasAuthority("MANAGE_PERMISSIONS")
@@ -46,8 +48,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/clients/**").hasAuthority("VIEW_CLIENTS")
                                                 .requestMatchers("/api/clients/changes").hasAuthority("VIEW_CHANGES")
                                                 .requestMatchers("/api/cases/**").hasAuthority("MANAGE_CASES")
-                                                .requestMatchers("/api/admin/audits").hasRole("ADMIN")
-                                                .requestMatchers("/api/admin/config").hasRole("ADMIN")
+                                                .requestMatchers("/api/admin/audits").hasAuthority("MANAGE_AUDITS")
+                                                .requestMatchers("/api/admin/config").hasAuthority("MANAGE_CONFIG")
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                                 .exceptionHandling(e -> e

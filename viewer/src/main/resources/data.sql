@@ -1,79 +1,129 @@
-INSERT INTO Clients (TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus) VALUES 
-('Mr.', 'Acme', 'The', 'Corp', '', 'USA', '', '2023-01-15', 'Active', 'Acme Senior', 'Junior', 'Male', '1980-05-20', 'English', 'Engineer', 'USA', 'USA', 'Reportable', 'Reportable'),
-('Dr.', 'Globex', '', 'Inc', 'Esq.', 'UK', 'USA', '2023-03-22', 'Pending', 'Globex Alpha', 'G', 'Female', '1975-11-10', 'English', 'Scientist', 'UK', 'USA', 'Non-Reportable', 'Reportable'),
-('', 'Soylent', 'Green', 'Corp', '', 'France', '', '2023-06-10', 'Inactive', 'Soylent Original', 'Greenie', 'Other', '1990-01-01', 'French', 'Analyst', 'France', 'France', 'Reportable', 'Non-Reportable'),
-('Ms.', 'Umbrella', 'T', 'Corp', '', 'Canada', 'UK', '2023-11-05', 'Active', 'Umbrella Prototype', 'U', 'Female', '1985-08-15', 'English', 'Manager', 'Canada', 'UK', 'Non-Reportable', 'Non-Reportable');
+INSERT INTO Users (Username, Password, Role, Active) VALUES ('admin', 'admin', 'ADMIN', true);
+INSERT INTO Users (Username, Password, Role, Active) VALUES ('analyst', 'password', 'KYC_ANALYST', true);
+INSERT INTO Users (Username, Password, Role, Active) VALUES ('reviewer', 'password', 'KYC_REVIEWER', true);
 
-INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement) VALUES (1, 'Postal', '123 Road Runner Way', '', 'Desert City', '85001', 'USA', '123', 'Ground Floor');
-INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement) VALUES (2, 'Residential', '456 Cypress Creek', 'Suite 200', 'Springfield', '62704', 'USA', '456', 'Annex A');
-INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement) VALUES (3, 'Postal', '789 People Place', '', 'New York', '10001', 'USA', '789', '');
-INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement) VALUES (4, 'Other', '666 Hive St', 'Underground', 'Raccoon City', '90210', 'USA', '666', 'Level -5');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ADMIN', 'MANAGE_USERS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ADMIN', 'MANAGE_PERMISSIONS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ADMIN', 'MANAGE_CASES');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ADMIN', 'VIEW_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_ANALYST', 'MANAGE_CASES');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_ANALYST', 'VIEW_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_REVIEWER', 'MANAGE_CASES');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_REVIEWER', 'VIEW_CLIENTS');
+INSERT INTO Users (Username, Password, Role, Active) VALUES ('afc_user', 'password', 'AFC_REVIEWER', true);
+INSERT INTO Users (Username, Password, Role, Active) VALUES ('aco_user', 'password', 'ACO_REVIEWER', true);
+INSERT INTO Users (Username, Password, Role, Active) VALUES ('auditor', 'password', 'AUDITOR', true);
+INSERT INTO Users (Username, Password, Role, Active) VALUES ('analyst2', 'password', 'KYC_ANALYST', true);
+INSERT INTO Users (Username, Password, Role, Active) VALUES ('reviewer2', 'password', 'KYC_REVIEWER', true);
 
+INSERT INTO RolePermissions (Role, Permission) VALUES ('AFC_REVIEWER', 'MANAGE_CASES');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('AFC_REVIEWER', 'VIEW_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ACO_REVIEWER', 'MANAGE_CASES');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ACO_REVIEWER', 'VIEW_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('AUDITOR', 'VIEW_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('AUDITOR', 'VIEW_CHANGES');
 
-INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority, IdentifierNumber) VALUES (1, 'Passport', 'A12345678', 'USA Dept of State', 'P-123-456');
-INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority, IdentifierNumber) VALUES (1, 'Social Issuance Number', '999-00-1111', 'SSA', 'S-999-00');
-INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority, IdentifierNumber) VALUES (2, 'NID', 'NID-987654321', 'Springfield Gov', 'N-987-654');
-INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority) VALUES (3, 'Other', 'CORP-ID-555', 'State Registry');
-INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority, IdentifierNumber) VALUES (3, 'Tax ID', 'TAX-789-012', 'French Revenue Service', 'T-789-012');
-INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority, IdentifierNumber) VALUES (4, 'Business Reg', 'BR-456-789', 'Canada Business Bureau', 'B-456-789');
+INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
+VALUES ('Mr', 'John', 'Doe', '2023-01-15', 'ACTIVE', 'USA', 'CAN', 'Male', '1980-05-20', 'English', 'Engineer', 'USA', 'USA', 'Reportable', 'Reportable');
 
-INSERT INTO RelatedParties (ClientID, RelationType, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus) 
-VALUES (1, 'Legal representative', 'Ms.', 'Jane', 'Marie', 'Doe', '', 'USA', '', '2023-01-16', 'Active', 'Jane BirthName', 'J', 'Female', '1992-04-10', 'English', 'Lawyer', 'USA', 'USA', 'Non-Reportable', 'Non-Reportable');
+INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
+VALUES (NULL, 'Acme', 'Corp', '2023-02-10', 'ACTIVE', 'USA', NULL, NULL, NULL, 'English', 'Manufacturing', 'USA', 'USA', 'Active NFFE', 'Active NFE');
 
-INSERT INTO RelatedPartyAddresses (RelatedPartyID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement) 
-VALUES (1, 'Residential', '789 Lawyer Ln', 'Apartment 4B', 'Legal City', '90210', 'USA', '789/B', 'Directly opposite park');
+INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, City, Zip, Country)
+VALUES (1, 'Residential', '123 Main St', 'New York', '10001', 'USA');
 
-INSERT INTO RelatedPartyIdentifiers (RelatedPartyID, IdentifierType, IdentifierValue, IssuingAuthority, IdentifierNumber) 
-VALUES (1, 'License', 'L-1234567', 'State Bar', 'LB-765-4321');
+INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, City, Zip, Country)
+VALUES (2, 'Business', '456 Tech Park', 'San Francisco', '94107', 'USA');
 
-INSERT INTO Accounts (ClientID, AccountNumber, AccountStatus) VALUES (1, 'ACC-123456', 'Active');
-INSERT INTO Accounts (ClientID, AccountNumber, AccountStatus) VALUES (1, 'SAV-999888', 'Inactive');
-INSERT INTO Accounts (ClientID, AccountNumber, AccountStatus) VALUES (2, 'ACC-555444', 'Active');
-INSERT INTO Accounts (ClientID, AccountNumber, AccountStatus) VALUES (3, 'ACC-000111', 'Pending');
+INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority)
+VALUES (1, 'Passport', 'A12345678', 'USA Dept of State');
 
+INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority)
+VALUES (2, 'Tax ID', '98-7654321', 'IRS');
 
+INSERT INTO RelatedParties (ClientID, RelationType, TitlePrefix, FirstName, LastName, Citizenship1, Status)
+VALUES (2, 'Director', 'Ms', 'Jane', 'Smith', 'USA', 'ACTIVE');
 
-INSERT INTO MaterialChanges (ChangeDate, ClientID, EntityID, EntityName, ColumnName, OperationType, OldValue, NewValue) VALUES
-('2025-01-10 10:00:00', 1, 1, 'Client', 'Status', 'UPDATE', 'PENDING', 'ACTIVE'),
-('2025-01-11 11:30:00', 1, 1, 'Address', 'Street', 'UPDATE', '123 Fake St', '124 Fake St'),
-('2025-01-12 09:15:00', 2, 2, 'Client', 'LastName', 'UPDATE', 'Smith', 'Smith-Jones'),
-('2025-01-13 14:20:00', 3, 3, 'Identifier', 'IDValue', 'UPDATE', 'A1234568', 'A9999999');
+INSERT INTO RelatedPartyAddresses (RelatedPartyID, AddressType, AddressLine1, City, Zip, Country)
+VALUES (1, 'Residential', '789 Pine Ln', 'Austin', '73301', 'USA');
 
+INSERT INTO RelatedPartyIdentifiers (RelatedPartyID, IdentifierType, IdentifierValue, IssuingAuthority)
+VALUES (1, 'Passport', 'B98765432', 'USA Dept of State');
 
+INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
+VALUES (1, 'CMMN', 'KYC_ANALYST', 'New Onboarding', CURRENT_TIMESTAMP, 'analyst');
 
+INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
+VALUES (2, 'CMMN', 'KYC_ANALYST', 'Periodic Review', CURRENT_TIMESTAMP, 'analyst2');
 
+-- Questionnaire Seeding
+INSERT INTO QuestionnaireSections (SectionName, DisplayOrder) VALUES ('General Information', 1);
+INSERT INTO QuestionnaireSections (SectionName, DisplayOrder) VALUES ('Risk Factors', 2);
+INSERT INTO QuestionnaireSections (SectionName, DisplayOrder) VALUES ('Declarations', 3);
 
-INSERT INTO Cases (ClientID, Reason, AssignedTo, Status) VALUES
-(1, 'New Onboarding', 'analyst', 'KYC_ANALYST'),
-(2, 'Periodic Review', 'reviewer', 'KYC_REVIEWER');
+-- Questions for General Information (Section 1)
+INSERT INTO QuestionnaireQuestions (SectionID, QuestionText, QuestionType, IsMandatory, DisplayOrder) 
+VALUES (1, 'Is the customer a PEP?', 'YES_NO', true, 1);
+INSERT INTO QuestionnaireQuestions (SectionID, QuestionText, QuestionType, IsMandatory, DisplayOrder) 
+VALUES (1, 'Source of Wealth description', 'TEXT', true, 2);
 
-INSERT INTO CaseComments (CaseID, UserID, CommentText, Role) VALUES
-(1, 'analyst', 'Starting onboarding for Acme Corp.', 'KYC_ANALYST'),
-(2, 'analyst', 'Reviewing Globex Inc documents.', 'KYC_ANALYST'),
-(2, 'reviewer', 'Documents look valid, passing to AFC.', 'KYC_REVIEWER');
+-- Questions for Risk Factors (Section 2)
+INSERT INTO QuestionnaireQuestions (SectionID, QuestionText, QuestionType, IsMandatory, DisplayOrder, RiskFactorKey) 
+VALUES (2, 'Does the customer have adverse media?', 'YES_NO', true, 1, 'ADVERSE_MEDIA');
+INSERT INTO QuestionnaireQuestions (SectionID, QuestionText, QuestionType, IsMandatory, DisplayOrder, Options) 
+VALUES (2, 'Customer Risk Rating', 'MULTI_CHOICE', true, 2, 'Low,Medium,High');
 
--- Questionnaire Template
-INSERT INTO QuestionnaireSections (SectionName, DisplayOrder) VALUES 
-('Customer Identity', 1),
-('Source of Wealth', 2),
-('Risk Assessment', 3);
+-- Questions for Declarations (Section 3)
+INSERT INTO QuestionnaireQuestions (SectionID, QuestionText, QuestionType, IsMandatory, DisplayOrder) 
+VALUES (3, 'All documents verified?', 'YES_NO', true, 1);
 
-INSERT INTO QuestionnaireQuestions (SectionID, QuestionText, QuestionType, IsMandatory, Options, DisplayOrder) VALUES 
-(1, 'Has the secondary ID been verified?', 'YES_NO', true, '', 1),
-(1, 'Residential address confirmation date?', 'TEXT', true, '', 2),
-(2, 'Main source of wealth?', 'MULTI_CHOICE', true, 'Salary,Inheritance,Investment,Other', 1),
-(3, 'Is the customer a PEP (Politically Exposed Person)?', 'YES_NO', true, '', 1),
-(3, 'Additional risk comments', 'TEXT', false, '', 2);
+-- Responses for Case 1 (John Doe)
+INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES (1, 1, 'No');
+INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES (1, 2, 'Employment income');
+INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES (1, 3, 'No');
+INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES (1, 4, 'Low');
+INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES (1, 5, 'Yes');
 
--- Sample Responses for Case 1
-INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES 
-(1, 1, 'Yes'),
-(1, 2, '2023-10-01'),
-(1, 3, 'Salary');
+-- Responses for Case 2 (Acme Corp)
+INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES (2, 1, 'No');
+INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES (2, 2, 'Business operations');
+INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES (2, 3, 'No');
+INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES (2, 4, 'Medium');
+INSERT INTO CaseQuestionnaireResponses (CaseID, QuestionID, AnswerText) VALUES (2, 5, 'Yes');
 
-INSERT INTO Portfolios (ClientID, AccountNumber, PortfolioText, OnboardingDate, OffboardingDate, Status) VALUES
-(1, 'ACC-1001', 'Global Equities Portfolio', '2023-02-01', NULL, 'Active'),
-(1, 'ACC-1002', 'Real Estate Fund', '2023-05-15', '2023-12-31', 'Closed'),
-(2, 'ACC-2001', 'Fixed Income Alpha', '2023-04-01', NULL, 'Active'),
-(3, 'ACC-3001', 'Venture Capital Tech', '2023-07-20', NULL, 'Active');
+-- Missing Permissions for Risk and Screening
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_ANALYST', 'MANAGE_RISK');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_ANALYST', 'MANAGE_SCREENING');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_ANALYST', 'MANAGE_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_ANALYST', 'ROLE_ANALYST');
 
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_REVIEWER', 'MANAGE_RISK');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_REVIEWER', 'MANAGE_SCREENING');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_REVIEWER', 'MANAGE_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('KYC_REVIEWER', 'ROLE_REVIEWER');
+
+INSERT INTO RolePermissions (Role, Permission) VALUES ('AFC_REVIEWER', 'MANAGE_RISK');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('AFC_REVIEWER', 'MANAGE_SCREENING');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('AFC_REVIEWER', 'MANAGE_CLIENTS');
+
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ACO_REVIEWER', 'MANAGE_RISK');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ACO_REVIEWER', 'MANAGE_SCREENING');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ACO_REVIEWER', 'MANAGE_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ACO_REVIEWER', 'ROLE_ACO_REVIEWER');
+
+-- Missing Permissions for ADMIN
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ADMIN', 'MANAGE_RISK');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ADMIN', 'MANAGE_SCREENING');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ADMIN', 'MANAGE_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ADMIN', 'MANAGE_AUDITS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ADMIN', 'MANAGE_CONFIG');
+
+-- Requested Specific Roles
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ROLE_ANALYST', 'VIEW_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ROLE_ANALYST', 'MANAGE_CASES');
+
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ROLE_REVIEWER', 'VIEW_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ROLE_REVIEWER', 'MANAGE_CASES');
+
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ROLE_ACO_REVIEWER', 'VIEW_CLIENTS');
+INSERT INTO RolePermissions (Role, Permission) VALUES ('ROLE_ACO_REVIEWER', 'MANAGE_CASES');

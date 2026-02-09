@@ -75,7 +75,7 @@ const AdminWorkflowDashboard = () => {
                     onClick={() => setActiveTab('processes')}
                     style={activeTab === 'processes' ? { borderBottom: '2px solid var(--primary-color)', borderRadius: '0' } : { border: 'none' }}
                 >
-                    Running Processes
+                    Running Cases
                 </button>
             </div>
 
@@ -111,11 +111,11 @@ const AdminWorkflowDashboard = () => {
                     )}
 
                     {activeTab === 'processes' && (
-                        processes.length === 0 ? <p>No running processes found.</p> : (
+                        processes.length === 0 ? <p>No running cases found.</p> : (
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Process Definition</th>
+                                        <th>Case Definition</th>
                                         <th>Started</th>
                                         <th>Initiator</th>
                                         <th>Case ID</th>

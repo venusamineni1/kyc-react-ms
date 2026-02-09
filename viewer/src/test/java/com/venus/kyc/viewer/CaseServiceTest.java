@@ -26,11 +26,6 @@ public class CaseServiceTest {
     private CmmnHistoryService cmmnHistoryService;
     @Mock
     private CmmnRuntimeService cmmnRuntimeService;
-
-    @Mock
-    private org.flowable.engine.RuntimeService runtimeService;
-    @Mock
-    private org.flowable.engine.TaskService taskService;
     @Mock
     private org.flowable.cmmn.api.CmmnTaskService cmmnTaskService;
     @Mock
@@ -42,7 +37,7 @@ public class CaseServiceTest {
 
     @BeforeEach
     void setUp() {
-        caseService = new CaseService(runtimeService, taskService, cmmnRuntimeService, cmmnTaskService,
+        caseService = new CaseService(cmmnRuntimeService, cmmnTaskService,
                 cmmnHistoryService, caseRepository, questionnaireRepository);
     }
 

@@ -27,6 +27,38 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
         };
     }, [status, currentRequestId]);
 
+    // Initial load effect
+    useEffect(() => {
+        const loadInitialStatus = async () => {
+            try {
+                const log = await screeningService.getHistory(clientId);
+                setHistory(log);
+
+                if (log && log.length > 0) {
+                    // Assuming API returns sorted desc by date, or we sort
+                    // Sort just in case
+                    const sorted = log.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    const latest = sorted[0];
+
+                    if (latest.overallStatus === 'COMPLETED' || latest.overallStatus === 'HIT' || latest.overallStatus === 'NO_HIT' || latest.overallStatus === 'CLEAR') {
+                        // We don't have the granular results here without calling status again
+                        // So we should fetch the status details if we have an ID
+                        if (latest.externalRequestID) {
+                            await checkStatus(latest.externalRequestID, true);
+                        }
+                        // Fallback if checkStatus fails or returns nothing?
+                        // checkStatus sets 'results' and 'status' state.
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load initial screening status", e);
+            }
+        };
+        if (clientId) {
+            loadInitialStatus();
+        }
+    }, [clientId]);
+
     const fetchHistory = async () => {
         try {
             const log = await screeningService.getHistory(clientId);
@@ -55,7 +87,7 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
         }
     };
 
-    const checkStatus = async (requestId) => {
+    const checkStatus = async (requestId, silent = false) => {
         try {
             const res = await screeningService.getScreeningStatus(requestId);
             setResults(res.results);
@@ -68,10 +100,10 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
                 // Keep polling
             } else if (anyHit) {
                 setStatus('HIT');
-                notify('Screening Completed: Alert Found', 'warning');
+                if (!silent) notify('Screening Completed: Alert Found', 'warning');
             } else {
                 setStatus('NO_HIT');
-                notify('Screening Completed: No Hits', 'success');
+                if (!silent) notify('Screening Completed: No Hits', 'success');
             }
         } catch (e) {
             console.error('Error checking status', e);
@@ -154,7 +186,7 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%' }}>
                 {['PEP', 'ADM', 'INT', 'SAN'].map(ctx => {
-                    const result = results.find(r => r.contextType === ctx) || { status: 'NOT_RUN' };
+                    const result = (results || []).find(r => r.contextType === ctx) || { status: 'NOT_RUN' };
                     const isInProgress = result.status === 'IN_PROGRESS';
 
                     return (
@@ -178,34 +210,36 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
             </div>
 
             {/* History Modal */}
-            {historyOpen && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.8)', zIndex: 1000,
-                    display: 'flex', justifyContent: 'center', alignItems: 'center'
-                }}>
+            {
+                historyOpen && (
                     <div style={{
-                        background: '#1f1f1f', padding: '20px', borderRadius: '8px',
-                        width: '500px', maxHeight: '80vh', overflowY: 'auto',
-                        border: '1px solid var(--glass-border)'
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.8)', zIndex: 1000,
+                        display: 'flex', justifyContent: 'center', alignItems: 'center'
                     }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                            <h3>Screening History</h3>
-                            <button onClick={() => setHistoryOpen(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
-                        </div>
-                        {history.map((h, idx) => (
-                            <div key={idx} style={{ borderBottom: '1px solid #333', padding: '10px 0' }}>
-                                <div><strong>Date:</strong> {new Date(h.createdAt || Date.now()).toLocaleString()}</div>
-                                <div style={{ color: h.overallStatus === 'COMPLETED' ? '#52c41a' : '#faad14' }}>
-                                    <strong>Status:</strong> {h.overallStatus}
-                                </div>
-                                <div style={{ fontSize: '0.8rem', color: '#aaa' }}>{h.externalRequestID}</div>
+                        <div style={{
+                            background: '#1f1f1f', padding: '20px', borderRadius: '8px',
+                            width: '500px', maxHeight: '80vh', overflowY: 'auto',
+                            border: '1px solid var(--glass-border)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                                <h3>Screening History</h3>
+                                <button onClick={() => setHistoryOpen(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
                             </div>
-                        ))}
+                            {history.map((h, idx) => (
+                                <div key={idx} style={{ borderBottom: '1px solid #333', padding: '10px 0' }}>
+                                    <div><strong>Date:</strong> {new Date(h.createdAt || Date.now()).toLocaleString()}</div>
+                                    <div style={{ color: h.overallStatus === 'COMPLETED' ? '#52c41a' : '#faad14' }}>
+                                        <strong>Status:</strong> {h.overallStatus}
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', color: '#aaa' }}>{h.externalRequestID}</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

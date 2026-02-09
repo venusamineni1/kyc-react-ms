@@ -60,14 +60,6 @@ public class CaseRepository {
                 .list();
     }
 
-    public List<CaseDocument> findDocumentsByCaseId(Long caseId) {
-        return jdbcClient.sql(
-                "SELECT DocumentID, CaseID, DocumentName, Category, MimeType, UploadedBy, Comment, NULL as Data, UploadDate FROM CaseDocuments WHERE CaseID = :caseId")
-                .param("caseId", caseId)
-                .query(CaseDocument.class)
-                .list();
-    }
-
     public void updateStatus(Long id, String status, String assignedTo) {
         jdbcClient
                 .sql("UPDATE Cases SET Status = COALESCE(:status, Status), AssignedTo = :assignedTo WHERE CaseID = :id")
@@ -84,20 +76,6 @@ public class CaseRepository {
                 .param("userId", userId)
                 .param("text", text)
                 .param("role", role)
-                .update();
-    }
-
-    public void addDocument(Long caseId, String name, String category, String mimeType, String uploadedBy,
-            String comment, byte[] data) {
-        jdbcClient.sql(
-                "INSERT INTO CaseDocuments (CaseID, DocumentName, Category, MimeType, UploadedBy, Comment, Data) VALUES (:caseId, :name, :category, :mimeType, :uploadedBy, :comment, :data)")
-                .param("caseId", caseId)
-                .param("name", name)
-                .param("category", category)
-                .param("mimeType", mimeType)
-                .param("uploadedBy", uploadedBy)
-                .param("comment", comment)
-                .param("data", data)
                 .update();
     }
 
@@ -118,10 +96,11 @@ public class CaseRepository {
         return keyHolder.getKey().longValue();
     }
 
-    public Optional<CaseDocument> findDocumentById(Long id) {
-        return jdbcClient.sql("SELECT * FROM CaseDocuments WHERE DocumentID = :id")
+    public void updateInstanceInfo(Long id, String instanceId, String workflowType) {
+        jdbcClient.sql("UPDATE Cases SET InstanceID = :instanceId, WorkflowType = :workflowType WHERE CaseID = :id")
+                .param("instanceId", instanceId)
+                .param("workflowType", workflowType)
                 .param("id", id)
-                .query(CaseDocument.class)
-                .optional();
+                .update();
     }
 }

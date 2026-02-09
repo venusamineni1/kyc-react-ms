@@ -2,8 +2,8 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const ProtectedRoute = ({ children, requiredRole }) => {
-    const { user, loading } = useAuth();
+const ProtectedRoute = ({ children, requiredRole, requiredPermission }) => {
+    const { user, loading, hasPermission } = useAuth();
     const location = useLocation();
 
     if (loading) {
@@ -17,6 +17,11 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 
     if (requiredRole && user.role !== requiredRole) {
         // Redirect to dashboard if role doesn't match
+        return <Navigate to="/" replace />;
+    }
+
+    if (requiredPermission && !hasPermission(requiredPermission)) {
+        // Redirect to dashboard if permission missing
         return <Navigate to="/" replace />;
     }
 

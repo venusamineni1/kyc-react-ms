@@ -64,7 +64,7 @@ const Dashboard = () => {
                 title="Questionnaire Config"
                 description="Manage questionnaire sections and questions for KYC cases."
                 color="#ff9a9e"
-                role="ADMIN"
+                permission="MANAGE_CASES"
             />
             <DashboardCard
                 to="/admin/audits"
@@ -72,7 +72,7 @@ const Dashboard = () => {
                 title="User Audit History"
                 description="View logs of all user actions in the system."
                 color="#ff6b6b"
-                role="ADMIN"
+                permission="MANAGE_AUDITS"
             />
             <DashboardCard
                 to="/admin/config"
@@ -80,7 +80,7 @@ const Dashboard = () => {
                 title="System Configuration"
                 description="View backend system settings and properties."
                 color="#6c757d" // Using a more standard color for consistency
-                role="ADMIN"
+                permission="MANAGE_CONFIG"
             />
         </div>
     );

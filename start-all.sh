@@ -67,6 +67,17 @@ else
     wait_for_port 8082 "Screening Service"
 fi
 
+# 5. Document Service
+if check_port 8085; then
+    echo "Document Service is already running on port 8085."
+else
+    echo "Starting Document Service..."
+    cd document-service
+    nohup ./mvnw spring-boot:run > ../document.log 2>&1 &
+    cd ..
+    wait_for_port 8085 "Document Service"
+fi
+
 # 5. Viewer Service (Core)
 if check_port 8083; then
     echo "Viewer Service is already running on port 8083."

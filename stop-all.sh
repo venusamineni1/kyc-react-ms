@@ -24,6 +24,7 @@ kill_port 8080 "API Gateway"
 kill_port 8084 "Auth Service"
 kill_port 8081 "Risk Service"
 kill_port 8082 "Screening Service"
+kill_port 8085 "Document Service"
 kill_port 8083 "Viewer Service"
 
 # Frontend might be on 5173 or another port if 5173 was taken

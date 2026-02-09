@@ -13,7 +13,8 @@ const Configuration = () => {
                 setConfig(data);
             } catch (err) {
                 console.error("Failed to load configuration", err);
-                setError(err.message || "Failed to load configuration");
+                const msg = err.message || "Failed to load configuration";
+                setError(msg + (msg.includes('403') ? " (Access Denied)" : ""));
             } finally {
                 setLoading(false);
             }

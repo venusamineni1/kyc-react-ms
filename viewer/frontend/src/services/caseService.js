@@ -43,6 +43,10 @@ export const caseService = {
         return apiClient.get(`${API_BASE_URL}/${id}/documents`);
     },
 
+    getDocumentVersions: async (id, name) => {
+        return apiClient.get(`${API_BASE_URL}/${id}/documents/versions?name=${encodeURIComponent(name)}`);
+    },
+
     getCaseEvents: async (id) => {
         return apiClient.get(`${API_BASE_URL}/${id}/events`);
     },
@@ -60,13 +64,14 @@ export const caseService = {
         }
     },
 
-    createCase: async (clientID, reason, useCmmn = false) => {
-        return apiClient.post(API_BASE_URL, { clientID, reason, useCmmn });
+    createCase: async (clientID, reason) => {
+        return apiClient.post(API_BASE_URL, { clientID, reason });
     },
 
     uploadDocument: async (caseId, formData) => {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/${caseId}/documents`, {
+        // Manually prepend /api since we are bypassing apiClient which handles the base URL
+        const response = await fetch(`/api${API_BASE_URL}/${caseId}/documents`, {
             method: 'POST',
             body: formData,
             headers: {
@@ -107,5 +112,9 @@ export const caseService = {
 
     deleteAllTasks: async () => {
         return apiClient.delete(`${API_BASE_URL}/tasks`);
+    },
+
+    completeTask: async (taskId) => {
+        return apiClient.post(`${API_BASE_URL}/tasks/${taskId}/complete`, {});
     }
 };

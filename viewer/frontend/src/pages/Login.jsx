@@ -16,7 +16,7 @@ function Login() {
 
         try {
             // Direct call to Gateway which routes to auth-service
-            const response = await fetch('/auth/login', {
+            const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ function Login() {
             await checkAuth();
 
             // Redirect to dashboard or clients list
-            navigate('/clients');
+            navigate('/');
         } catch (err) {
             console.error(err);
             setError('Invalid username or password');
