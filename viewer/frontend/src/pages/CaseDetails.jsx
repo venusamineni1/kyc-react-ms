@@ -28,6 +28,7 @@ const CaseDetails = () => {
     const [timeline, setTimeline] = useState([]);
     const [riskHistory, setRiskHistory] = useState([]);
     const [myTasks, setMyTasks] = useState([]);
+    const [activeTab, setActiveTab] = useState('flow');
 
     // Modal States
     const [isDocModalOpen, setIsDocModalOpen] = useState(false);
@@ -89,7 +90,6 @@ const CaseDetails = () => {
             // Fetch My Active Tasks for this Case
             try {
                 const tasks = await caseService.getUserTasks();
-                // Filter for tasks belonging to this case (by DB ID or CMMN Instance ID)
                 const caseTasks = tasks.filter(t => {
                     if (t.caseId && String(t.caseId) === String(id)) return true;
                     if (caseData.instanceID && t.caseInstanceId === caseData.instanceID) return true;
@@ -190,17 +190,16 @@ const CaseDetails = () => {
         try {
             await caseService.completeTask(taskId);
             notify('Task completed successfully', 'success');
-            loadCaseData(); // Refresh all data
+            loadCaseData();
         } catch (err) {
             notify('Failed to complete task: ' + err.message, 'error');
         }
     };
 
     const handleOpenAssignModal = async () => {
-        // Map Case Status to User Role
         const statusToRoleMap = {
             'PROCESSING': 'KYC_ANALYST',
-            'KYC_ANALYST': 'KYC_ANALYST', // In case status is already the step name
+            'KYC_ANALYST': 'KYC_ANALYST',
             'REVIEWER_REVIEW': 'KYC_REVIEWER',
             'AFC_REVIEW': 'AFC_REVIEWER',
             'ACO_REVIEW': 'ACO_REVIEWER'
@@ -215,279 +214,270 @@ const CaseDetails = () => {
 
         try {
             const users = await caseService.getUsersByRole(role);
-            if (!users || users.length === 0) {
-                notify(`No users found with role: ${role}`, 'warning');
-                // Fallback: show empty list but still open modal
-                setAssignableUsers([]);
-            } else {
-                setAssignableUsers(users);
-            }
+            setAssignableUsers(users || []);
             setIsAssignModalOpen(true);
         } catch (err) {
-            console.error("Failed to load users for role:", role, err);
             notify('Failed to load users: ' + err.message, 'error');
         }
     };
 
     if (loading) return <p className="loading">Loading case details...</p>;
-    if (error) return <p className="error">{error}</p>;
+    if (error) return (
+        <div className="glass-section" style={{ textAlign: 'center', padding: '3rem' }}>
+            <p className="error">{error}</p>
+            <Link to="/cases" className="btn btn-secondary" style={{ marginTop: '1rem' }}>Back to Case Management</Link>
+        </div>
+    );
     if (!kycCase) return <p className="error">Case not found</p>;
 
     const workflowSteps = ['KYC_ANALYST', 'REVIEWER_REVIEW', 'AFC_REVIEW', 'ACO_REVIEW', 'APPROVED'];
 
     return (
-        <div>
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h1 style={{ margin: 0 }}>Case #{kycCase.caseID} - {kycCase.clientName}</h1>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-
-                    {/* Lifecycle Actions */}
-                    {['KYC_ANALYST', 'REVIEWER_REVIEW', 'AFC_REVIEW', 'ACO_REVIEW'].includes(kycCase.status) && (kycCase.assignedTo === user.username || myTasks.length > 0) && (
-                        <>
-                            <Button onClick={() => handleTransition('APPROVE')} disabled={transitioning} style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}>Approve</Button>
-                            <Button onClick={() => handleTransition('REJECT')} disabled={transitioning} style={{ backgroundColor: '#ff4d4f', borderColor: '#ff4d4f' }}>Reject</Button>
-                        </>
-                    )}
-
-                    {/* Assignment Controls */}
-                    {['APPROVED', 'REJECTED'].indexOf(kycCase.status) === -1 && (
-                        <>
-                            {kycCase.assignedTo !== user.username && (
-                                <Button variant="secondary" onClick={() => handleAssign(user.username)} disabled={assigning}>
-                                    Assign to Me
-                                </Button>
-                            )}
-                            <Button variant="secondary" onClick={handleOpenAssignModal} disabled={assigning}>
-                                assign to...
-                            </Button>
-                        </>
-                    )}
-
-                    <Link to={`/cases/${id}/questionnaire`} className="btn btn-secondary">Questionnaire</Link>
-                    <Link to="/cases" className="back-link">Back to list</Link>
-                </div>
-            </header>
-
-            {/* Legacy Workflow Steps - Hide for CMMN */}
-            {kycCase.workflowType !== 'CMMN' && (
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
-                    {workflowSteps.map((step, index) => (
-                        <React.Fragment key={step}>
-                            <div
-                                className={`workflow-step ${kycCase.status === step ? 'active' : ''}`}
-                                style={{
-                                    flex: 1, textAlign: 'center', padding: '0.75rem',
-                                    background: kycCase.status === step ? 'var(--primary-color)' : 'rgba(255,255,255,0.05)',
-                                    border: `1px solid ${kycCase.status === step ? 'var(--primary-color)' : 'var(--glass-border)'}`,
-                                    borderRadius: '24px',
-                                    transition: 'all 0.3s ease',
-                                    fontWeight: kycCase.status === step ? 'bold' : 'normal',
-                                    boxShadow: kycCase.status === step ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
-                                    whiteSpace: 'nowrap'
-                                }}
-                            >
-                                {step.replace(/_/g, ' ')}
+        <div className="case-details-page">
+            {/* Case Hero Header */}
+            <div className="hero-header glass-section" style={{ marginBottom: '2rem', padding: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                        <div className="case-id-badge">
+                            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>CASE ID</span>
+                            <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>#{kycCase.caseID}</span>
+                        </div>
+                        <div>
+                            <h1 style={{ margin: 0, fontSize: '2.5rem', color: '#fff' }}>{kycCase.clientName}</h1>
+                            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem', color: 'rgba(255,255,255,0.6)' }}>
+                                <span><strong>Type:</strong> Onboarding</span>
+                                <span><strong>Created:</strong> {new Date(kycCase.createdDate).toLocaleDateString()}</span>
+                                <span><strong>Assignee:</strong> {kycCase.assignedTo || 'Unassigned'}</span>
                             </div>
-                            {index < workflowSteps.length - 1 && (
-                                <div style={{ display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.3)' }}>
-                                    <span style={{ fontSize: '1.2rem' }}>→</span>
-                                </div>
-                            )}
-                        </React.Fragment>
-                    ))}
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
+                        <span className={`status-badge-lg ${kycCase.status.toLowerCase()}`}>
+                            {kycCase.status.replace(/_/g, ' ')}
+                        </span>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <Link to={`/clients/${kycCase.clientID}`} className="btn-glass">View Client Profile</Link>
+                            <Link to="/cases" className="btn-glass">Back to List</Link>
+                        </div>
+                    </div>
                 </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem' }}>
-                <section className="glass-section" style={{ flex: 1 }}>
-                    <h3>Case Information</h3>
-                    <div className="case-info-grid">
-                        <div className="info-item"><strong>Case ID</strong><span>{kycCase.caseID}</span></div>
-                        <div className="info-item"><strong>Client ID</strong><span>{kycCase.clientID}</span></div>
-                        <div className="info-item"><strong>Status</strong><span><span className="status-badge">{kycCase.status}</span></span></div>
-                        <div className="info-item"><strong>Assigned To</strong><span>{kycCase.assignedTo || 'Unassigned'}</span></div>
-                    </div>
-                </section>
-
-                <section className="glass-section" style={{ flex: 1, display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'space-around' }}>
-                    {/* Risk Pulse Miniature */}
-                    <div style={{ textAlign: 'center' }}>
-                        <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Risk Pulse</h4>
-                        {riskHistory.length > 0 ? (
-                            <div>
-                                <div style={{
-                                    fontSize: '2rem',
-                                    fontWeight: 'bold',
-                                    color: riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a',
-                                    lineHeight: 1
-                                }}>
-                                    {riskHistory[0].overallRiskScore}
-                                </div>
-                                <div style={{
-                                    fontSize: '0.8rem',
-                                    color: riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'
-                                }}>
-                                    {riskHistory[0].overallRiskLevel}
-                                </div>
-                            </div>
-                        ) : <div style={{ color: '#666', fontStyle: 'italic' }}>N/A</div>}
-                    </div>
-
-                    <div style={{ width: '1px', height: '60px', background: 'var(--glass-border)' }}></div>
-
-                    {/* Screening Panel Compact Integration */}
-                    <div style={{ flex: 1 }}>
-                        <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center' }}>Screening</h4>
-                        <ScreeningPanel clientId={kycCase.clientID} hasPermission={false} />
-                    </div>
-                </section>
             </div>
 
-            {/* Case Timeline */}
-            <section className="glass-section" style={{ marginBottom: '1.5rem' }}>
-                <h3>Case Timeline (CMMN)</h3>
-                <CaseTimeline items={timeline} />
-            </section>
+            {/* Tabbed Navigation */}
+            <div className="tabs-container" style={{ marginBottom: '2rem', borderBottom: '1px solid var(--glass-border)' }}>
+                <button className={`tab-btn ${activeTab === 'flow' ? 'active' : ''}`} onClick={() => setActiveTab('flow')}>
+                    Processing & Decisions
+                </button>
+                <button className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
+                    Risk & Screening
+                </button>
+                <button className={`tab-btn ${activeTab === 'timeline' ? 'active' : ''}`} onClick={() => setActiveTab('timeline')}>
+                    Timeline & Docs
+                </button>
+                {/* Questionnaire link is special as it's a separate page, but we could list it here if we want to navigate */}
+                <Link to={`/cases/${id}/questionnaire`} className="tab-btn" style={{ textDecoration: 'none' }}>
+                    Identity Questionnaire ↗
+                </Link>
+            </div>
 
-            {/* Discretionary Actions */}
-            <CaseActions id={id} onActionTriggered={loadCaseData} />
+            {/* Tab Content */}
+            <div className="tab-content">
+                {activeTab === 'flow' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        {/* Legacy Workflow Steps Visualization */}
+                        {kycCase.workflowType !== 'CMMN' && (
+                            <section className="glass-section">
+                                <h3 style={{ marginBottom: '1.5rem' }}>Process Flow</h3>
+                                <div className="workflow-stepper">
+                                    {workflowSteps.map((step, index) => (
+                                        <React.Fragment key={step}>
+                                            <div className={`step-item ${kycCase.status === step ? 'active' : workflowSteps.indexOf(kycCase.status) > index ? 'completed' : ''}`}>
+                                                <div className="step-circle">{index + 1}</div>
+                                                <span className="step-label">{step.replace(/_/g, ' ')}</span>
+                                            </div>
+                                            {index < workflowSteps.length - 1 && <div className="step-connector"></div>}
+                                        </React.Fragment>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
-            {/* My Active Tasks Section */}
-            {/* My Active Tasks Section */}
-            <section className="glass-section" style={{ marginTop: '1.5rem', borderLeft: '4px solid #faad14' }}>
-                <h3 style={{ color: '#faad14' }}>⚡ My Active Tasks</h3>
-                <p style={{ fontSize: '0.9rem', color: '#ccc', marginBottom: '1rem' }}>
-                    Tasks assigned to you or your roles that require action.
-                </p>
-                {myTasks.length > 0 ? (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>
-                                <th style={{ padding: '0.5rem' }}>Task Name</th>
-                                <th style={{ padding: '0.5rem' }}>Created</th>
-                                <th style={{ padding: '0.5rem' }}>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {myTasks.map(task => (
-                                <tr key={task.taskId} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <td style={{ padding: '0.5rem' }}>{task.name}</td>
-                                    <td style={{ padding: '0.5rem' }}>{new Date(task.createTime).toLocaleString()}</td>
-                                    <td style={{ padding: '0.5rem' }}>
-                                        <Button onClick={() => handleCompleteTask(task.taskId)}>
-                                            Complete
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                ) : (
-                    <div style={{ padding: '1rem', textAlign: 'center', color: '#888', fontStyle: 'italic', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                        No active tasks currently assigned to you or your groups.
+                        {/* Decision Panel */}
+                        <section className="glass-section" style={{ borderLeft: '4px solid var(--primary-color)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h3>Decision Support</h3>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    {/* Lifecycle Actions */}
+                                    {['KYC_ANALYST', 'REVIEWER_REVIEW', 'AFC_REVIEW', 'ACO_REVIEW'].includes(kycCase.status) && (kycCase.assignedTo === user.username || myTasks.length > 0) && (
+                                        <>
+                                            <Button onClick={() => handleTransition('APPROVE')} disabled={transitioning} style={{ backgroundColor: '#52c41a', color: '#fff' }}>Approve Case</Button>
+                                            <Button onClick={() => handleTransition('REJECT')} disabled={transitioning} style={{ backgroundColor: '#ff4d4f', color: '#fff' }}>Reject Case</Button>
+                                        </>
+                                    )}
+
+                                    {/* Assignment Controls */}
+                                    {['APPROVED', 'REJECTED'].indexOf(kycCase.status) === -1 && (
+                                        <>
+                                            {kycCase.assignedTo !== user.username && (
+                                                <Button variant="secondary" onClick={() => handleAssign(user.username)} disabled={assigning}>Assign to Me</Button>
+                                            )}
+                                            <Button variant="secondary" onClick={handleOpenAssignModal} disabled={assigning}>Assign To...</Button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <label style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>Decision Comment (Required)</label>
+                                <textarea
+                                    value={commentInput}
+                                    onChange={(e) => setCommentInput(e.target.value)}
+                                    placeholder="Provide detailed rationale for your decision..."
+                                    className="decision-textarea"
+                                />
+                            </div>
+                        </section>
+
+                        {/* Recent Comments */}
+                        <section className="glass-section">
+                            <h3>Workflow Audit Trail</h3>
+                            <div className="comments-list">
+                                {comments.map((c, i) => (
+                                    <div key={i} className="comment-bubble">
+                                        <div className="comment-meta">
+                                            <strong>{c.userID || c.userId}</strong>
+                                            <span>{new Date(c.commentDate || c.time).toLocaleString()}</span>
+                                        </div>
+                                        <p className="comment-text">{c.commentText || c.message}</p>
+                                    </div>
+                                ))}
+                                {comments.length === 0 && <p style={{ color: '#666', fontStyle: 'italic' }}>No audit comments recorded.</p>}
+                            </div>
+                        </section>
                     </div>
                 )}
-            </section>
 
-            <section className="glass-section" style={{ marginTop: '1.5rem' }}>
-                <h3>Case Events</h3>
-                {events && events.length > 0 ? (
-                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>
-                                <th style={{ padding: '0.5rem' }}>Date</th>
-                                <th style={{ padding: '0.5rem' }}>Type</th>
-                                <th style={{ padding: '0.5rem' }}>Description</th>
-                                <th style={{ padding: '0.5rem' }}>Source</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {events.map(event => (
-                                <tr key={event.eventID} style={{
-                                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                                    background: event.eventType === 'RISK_CHANGED' ? 'rgba(255, 150, 50, 0.1)' : 'transparent',
-                                    borderLeft: event.eventType === 'RISK_CHANGED' ? '3px solid #ffaa00' : 'none'
-                                }}>
-                                    <td style={{ padding: '0.5rem' }}>{new Date(event.eventDate).toLocaleString()}</td>
-                                    <td style={{ padding: '0.5rem' }}>
-                                        <span className={`status-badge ${event.eventType === 'RISK_CHANGED' ? 'warning' : 'info'}`}>
-                                            {event.eventType}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '0.5rem' }}>{event.eventDescription}</td>
-                                    <td style={{ padding: '0.5rem' }}>{event.eventSource}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                ) : (
-                    <p style={{ color: '#aaa', fontStyle: 'italic' }}>No events recorded for this case.</p>
-                )}
-            </section>
-
-            <section className="glass-section" style={{ marginTop: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ margin: 0 }}>Documents</h3>
-                    {['APPROVED', 'REJECTED'].indexOf(kycCase.status) === -1 && (
-                        <Button onClick={() => setIsDocModalOpen(true)}>Upload Document</Button>
-                    )}
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>Name</th>
-                            <th>Version</th>
-                            <th>Uploaded By</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {docs.map(d => (
-                            <tr key={d.documentID}>
-                                <td>{d.category}</td>
-                                <td><a href={`/api/cases/documents/${d.documentID}`} target="_blank" rel="noreferrer">{d.documentName}</a></td>
-                                <td><span className="status-badge info">v{d.version || 1}</span></td>
-                                <td>{d.uploadedBy}</td>
-                                <td>{new Date(d.uploadDate).toLocaleDateString()}</td>
-                                <td>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <Button variant="secondary" onClick={() => handleViewHistory(d.documentName)} style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}>History</Button>
-                                        <Button variant="secondary" onClick={() => {
-                                            setUploadData({ ...uploadData, documentName: d.documentName, category: d.category });
-                                            setIsDocModalOpen(true);
-                                        }} style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}>New Ver</Button>
+                {activeTab === 'profile' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                        <section className="glass-section">
+                            <h3 style={{ marginBottom: '1.5rem' }}>Client Risk Pulse</h3>
+                            {riskHistory.length > 0 ? (
+                                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                                    <div className="risk-score-large" style={{
+                                        color: riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'
+                                    }}>
+                                        {riskHistory[0].overallRiskScore}
                                     </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </section>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '1rem' }}>
+                                        {riskHistory[0].overallRiskLevel} RISK
+                                    </div>
+                                    <p style={{ color: 'var(--text-secondary)' }}>Last calculated on {new Date(riskHistory[0].calculationDate).toLocaleDateString()}</p>
+                                </div>
+                            ) : (
+                                <div style={{ padding: '3rem', textAlign: 'center', color: '#666' }}>No risk assessments available for this client.</div>
+                            )}
+                        </section>
 
-            {/* Document History Modal */}
-            <Modal
-                isOpen={isHistoryModalOpen}
-                onClose={() => setIsHistoryModalOpen(false)}
-                title="Document History"
-                maxWidth="600px"
-            >
+                        <section className="glass-section">
+                            <h3 style={{ marginBottom: '1.5rem' }}>Screening Verdicts</h3>
+                            <ScreeningPanel clientId={kycCase.clientID} hasPermission={true} />
+                        </section>
+
+                        <section className="glass-section" style={{ gridColumn: 'span 2' }}>
+                            <CaseActions id={id} onActionTriggered={loadCaseData} />
+                        </section>
+                    </div>
+                )}
+
+                {activeTab === 'timeline' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        {/* Documents Section */}
+                        <section className="glass-section">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h3>Supporting Documents</h3>
+                                {['APPROVED', 'REJECTED'].indexOf(kycCase.status) === -1 && (
+                                    <Button onClick={() => setIsDocModalOpen(true)}>Upload New Document</Button>
+                                )}
+                            </div>
+                            <table className="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Filename</th>
+                                        <th>Version</th>
+                                        <th>Uploaded By</th>
+                                        <th>Date</th>
+                                        <th style={{ textAlign: 'right' }}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {docs.map(d => (
+                                        <tr key={d.documentID}>
+                                            <td style={{ fontWeight: '600' }}>{d.category}</td>
+                                            <td><a href={`/api/cases/documents/${d.documentID}`} target="_blank" rel="noreferrer" className="doc-link">{d.documentName}</a></td>
+                                            <td><span className="status-badge-modern info">v{d.version || 1}</span></td>
+                                            <td>{d.uploadedBy}</td>
+                                            <td>{new Date(d.uploadDate).toLocaleDateString()}</td>
+                                            <td style={{ textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    <button onClick={() => handleViewHistory(d.documentName)} className="btn-action-sm">History</button>
+                                                    <button onClick={() => {
+                                                        setUploadData({ ...uploadData, documentName: d.documentName, category: d.category });
+                                                        setIsDocModalOpen(true);
+                                                    }} className="btn-action-sm">New Version</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {docs.length === 0 && (
+                                        <tr>
+                                            <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No documents uploaded.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </section>
+
+                        {/* Timeline */}
+                        <section className="glass-section">
+                            <h3>Case Lifecycle Timeline</h3>
+                            <CaseTimeline items={timeline} />
+                        </section>
+
+                        {/* Events log */}
+                        <section className="glass-section">
+                            <h3>Technical Events Log</h3>
+                            <div className="event-log">
+                                {events.map(event => (
+                                    <div key={event.eventID} className={`event-item ${event.eventType.toLowerCase()}`}>
+                                        <div className="event-dot"></div>
+                                        <div className="event-content">
+                                            <div className="event-header">
+                                                <span className="event-type">{event.eventType}</span>
+                                                <span className="event-date">{new Date(event.eventDate).toLocaleString()}</span>
+                                            </div>
+                                            <p className="event-desc">{event.eventDescription}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    </div>
+                )}
+            </div>
+
+            {/* Modals remain similar but with updated styling */}
+            <Modal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} title="Document Version History" maxWidth="600px">
                 {historyLoading ? <p>Loading history...</p> : (
-                    <table style={{ width: '100%' }}>
+                    <table className="modern-table">
                         <thead>
-                            <tr style={{ textAlign: 'left' }}>
-                                <th>Ver</th>
-                                <th>Name</th>
-                                <th>Uploaded By</th>
-                                <th>Date</th>
-                            </tr>
+                            <tr><th>Ver</th><th>Filename</th><th>By</th><th>Date</th></tr>
                         </thead>
                         <tbody>
                             {selectedDocHistory.map(v => (
-                                <tr key={v.documentID} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                                    <td><span className="status-badge info">v{v.version || 1}</span></td>
-                                    <td><a href={`/api/cases/documents/${v.documentID}`} target="_blank" rel="noreferrer">{v.documentName}</a></td>
+                                <tr key={v.documentID}>
+                                    <td><span className="status-badge-modern info">v{v.version || 1}</span></td>
+                                    <td><a href={`/api/cases/documents/${v.documentID}`} target="_blank" rel="noreferrer" className="doc-link">{v.documentName}</a></td>
                                     <td>{v.uploadedBy}</td>
                                     <td>{new Date(v.uploadDate).toLocaleString()}</td>
                                 </tr>
@@ -497,34 +487,18 @@ const CaseDetails = () => {
                 )}
             </Modal>
 
-            {/* Upload Document Modal */}
-            <Modal
-                isOpen={isDocModalOpen}
-                onClose={() => setIsDocModalOpen(false)}
-                title="Upload Document"
-                maxWidth="450px"
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>File</label>
-                        <input
-                            type="file"
-                            onChange={(e) => setUploadData({ ...uploadData, file: e.target.files[0] })}
-                            style={{ width: '100%', color: 'var(--text-color)' }}
-                        />
+            <Modal isOpen={isDocModalOpen} onClose={() => setIsDocModalOpen(false)} title="Upload Documentation" maxWidth="450px">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div className="form-group">
+                        <label>Select File</label>
+                        <input type="file" onChange={(e) => setUploadData({ ...uploadData, file: e.target.files[0] })} style={{ width: '100%' }} />
                     </div>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Category</label>
+                    <div className="form-group">
+                        <label>Category</label>
                         {uploadData.documentName ? (
-                            <div style={{ padding: '0.5rem', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', fontStyle: 'italic' }}>
-                                Uploading new version for: <strong>{uploadData.documentName}</strong> ({uploadData.category})
-                            </div>
+                            <div className="info-box">Uploading new version for: <strong>{uploadData.documentName}</strong></div>
                         ) : (
-                            <select
-                                value={uploadData.category}
-                                onChange={(e) => setUploadData({ ...uploadData, category: e.target.value })}
-                                style={{ width: '100%', padding: '0.5rem', background: 'var(--glass-bg)', color: 'var(--text-color)', border: '1px solid var(--glass-border)', borderRadius: '4px' }}
-                            >
+                            <select value={uploadData.category} onChange={(e) => setUploadData({ ...uploadData, category: e.target.value })} className="modern-select">
                                 <option value="IDENTIFICATION">Identification</option>
                                 <option value="PROOF_OF_ADDRESS">Proof of Address</option>
                                 <option value="SOURCE_OF_WEALTH">Source of Wealth</option>
@@ -532,97 +506,135 @@ const CaseDetails = () => {
                             </select>
                         )}
                     </div>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Comment</label>
-                        <input
-                            type="text"
-                            value={uploadData.comment}
-                            onChange={(e) => setUploadData({ ...uploadData, comment: e.target.value })}
-                            placeholder="Optional comment"
-                            style={{ width: '100%', padding: '0.5rem', background: 'var(--glass-bg)', color: 'var(--text-color)', border: '1px solid var(--glass-border)', borderRadius: '4px' }}
-                        />
+                    <div className="form-group">
+                        <label>Comment</label>
+                        <input type="text" value={uploadData.comment} onChange={(e) => setUploadData({ ...uploadData, comment: e.target.value })} placeholder="Internal note..." className="modern-input" />
                     </div>
-                    <Button onClick={handleUpload} disabled={uploading}>
-                        {uploading ? 'Uploading...' : 'Upload'}
-                    </Button>
+                    <Button onClick={handleUpload} disabled={uploading}>{uploading ? 'Processing...' : 'Upload Document'}</Button>
                 </div>
             </Modal>
-            {/* Comments Section */}
-            <section className="glass-section" style={{ marginTop: '1.5rem' }}>
-                <h3>Comments & Workflow Notes</h3>
-                <div style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '1rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
-                    {comments.length > 0 ? (
-                        comments.map((c, i) => (
-                            <div key={i} style={{ marginBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#aaa', marginBottom: '0.2rem' }}>
-                                    <strong style={{ color: '#fff' }}>{c.userID || c.userId}</strong>
-                                    <span>{new Date(c.commentDate || c.time).toLocaleString()}</span>
-                                </div>
-                                <div style={{ whiteSpace: 'pre-wrap' }}>{c.commentText || c.message}</div>
-                            </div>
-                        ))
-                    ) : (
-                        <p style={{ color: '#666', fontStyle: 'italic' }}>No comments yet.</p>
-                    )}
-                </div>
 
-                {/* Comment Input for Transitions */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <label style={{ color: '#faad14', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                        Workflow Comment (Required for Approve/Reject):
-                    </label>
-                    <textarea
-                        value={commentInput}
-                        onChange={(e) => setCommentInput(e.target.value)}
-                        placeholder="Type your comment here before clicking Approve or Reject..."
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            borderRadius: '8px',
-                            border: '1px solid var(--glass-border)',
-                            background: 'var(--glass-bg)',
-                            color: 'var(--text-color)',
-                            minHeight: '80px'
-                        }}
-                    />
-                </div>
-            </section>
-
-            {/* Assignment Modal */}
-            <Modal
-                isOpen={isAssignModalOpen}
-                onClose={() => setIsAssignModalOpen(false)}
-                title={`Assign Case (${kycCase.status})`}
-                maxWidth="400px"
-            >
+            <Modal isOpen={isAssignModalOpen} onClose={() => setIsAssignModalOpen(false)} title={`Reassign Case (${kycCase.status})`} maxWidth="400px">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <p style={{ color: '#ccc' }}>Select a user from the <strong>{kycCase.status}</strong> group:</p>
-                    <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <p style={{ color: 'var(--text-secondary)' }}>Select a qualified officer for the <strong>{kycCase.status}</strong> step:</p>
+                    <div className="assign-list">
                         {assignableUsers.map(u => (
-                            <button
-                                key={u.username}
-                                onClick={() => handleAssign(u.username)}
-                                disabled={assigning}
-                                style={{
-                                    padding: '0.75rem',
-                                    background: 'var(--glass-bg)',
-                                    border: '1px solid var(--glass-border)',
-                                    borderRadius: '0.5rem',
-                                    color: 'var(--text-color)',
-                                    cursor: 'pointer',
-                                    textAlign: 'left',
-                                    display: 'flex',
-                                    justifyContent: 'space-between'
-                                }}
-                            >
-                                <span>{u.username}</span>
-                                {kycCase.assignedTo === u.username && <span style={{ fontSize: '0.8rem', color: '#6ee7b7' }}>Current</span>}
+                            <button key={u.username} onClick={() => handleAssign(u.username)} className="assign-item">
+                                {u.username} {kycCase.assignedTo === u.username && <span className="current-label">Current</span>}
                             </button>
                         ))}
-                        {assignableUsers.length === 0 && <p style={{ color: '#999' }}>No eligible users found.</p>}
                     </div>
                 </div>
             </Modal>
+
+            <style>{`
+                .case-id-badge {
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid var(--glass-border);
+                    padding: 0.5rem 1rem;
+                    border-radius: 12px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+                .status-badge-lg {
+                    padding: 0.5rem 1.5rem;
+                    border-radius: 30px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    background: rgba(255,255,255,0.1);
+                    border: 1px solid var(--glass-border);
+                }
+                .status-badge-lg.approved { color: #52c41a; border-color: #52c41a40; background: #52c41a10; }
+                .status-badge-lg.rejected { color: #ff4d4f; border-color: #ff4d4f40; background: #ff4d4f10; }
+                .tab-btn {
+                    padding: 1rem 1.5rem;
+                    background: none;
+                    border: none;
+                    color: var(--text-secondary);
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    border-bottom: 2px solid transparent;
+                }
+                .tab-btn.active {
+                    color: var(--primary-color);
+                    border-bottom-color: var(--primary-color);
+                }
+                .workflow-stepper {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 1rem 0;
+                }
+                .step-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 0.5rem;
+                    flex: 1;
+                    opacity: 0.4;
+                }
+                .step-item.active { opacity: 1; }
+                .step-item.completed { opacity: 0.8; }
+                .step-circle {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    border: 2px solid var(--glass-border);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                }
+                .step-item.active .step-circle { background: var(--primary-color); border-color: var(--primary-color); }
+                .step-item.completed .step-circle { background: #52c41a; border-color: #52c41a; }
+                .step-connector { height: 2px; background: var(--glass-border); flex: 1; margin: 0 10px; margin-top: -25px; }
+                .decision-textarea {
+                    width: 100%;
+                    min-height: 120px;
+                    background: rgba(0,0,0,0.2);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 8px;
+                    color: #fff;
+                    padding: 1rem;
+                    font-family: inherit;
+                    resize: vertical;
+                }
+                .comment-bubble {
+                    background: rgba(255,255,255,0.02);
+                    padding: 1rem;
+                    border-radius: 12px;
+                    margin-bottom: 1rem;
+                    border: 1px solid var(--glass-border);
+                }
+                .comment-meta {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 0.85rem;
+                    color: var(--text-secondary);
+                    margin-bottom: 0.5rem;
+                }
+                .risk-score-large { font-size: 4rem; font-weight: 900; line-height: 1; }
+                .event-log { display: flex; flexDirection: column; gap: 1rem; }
+                .event-item { display: flex; gap: 1.5rem; position: relative; padding-bottom: 1rem; }
+                .event-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--glass-border); margin-top: 5px; z-index: 1; }
+                .event-item::after { content: ''; position: absolute; left: 5px; top: 15px; bottom: 0; width: 2px; background: var(--glass-border); }
+                .event-item:last-child::after { display: none; }
+                .event-content { flex: 1; }
+                .event-header { display: flex; justify-content: space-between; margin-bottom: 0.25rem; }
+                .event-type { font-weight: 700; font-size: 0.8rem; text-transform: uppercase; color: var(--primary-color); }
+                .event-date { font-size: 0.8rem; color: var(--text-secondary); }
+                .event-desc { color: #ccc; font-size: 0.95rem; }
+                .doc-link { color: var(--primary-color); text-decoration: none; font-weight: 600; }
+                .btn-action-sm { background: var(--glass-bg); border: 1px solid var(--glass-border); color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+                .assign-item { width: 100%; padding: 1rem; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; color: #fff; text-align: left; margin-bottom: 0.5rem; cursor: pointer; display: flex; justify-content: space-between; }
+                .current-label { font-size: 0.7rem; color: #52c41a; border: 1px solid #52c41a40; padding: 2px 6px; border-radius: 4px; }
+                .btn-glass { background: rgba(255,255,255,0.05); color: #fff; text-decoration: none; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--glass-border); font-size: 0.9rem; transition: all 0.2s; }
+                .btn-glass:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
+                .modern-select, .modern-input { width: 100%; padding: 0.75rem; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; }
+            `}</style>
         </div>
     );
 };

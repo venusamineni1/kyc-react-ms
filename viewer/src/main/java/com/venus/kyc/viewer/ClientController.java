@@ -17,12 +17,23 @@ public class ClientController {
     private final ClientRepository clientRepository;
     private final MaterialChangeRepository materialChangeRepository;
     private final UserAuditService userAuditService;
+    private final ClientDataChangeService clientDataChangeService;
+    private final MaterialChangeConfigRepository configRepository;
+    private final com.venus.kyc.viewer.risk.RiskAssessmentService riskService;
+    private final com.venus.kyc.viewer.screening.ScreeningService screeningService;
 
     public ClientController(ClientRepository clientRepository, MaterialChangeRepository materialChangeRepository,
-            UserAuditService userAuditService) {
+            UserAuditService userAuditService, ClientDataChangeService clientDataChangeService,
+            MaterialChangeConfigRepository configRepository,
+            com.venus.kyc.viewer.risk.RiskAssessmentService riskService,
+            com.venus.kyc.viewer.screening.ScreeningService screeningService) {
         this.clientRepository = clientRepository;
         this.materialChangeRepository = materialChangeRepository;
         this.userAuditService = userAuditService;
+        this.clientDataChangeService = clientDataChangeService;
+        this.configRepository = configRepository;
+        this.riskService = riskService;
+        this.screeningService = screeningService;
     }
 
     @GetMapping("/changes")
@@ -100,6 +111,51 @@ public class ClientController {
         List<Client> maskedContent = response.content().stream().map(this::maskSensitiveData).toList();
         return new PaginatedResponse<>(maskedContent, response.currentPage(), response.pageSize(),
                 response.totalElements(), response.totalPages());
+    }
+
+    @PostMapping("/{id}/ingest")
+    public ResponseEntity<Void> ingestClientChange(@PathVariable Long id, @RequestBody Client newData) {
+        Client oldData = clientRepository.findById(id).orElseThrow();
+        clientDataChangeService.processClientChanges(oldData, newData);
+        clientRepository.updateClient(newData);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/changes")
+    public List<MaterialChange> getClientMaterialChanges(@PathVariable Long id) {
+        return materialChangeRepository.findByClientId(id);
+    }
+
+    @PostMapping("/changes/{changeId}/trigger-risk")
+    public ResponseEntity<Void> triggerRiskForChange(@PathVariable Long changeId) {
+        MaterialChange mc = materialChangeRepository.findById(changeId).orElseThrow();
+        riskService.evaluateRiskForClient(mc.clientID());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/changes/{changeId}/trigger-screening")
+    public ResponseEntity<Void> triggerScreeningForChange(@PathVariable Long changeId) {
+        MaterialChange mc = materialChangeRepository.findById(changeId).orElseThrow();
+        screeningService.initiateScreening(mc.clientID());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/changes/{changeId}/review")
+    public ResponseEntity<Void> markAsReviewed(@PathVariable Long changeId) {
+        materialChangeRepository.updateStatus(changeId, "REVIEWED");
+        return ResponseEntity.ok().build();
+    }
+
+    // Admin Config Endpoints
+    @GetMapping("/admin/configs")
+    public List<MaterialChangeConfig> getConfigs() {
+        return configRepository.findAll();
+    }
+
+    @PostMapping("/admin/configs")
+    public ResponseEntity<Void> saveConfig(@RequestBody MaterialChangeConfig config) {
+        configRepository.save(config);
+        return ResponseEntity.ok().build();
     }
 
     private boolean isAdmin(org.springframework.security.core.Authentication authentication) {

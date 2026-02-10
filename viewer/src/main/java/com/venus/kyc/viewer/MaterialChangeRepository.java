@@ -52,6 +52,8 @@ public class MaterialChangeRepository {
                 case "entityName" -> "EntityName";
                 case "columnName" -> "ColumnName";
                 case "operationType" -> "OperationType";
+                case "status" -> "Status";
+                case "category" -> "Category";
                 default -> "ChangeDate";
             };
         }
@@ -85,7 +87,9 @@ public class MaterialChangeRepository {
                 rs.getString("ColumnName"),
                 rs.getString("OperationType"),
                 rs.getString("OldValue"),
-                rs.getString("NewValue")))
+                rs.getString("NewValue"),
+                rs.getString("Status"),
+                rs.getString("Category")))
                 .list();
 
         return new PaginatedResponse<>(changes, page, size, totalElements, totalPages);
@@ -117,7 +121,71 @@ public class MaterialChangeRepository {
                 rs.getString("ColumnName"),
                 rs.getString("OperationType"),
                 rs.getString("OldValue"),
-                rs.getString("NewValue")))
+                rs.getString("NewValue"),
+                rs.getString("Status"),
+                rs.getString("Category")))
                 .list();
+    }
+
+    public void save(MaterialChange change) {
+        jdbcClient.sql(
+                "INSERT INTO MaterialChanges (ClientID, EntityID, EntityName, ColumnName, OperationType, OldValue, NewValue, Status, Category) VALUES (:clientID, :entityID, :entityName, :columnName, :operationType, :oldValue, :newValue, :status, :category)")
+                .param("clientID", change.clientID())
+                .param("entityID", change.entityID())
+                .param("entityName", change.entityName())
+                .param("columnName", change.columnName())
+                .param("operationType", change.operationType())
+                .param("oldValue", change.oldValue())
+                .param("newValue", change.newValue())
+                .param("status", change.status())
+                .param("category", change.category())
+                .update();
+    }
+
+    public void updateStatus(Long changeId, String status) {
+        jdbcClient.sql("UPDATE MaterialChanges SET Status = :status WHERE ChangeID = :id")
+                .param("status", status)
+                .param("id", changeId)
+                .update();
+    }
+
+    public List<MaterialChange> findByClientId(Long clientId) {
+        return jdbcClient.sql(
+                "SELECT mc.*, COALESCE(c.NameAtBirth, c.FirstName || ' ' || c.LastName) as ClientName FROM MaterialChanges mc LEFT JOIN Clients c ON mc.ClientID = c.ClientID WHERE mc.ClientID = :clientId ORDER BY mc.ChangeDate DESC")
+                .param("clientId", clientId)
+                .query((rs, rowNum) -> new MaterialChange(
+                        rs.getLong("ChangeID"),
+                        rs.getTimestamp("ChangeDate").toLocalDateTime(),
+                        rs.getLong("ClientID"),
+                        rs.getString("ClientName"),
+                        rs.getLong("EntityID"),
+                        rs.getString("EntityName"),
+                        rs.getString("ColumnName"),
+                        rs.getString("OperationType"),
+                        rs.getString("OldValue"),
+                        rs.getString("NewValue"),
+                        rs.getString("Status"),
+                        rs.getString("Category")))
+                .list();
+    }
+
+    public java.util.Optional<MaterialChange> findById(Long id) {
+        return jdbcClient.sql(
+                "SELECT mc.*, COALESCE(c.NameAtBirth, c.FirstName || ' ' || c.LastName) as ClientName FROM MaterialChanges mc LEFT JOIN Clients c ON mc.ClientID = c.ClientID WHERE mc.ChangeID = :id")
+                .param("id", id)
+                .query((rs, rowNum) -> new MaterialChange(
+                        rs.getLong("ChangeID"),
+                        rs.getTimestamp("ChangeDate").toLocalDateTime(),
+                        rs.getLong("ClientID"),
+                        rs.getString("ClientName"),
+                        rs.getLong("EntityID"),
+                        rs.getString("EntityName"),
+                        rs.getString("ColumnName"),
+                        rs.getString("OperationType"),
+                        rs.getString("OldValue"),
+                        rs.getString("NewValue"),
+                        rs.getString("Status"),
+                        rs.getString("Category")))
+                .optional();
     }
 }

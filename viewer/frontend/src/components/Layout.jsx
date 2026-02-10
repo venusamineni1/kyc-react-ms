@@ -88,13 +88,13 @@ const Layout = ({ children }) => {
                                 <select
                                     value={theme}
                                     onChange={(e) => setTheme(e.target.value)}
-                                    style={{ width: '100%', padding: '0.4rem', background: 'rgba(255,255,255,0.05)', color: 'var(--text-color)', border: '1px solid var(--glass-border)', borderRadius: '4px' }}
+                                    style={{ width: '100%', padding: '0.4rem', background: 'var(--hover-bg)', color: 'var(--text-color)', border: '1px solid var(--glass-border)', borderRadius: '4px' }}
                                 >
-                                    <option value="theme-midnight">Midnight</option>
-                                    <option value="theme-sunset">Sunset</option>
-                                    <option value="theme-lightblue">Light Blue</option>
-                                    <option value="theme-darkgray">Dark Gray</option>
-                                    <option value="theme-light">Light</option>
+                                    <option value="theme-midnight">Midnight Blues (Default)</option>
+                                    <option value="theme-slate">Slate Executive</option>
+                                    <option value="theme-nordic">Nordic Frost</option>
+                                    <option value="theme-sapphire">Sapphire Corporate</option>
+                                    <option value="theme-emerald">Emerald Trust</option>
                                 </select>
                             </div>
 
@@ -104,7 +104,7 @@ const Layout = ({ children }) => {
                                 My Inbox
                                 {inboxCount > 0 && (
                                     <span style={{
-                                        backgroundColor: '#ff5555',
+                                        backgroundColor: '#ef4444',
                                         color: '#fff',
                                         fontSize: '0.75rem',
                                         padding: '0.1rem 0.4rem',
@@ -124,9 +124,9 @@ const Layout = ({ children }) => {
                                     Manage Users
                                 </Link>
                             )}
-                            {hasPermission('MANAGE_USERS') && (
-                                <Link to="/admin/workflow" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
-                                    Workflow Dashboard
+                            {hasPermission('MANAGE_CONFIG') && (
+                                <Link to="/admin/material-configs" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
+                                    Material Change Rules
                                 </Link>
                             )}
                             {hasPermission('MANAGE_PERMISSIONS') && (

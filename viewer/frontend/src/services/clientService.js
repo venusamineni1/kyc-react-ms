@@ -29,5 +29,37 @@ export const clientService = {
 
     getRelatedPartyDetails: async (partyId) => {
         return apiClient.get(`${API_BASE_URL}/related-parties/${partyId}`);
+    },
+
+    ingestClientChange: async (id, newData) => {
+        return apiClient.post(`${API_BASE_URL}/${id}/ingest`, newData);
+    },
+
+    getClientChanges: async (id) => {
+        return apiClient.get(`${API_BASE_URL}/${id}/changes`);
+    },
+
+    triggerRisk: async (changeId) => {
+        return apiClient.post(`${API_BASE_URL}/changes/${changeId}/trigger-risk`);
+    },
+
+    triggerScreening: async (changeId) => {
+        return apiClient.post(`${API_BASE_URL}/changes/${changeId}/trigger-screening`);
+    },
+
+    reviewChange: async (changeId) => {
+        return apiClient.post(`${API_BASE_URL}/changes/${changeId}/review`);
+    },
+
+    getAdminConfigs: async () => {
+        return apiClient.get(`${API_BASE_URL}/admin/configs`);
+    },
+
+    saveAdminConfig: async (config) => {
+        return apiClient.post(`${API_BASE_URL}/admin/configs`, config);
+    },
+
+    getMaterialChanges: async (page = 0, size = 10) => {
+        return apiClient.get(`${API_BASE_URL}/changes?page=${page}&size=${size}`);
     }
 };

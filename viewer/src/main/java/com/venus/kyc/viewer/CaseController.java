@@ -254,7 +254,14 @@ public class CaseController {
         // Use new Service to start process
         Long caseId = caseService.createCase(clientID, reason, authentication.getName());
         String type = "CMMN Case";
-        caseRepository.addComment(caseId, authentication.getName(), "Case created via " + type + ": " + reason, role);
+
+        String initialComment = (String) request.get("comment");
+        if (initialComment != null && !initialComment.isBlank()) {
+            caseRepository.addComment(caseId, authentication.getName(), initialComment, role);
+        } else {
+            caseRepository.addComment(caseId, authentication.getName(), "Case created via " + type + ": " + reason,
+                    role);
+        }
 
         userAuditService.log(authentication.getName(), "CREATE_CASE",
                 "Created case " + caseId + " for client " + clientID);

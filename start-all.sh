@@ -29,7 +29,7 @@ if check_port 8761; then
 else
     echo "Starting Service Registry..."
     cd service-registry
-    nohup ./mvnw spring-boot:run > ../registry.log 2>&1 &
+    nohup ../mvnw spring-boot:run > ../registry.log 2>&1 &
     cd ..
     wait_for_port 8761 "Service Registry"
 fi
@@ -40,7 +40,7 @@ if check_port 8084; then
 else
     echo "Starting Auth Service..."
     cd auth-service
-    nohup ./mvnw spring-boot:run > ../auth.log 2>&1 &
+    nohup ../mvnw spring-boot:run > ../auth.log 2>&1 &
     cd ..
     wait_for_port 8084 "Auth Service"
 fi
@@ -51,7 +51,7 @@ if check_port 8081; then
 else
     echo "Starting Risk Service..."
     cd risk-service
-    nohup ./mvnw spring-boot:run > ../risk.log 2>&1 &
+    nohup ../mvnw spring-boot:run > ../risk.log 2>&1 &
     cd ..
     wait_for_port 8081 "Risk Service"
 fi
@@ -62,7 +62,7 @@ if check_port 8082; then
 else
     echo "Starting Screening Service..."
     cd screening-service
-    nohup ./mvnw spring-boot:run > ../screening.log 2>&1 &
+    nohup ../mvnw spring-boot:run > ../screening.log 2>&1 &
     cd ..
     wait_for_port 8082 "Screening Service"
 fi
@@ -73,7 +73,7 @@ if check_port 8085; then
 else
     echo "Starting Document Service..."
     cd document-service
-    nohup ./mvnw spring-boot:run > ../document.log 2>&1 &
+    nohup ../mvnw spring-boot:run > ../document.log 2>&1 &
     cd ..
     wait_for_port 8085 "Document Service"
 fi
@@ -84,7 +84,7 @@ if check_port 8083; then
 else
     echo "Starting Viewer Service..."
     cd viewer
-    nohup ./mvnw spring-boot:run > ../viewer.log 2>&1 &
+    nohup ../mvnw spring-boot:run > ../viewer.log 2>&1 &
     cd ..
     wait_for_port 8083 "Viewer Service"
 fi
@@ -95,7 +95,7 @@ if check_port 8080; then
 else
     echo "Starting API Gateway..."
     cd api-gateway
-    nohup ./mvnw spring-boot:run > ../gateway.log 2>&1 &
+    nohup ../mvnw spring-boot:run > ../gateway.log 2>&1 &
     cd ..
     wait_for_port 8080 "API Gateway"
 fi

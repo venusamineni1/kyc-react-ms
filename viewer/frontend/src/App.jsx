@@ -19,6 +19,7 @@ import Questionnaire from './pages/Questionnaire';
 import TaskInbox from './pages/TaskInbox';
 import AdHocTaskList from './pages/AdHocTaskList';
 import Login from './pages/Login';
+import AdminMaterialConfig from './pages/AdminMaterialConfig';
 
 import Profile from './pages/Profile';
 
@@ -77,6 +78,11 @@ function App() {
                           <Route path="/admin/config" element={
                             <ProtectedRoute requiredPermission="MANAGE_CONFIG">
                               <Configuration />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/admin/material-configs" element={
+                            <ProtectedRoute requiredPermission="MANAGE_CONFIG">
+                              <AdminMaterialConfig />
                             </ProtectedRoute>
                           } />
                           <Route path="/inbox" element={<TaskInbox />} />

@@ -343,4 +343,29 @@ public class ClientRepository {
 
                 return new PaginatedResponse<>(clients, page, size, totalElements, totalPages);
         }
+
+        public void updateClient(Client client) {
+                jdbcClient.sql(
+                                "UPDATE Clients SET TitlePrefix = :titlePrefix, FirstName = :firstName, MiddleName = :middleName, LastName = :lastName, TitleSuffix = :titleSuffix, Citizenship1 = :citizenship1, Citizenship2 = :citizenship2, Status = :status, NameAtBirth = :nameAtBirth, NickName = :nickName, Gender = :gender, DateOfBirth = :dateOfBirth, Language = :language, Occupation = :occupation, CountryOfTax = :countryOfTax, SourceOfFundsCountry = :sourceOfFundsCountry, FATCAStatus = :fatcaStatus, CRSStatus = :crsStatus WHERE ClientID = :id")
+                                .param("id", client.clientID())
+                                .param("titlePrefix", client.titlePrefix())
+                                .param("firstName", client.firstName())
+                                .param("middleName", client.middleName())
+                                .param("lastName", client.lastName())
+                                .param("titleSuffix", client.titleSuffix())
+                                .param("citizenship1", client.citizenship1())
+                                .param("citizenship2", client.citizenship2())
+                                .param("status", client.status())
+                                .param("nameAtBirth", client.nameAtBirth())
+                                .param("nickName", client.nickName())
+                                .param("gender", client.gender())
+                                .param("dateOfBirth", client.dateOfBirth())
+                                .param("language", client.language())
+                                .param("occupation", client.occupation())
+                                .param("countryOfTax", client.countryOfTax())
+                                .param("sourceOfFundsCountry", client.sourceOfFundsCountry())
+                                .param("fatcaStatus", client.fatcaStatus())
+                                .param("crsStatus", client.crsStatus())
+                                .update();
+        }
 }

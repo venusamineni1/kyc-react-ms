@@ -64,8 +64,8 @@ export const caseService = {
         }
     },
 
-    createCase: async (clientID, reason) => {
-        return apiClient.post(API_BASE_URL, { clientID, reason });
+    createCase: async (clientID, reason, comment) => {
+        return apiClient.post(API_BASE_URL, { clientID, reason, comment });
     },
 
     uploadDocument: async (caseId, formData) => {

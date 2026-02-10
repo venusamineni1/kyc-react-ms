@@ -1,8 +1,107 @@
 import React, { useState, useEffect } from 'react';
 import { screeningService } from '../services/screeningService';
 import { useNotification } from '../contexts/NotificationContext';
-// Icons: using emoji or simple svg for now if no icon lib
-// Or assuming we have a Button component
+import { FiUser, FiGlobe, FiAlertTriangle, FiShield, FiClock, FiPlay, FiSearch } from 'react-icons/fi';
+
+const ScreeningCard = ({ title, context, result, onRun }) => {
+    const isHit = result.status === 'HIT';
+    const isNoHit = result.status === 'NO_HIT';
+    const isInProgress = result.status === 'IN_PROGRESS';
+
+    const getIcon = () => {
+        switch (context) {
+            case 'PEP': return <FiUser />;
+            case 'ADM': return <FiAlertTriangle />;
+            case 'INT': return <FiGlobe />;
+            case 'SAN': return <FiShield />;
+            default: return <FiSearch />;
+        }
+    };
+
+    const getStatusLabel = () => {
+        if (isInProgress) return 'Scanning...';
+        if (isHit) return 'ALERT FOUND';
+        if (isNoHit) return 'CLEAR';
+        return 'NOT RUN';
+    };
+
+    const getStatusColor = () => {
+        if (isInProgress) return 'var(--warning-color, #faad14)';
+        if (isHit) return 'var(--error-color, #ff4d4f)';
+        if (isNoHit) return 'var(--success-color, #52c41a)';
+        return 'var(--text-muted, #8c8c8c)';
+    };
+
+    return (
+        <div style={{
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: `1px solid ${isHit ? 'rgba(255, 77, 79, 0.3)' : 'var(--glass-border, rgba(255, 255, 255, 0.1))'}`,
+            borderRadius: '12px',
+            padding: '1.2rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: isHit ? '0 0 15px rgba(255, 77, 79, 0.1)' : 'none'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.1rem',
+                    color: getStatusColor()
+                }}>
+                    {getIcon()}
+                </div>
+                <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: '500' }}>{context}</div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{title}</div>
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                <div style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    background: `${getStatusColor()}20`,
+                    color: getStatusColor(),
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                }}>
+                    {getStatusLabel()}
+                </div>
+                {isInProgress && (
+                    <div className="spinning" style={{ color: getStatusColor(), fontSize: '0.9rem' }}>
+                        <FiSearch />
+                    </div>
+                )}
+            </div>
+
+            {isHit && result.alertMessage && (
+                <div style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--error-color, #ff4d4f)',
+                    background: 'rgba(255, 77, 79, 0.05)',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    marginTop: '8px',
+                    border: '1px solid rgba(255, 77, 79, 0.1)'
+                }}>
+                    {result.alertMessage}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const ScreeningPanel = ({ clientId, hasPermission }) => {
     const { notify } = useNotification();
@@ -134,79 +233,80 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
             justifyContent: 'center',
             position: 'relative'
         }}>
-            <style>
-                {`
-                @keyframes pulse-yellow {
-                    0% { box-shadow: 0 0 0 0 rgba(250, 173, 20, 0.4); }
-                    70% { box-shadow: 0 0 0 10px rgba(250, 173, 20, 0); }
-                    100% { box-shadow: 0 0 0 0 rgba(250, 173, 20, 0); }
-                }
-                `}
-            </style>
-            <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '5px' }}>
-                {hasPermission && (
-                    <>
-                        <button
-                            onClick={() => { setHistoryOpen(true); fetchHistory(); }}
-                            title="View History"
-                            style={{
-                                background: 'transparent',
-                                border: '1px solid var(--glass-border)',
-                                borderRadius: '4px',
-                                color: 'var(--text-primary)',
-                                cursor: 'pointer',
-                                padding: '4px 8px',
-                                fontSize: '1.2rem'
-                            }}
-                        >
-                            🕒
-                        </button>
-                        <button
-                            onClick={runScreening}
-                            disabled={status === 'IN_PROGRESS'}
-                            title="Run Screening"
-                            style={{
-                                background: 'transparent',
-                                border: '1px solid var(--glass-border)',
-                                borderRadius: '4px',
-                                color: 'var(--text-primary)',
-                                cursor: 'pointer',
-                                padding: '4px 8px',
-                                fontSize: '1.2rem',
-                                opacity: (status === 'IN_PROGRESS') ? 0.5 : 1
-                            }}
-                        >
-                            ▶️
-                        </button>
-                    </>
-                )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '1.5rem' }}>
+                <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Screening Intelligence</h4>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    {hasPermission && (
+                        <>
+                            <button
+                                onClick={() => { setHistoryOpen(true); fetchHistory(); }}
+                                title="View History"
+                                className="btn-icon"
+                                style={{
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--glass-border)',
+                                    borderRadius: '8px',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer',
+                                    padding: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '1.1rem',
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                <FiClock />
+                            </button>
+                            <button
+                                onClick={runScreening}
+                                disabled={status === 'IN_PROGRESS'}
+                                title="Run Screening"
+                                className="btn-icon"
+                                style={{
+                                    background: 'var(--accent-primary)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    color: 'black',
+                                    cursor: 'pointer',
+                                    padding: '8px 16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '600',
+                                    opacity: (status === 'IN_PROGRESS') ? 0.5 : 1,
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                <FiPlay /> Run All
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
-            <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-secondary)' }}>Screening Status</h4>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%' }}>
-                {['PEP', 'ADM', 'INT', 'SAN'].map(ctx => {
-                    const result = (results || []).find(r => r.contextType === ctx) || { status: 'NOT_RUN' };
-                    const isInProgress = result.status === 'IN_PROGRESS';
-
-                    return (
-                        <div key={ctx} title={result.alertMessage} style={{
-                            background: getIndicatorColor(result.status),
-                            color: 'white',
-                            padding: '10px',
-                            borderRadius: '4px',
-                            textAlign: 'center',
-                            fontWeight: 'bold',
-                            fontSize: '0.9rem',
-                            cursor: result.status === 'HIT' ? 'help' : 'default',
-                            animation: isInProgress ? 'pulse-yellow 2s infinite' : 'none'
-                        }}>
-                            {ctx}
-                            {isInProgress && <span style={{ display: 'block', fontSize: '0.7rem' }}>Scanning...</span>}
-                            {result.status === 'HIT' && <span style={{ display: 'block', fontSize: '0.7rem' }}>HIT</span>}
-                        </div>
-                    );
-                })}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', width: '100%' }}>
+                <ScreeningCard
+                    title="Politically Exposed Person"
+                    context="PEP"
+                    result={(results || []).find(r => r.contextType === 'PEP') || { status: 'NOT_RUN' }}
+                />
+                <ScreeningCard
+                    title="Adverse Media"
+                    context="ADM"
+                    result={(results || []).find(r => r.contextType === 'ADM') || { status: 'NOT_RUN' }}
+                />
+                <ScreeningCard
+                    title="International Sanctions"
+                    context="SAN"
+                    result={(results || []).find(r => r.contextType === 'SAN') || { status: 'NOT_RUN' }}
+                />
+                <ScreeningCard
+                    title="Internal Watchlist"
+                    context="INT"
+                    result={(results || []).find(r => r.contextType === 'INT') || { status: 'NOT_RUN' }}
+                />
             </div>
 
             {/* History Modal */}
