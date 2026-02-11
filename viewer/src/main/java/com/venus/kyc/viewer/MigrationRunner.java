@@ -23,7 +23,12 @@ public class MigrationRunner implements CommandLineRunner {
             // For the known demo data cases
             caseService.migrateLegacyCase(1L, 1L, "admin");
             caseService.migrateLegacyCase(2L, 2L, "admin");
-            System.out.println("Migration triggered for cases 1 and 2.");
+            caseService.migrateLegacyCase(3L, 106L, "admin");
+            caseService.migrateLegacyCase(4L, 107L, "admin");
+            caseService.migrateLegacyCase(5L, 108L, "admin");
+            caseService.migrateLegacyCase(6L, 109L, "admin");
+            caseService.migrateLegacyCase(7L, 110L, "admin");
+            System.out.println("Migration triggered for cases 1-7.");
         } catch (Exception e) {
             System.out.println("Migration skipped or failed (non-critical): " + e.getMessage());
         }
@@ -31,14 +36,20 @@ public class MigrationRunner implements CommandLineRunner {
         System.out.println("Seeding ad-hoc tasks for demonstration...");
         try {
             // Seed some diverse tasks
-            String t1 = adHocTaskService.createTask("admin", "analyst",
+            adHocTaskService.createTask("admin", "analyst",
                     "Urgent: Please verify the source of wealth for Global Prime Corp (Client #1004).", 1004L);
-            String t2 = adHocTaskService.createTask("analyst", "kyc_manager",
-                    "Requesting manual override for PEP flag on John Doe. Evidence attached in case file.", null);
+            adHocTaskService.createTask("analyst", "reviewer",
+                    "Requesting manual override for PEP flag on John Doe. Evidence attached in case file.", 1L);
+            adHocTaskService.createTask("reviewer", "analyst",
+                    "Please provide more clarity on the UBO structure for SolarTech Energy.", 107L);
+
+            // Seed a task for a new case
+            adHocTaskService.createTask("admin", "analyst2",
+                    "Follow up on missing GID for Hans Schmidt.", 106L);
 
             // Seed a responded task
-            String t3 = adHocTaskService.createTask("admin", "analyst", "Standard periodic review for Client #1001.",
-                    1001L);
+            String t3 = adHocTaskService.createTask("admin", "analyst", "Standard periodic review for Client #101.",
+                    101L);
             adHocTaskService.respondTask(t3, "analyst",
                     "Preliminary check completed. All documentation appears valid. Moving to final audit.");
 
@@ -49,7 +60,7 @@ public class MigrationRunner implements CommandLineRunner {
 
             System.out.println("Ad-hoc task seeding completed.");
         } catch (Exception e) {
-            System.out.println("Ad-hoc seeding skipped or failed (non-critical): " + e.getMessage());
+            System.out.println("Ad-hoc seeding failed: " + e.getMessage());
         }
     }
 }

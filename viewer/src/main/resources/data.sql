@@ -207,3 +207,54 @@ VALUES (104, NULL, 'TechFlow', 'Systems', '2024-03-04', 'ACTIVE', 'USA', NULL, N
 -- 105. Individual: Carlos Silva (BRA)
 INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
 VALUES (105, 'Mr', 'Carlos', 'Silva', '2024-03-05', 'SUSPENDED', 'BRA', NULL, 'Male', '1970-01-20', 'Portuguese', 'Business Owner', 'BRA', 'BRA', 'Reportable', 'Reportable');
+
+-- Current Material Changes (PENDING)
+INSERT INTO MaterialChanges (ClientID, EntityID, EntityName, ColumnName, OperationType, OldValue, NewValue, Status, Category, ChangeDate)
+VALUES (1, 1, 'Client', 'Citizenship1', 'UPDATE', 'USA', 'CAN', 'PENDING', 'RISK', DATEADD('HOUR', -2, CURRENT_TIMESTAMP));
+
+INSERT INTO MaterialChanges (ClientID, EntityID, EntityName, ColumnName, OperationType, OldValue, NewValue, Status, Category, ChangeDate)
+VALUES (101, 101, 'Client', 'Occupation', 'UPDATE', 'Logistics', 'Logistics & Supply Chain', 'PENDING', 'BOTH', DATEADD('HOUR', -5, CURRENT_TIMESTAMP));
+
+INSERT INTO MaterialChanges (ClientID, EntityID, EntityName, ColumnName, OperationType, OldValue, NewValue, Status, Category, ChangeDate)
+VALUES (4, 4, 'Client', 'LastName', 'UPDATE', 'Rodriguez', 'Rodriguez-Gomez', 'PENDING', 'SCREENING', DATEADD('HOUR', -12, CURRENT_TIMESTAMP));
+
+-- Historical Material Changes (PROCESSED)
+INSERT INTO MaterialChanges (ClientID, EntityID, EntityName, ColumnName, OperationType, OldValue, NewValue, Status, Category, ChangeDate)
+VALUES (2, 2, 'Client', 'FirstName', 'UPDATE', 'Acme', 'Acme Global', 'PROCESSED', 'SCREENING', DATEADD('DAY', -2, CURRENT_TIMESTAMP));
+
+INSERT INTO MaterialChanges (ClientID, EntityID, EntityName, ColumnName, OperationType, OldValue, NewValue, Status, Category, ChangeDate)
+VALUES (102, 102, 'Client', 'CountryOfTax', 'UPDATE', 'NGA', 'USA', 'PROCESSED', 'RISK', DATEADD('DAY', -5, CURRENT_TIMESTAMP));
+
+INSERT INTO MaterialChanges (ClientID, EntityID, EntityName, ColumnName, OperationType, OldValue, NewValue, Status, Category, ChangeDate)
+VALUES (3, 3, 'Client', 'FirstName', 'UPDATE', 'Global Tech', 'Global Tech Group', 'PROCESSED', 'BOTH', DATEADD('DAY', -10, CURRENT_TIMESTAMP));
+
+-- New Seed Clients & Cases for UI Testing
+-- 106. Individual: Hans Schmidt (DEU)
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
+VALUES (106, 'Mr', 'Hans', 'Schmidt', '2024-03-06', 'ACTIVE', 'DEU', NULL, 'Male', '1985-08-15', 'German', 'Consultant', 'DEU', 'DEU', 'Reportable', 'Reportable');
+INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
+VALUES (106, 'CMMN', 'KYC_ANALYST', 'Periodic Review', CURRENT_TIMESTAMP, 'analyst');
+
+-- 107. Corporate: SolarTech Energy (AUS)
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
+VALUES (107, NULL, 'SolarTech', 'Energy', '2024-03-07', 'ACTIVE', 'AUS', NULL, NULL, NULL, 'Energy', 'AUS', 'AUS', 'Active NFFE', 'Active NFE');
+INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
+VALUES (107, 'CMMN', 'KYC_ANALYST', 'New Onboarding', CURRENT_TIMESTAMP, 'analyst2');
+
+-- 108. Individual: Maria Garcia (ESP)
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
+VALUES (108, 'Ms', 'Maria', 'Garcia', '2024-03-08', 'ACTIVE', 'ESP', NULL, 'Female', '1990-03-12', 'Spanish', 'Architect', 'ESP', 'ESP', 'Reportable', 'Reportable');
+INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
+VALUES (108, 'CMMN', 'KYC_ANALYST', 'New Onboarding', CURRENT_TIMESTAMP, NULL);
+
+-- 109. Individual: Chen Wei (CHN)
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
+VALUES (109, 'Mr', 'Chen', 'Wei', '2024-03-09', 'IN_REVIEW', 'CHN', NULL, 'Male', '1982-12-05', 'Chinese', 'Entrepreneur', 'CHN', 'CHN', 'Reportable', 'Reportable');
+INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
+VALUES (109, 'CMMN', 'REVIEWER_REVIEW', 'Risk Elevation', CURRENT_TIMESTAMP, 'reviewer');
+
+-- 110. Individual: Olivia Brown (GBR)
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
+VALUES (110, 'Ms', 'Olivia', 'Brown', '2024-03-10', 'ACTIVE', 'GBR', NULL, 'Female', '1993-06-25', 'English', 'Pilatist', 'GBR', 'GBR', 'Reportable', 'Reportable');
+INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
+VALUES (110, 'CMMN', 'KYC_ANALYST', 'Standard Review', CURRENT_TIMESTAMP, 'analyst');

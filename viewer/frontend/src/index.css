@@ -252,3 +252,121 @@ tr:hover td {
   border-color: var(--primary-color);
   background: rgba(0, 0, 0, 0.3);
 }
+/* Active Tasks & Enhanced UI */
+.highlight-border {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 15px rgba(24, 144, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.highlight-border::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary-color);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #52c41a;
+  border-radius: 50%;
+  box-shadow: 0 0 0 rgba(82, 196, 26, 0.4);
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(82, 196, 26, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(82, 196, 26, 0); }
+}
+
+.task-count-badge {
+  background: var(--primary-color);
+  color: var(--modal-bg);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.task-list-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.task-item-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1rem;
+  transition: background 0.2s;
+}
+
+.task-item-compact:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.task-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.task-type-tag {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.task-name {
+  margin: 0;
+  font-size: 1rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.task-meta {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.btn-primary-sm {
+  background: var(--primary-color);
+  color: var(--modal-bg);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.btn-primary-sm:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.empty-state-tasks {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.9rem;
+  border: 1px dashed var(--glass-border);
+  border-radius: 12px;
+}

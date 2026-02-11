@@ -4,122 +4,219 @@ const CaseTimeline = ({ items }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     if (!items || items.length === 0) {
-        return <p style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>No timeline data available for this case.</p>;
+        return <p style={{ fontStyle: 'italic', color: 'var(--text-secondary)', padding: '1rem' }}>No lifecycle data available for this case.</p>;
     }
 
-    // Sort items: Active first, then by time? Or just chronological?
-    // Usually chronological is best for timeline.
-    // Let's just limit the view if there are too many items.
-    const displayedItems = isExpanded ? items : items.slice(-5); // Show last 5 by default if sorted by time, or first 5?
-    // Timeline usually goes top-down. If customized sort (newest first), showing "first 5" is correct.
-    // The service sorts by Start Time ASC. So bottom is newest.
-    // We probably want to see the *active* ones.
+    // Sort items: oldest first
+    const sortedItems = [...items].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    const displayedItems = isExpanded ? sortedItems : sortedItems.slice(-6);
 
-    // Let's just make the list compact first.
-
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case 'completed': return '✅';
-            case 'terminated': return '❌';
-            case 'active': return '▶️';
-            case 'available': return '○';
-            case 'enabled': return '⚪';
-            default: return '•';
+    const getStatusConfig = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'completed': return { color: '#52c41a', bg: 'rgba(82, 196, 26, 0.1)', icon: '✓' };
+            case 'active': return { color: '#1890ff', bg: 'rgba(24, 144, 255, 0.2)', icon: '▶', pulse: true };
+            case 'available': return { color: '#faad14', bg: 'rgba(250, 173, 20, 0.1)', icon: '○' };
+            case 'terminated': return { color: '#ff4d4f', bg: 'rgba(255, 77, 79, 0.1)', icon: '✕' };
+            case 'enabled': return { color: '#722ed1', bg: 'rgba(114, 46, 209, 0.1)', icon: '•' };
+            default: return { color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.05)', icon: '•' };
         }
     };
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'completed': return '#52c41a';
-            case 'active': return '#1890ff';
-            case 'terminated': return '#ff4d4f';
-            case 'available': return '#faad14';
-            default: return 'var(--text-secondary)';
-        }
+    const getTypeLabel = (type) => {
+        if (type?.includes('Task')) return 'Task';
+        if (type?.includes('Stage')) return 'Stage';
+        if (type?.includes('EventListener')) return 'Signal';
+        return type || 'Event';
     };
 
     return (
-        <div className="case-timeline-compact">
-            <div className="timeline-header-controls" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-                {items.length > 5 && (
-                    <button
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', fontSize: '0.8rem' }}
-                    >
-                        {isExpanded ? 'Show Less' : `Show All (${items.length})`}
+        <div className="modern-timeline">
+            <div className="timeline-controls">
+                {items.length > 6 && (
+                    <button onClick={() => setIsExpanded(!isExpanded)} className="expand-link">
+                        {isExpanded ? 'Collapse View' : `View Full History (${items.length} events)`}
                     </button>
                 )}
             </div>
 
-            <div className="timeline-list">
-                {displayedItems.map((item, index) => (
-                    <div key={index} className="timeline-row" style={{ opacity: item.status === 'completed' || item.status === 'terminated' ? 0.7 : 1 }}>
-                        <div className="t-time" style={{ width: '130px', fontSize: '0.75rem', textAlign: 'right', color: 'var(--text-secondary)', paddingRight: '1rem' }}>
-                            {new Date(item.startTime).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                        <div className="t-marker">
-                            <div className="t-dot" style={{ borderColor: getStatusColor(item.status) }}></div>
-                            {index !== displayedItems.length - 1 && <div className="t-line"></div>}
-                        </div>
-                        <div className="t-content">
-                            <div className="t-title">
-                                <span style={{ fontWeight: item.status === 'active' ? 'bold' : 'normal', color: item.status === 'active' ? 'white' : 'inherit' }}>
-                                    {item.name}
-                                </span>
-                                <span className="t-status" style={{ color: getStatusColor(item.status), marginLeft: '0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', border: `1px solid ${getStatusColor(item.status)}`, padding: '0px 4px', borderRadius: '4px' }}>
-                                    {item.status}
-                                </span>
+            <div className="timeline-rail">
+                {displayedItems.map((item, index) => {
+                    const config = getStatusConfig(item.status);
+                    const isLast = index === displayedItems.length - 1;
+                    const isActive = item.status === 'active';
+
+                    return (
+                        <div key={index} className={`timeline-entry ${isActive ? 'entry-active' : ''}`}>
+                            <div className="entry-time">
+                                <span className="date">{new Date(item.startTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                <span className="time">{new Date(item.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
-                            {item.endTime && <div className="t-sub" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Ended: {new Date(item.endTime).toLocaleTimeString()}</div>}
+
+                            <div className="entry-rail-segment">
+                                <div className={`rail-dot ${config.pulse ? 'pulse' : ''}`} style={{ backgroundColor: config.color, boxShadow: `0 0 10px ${config.color}` }}>
+                                    <span className="dot-icon">{config.icon}</span>
+                                </div>
+                                {!isLast && <div className="rail-line"></div>}
+                            </div>
+
+                            <div className="entry-card shadow-lg">
+                                <div className="card-header">
+                                    <span className="type-chip">{getTypeLabel(item.itemType)}</span>
+                                    <span className="status-badge" style={{ color: config.color, background: config.bg, borderColor: `${config.color}40` }}>
+                                        {item.status}
+                                    </span>
+                                </div>
+                                <div className="card-body">
+                                    <h4 className="entry-name">{item.name}</h4>
+                                    {item.endTime && (
+                                        <div className="entry-meta">
+                                            Completed at {new Date(item.endTime).toLocaleTimeString()}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             <style>{`
-                .case-timeline-compact {
-                    position: relative;
+                .modern-timeline {
+                    padding: 1rem 0;
+                    font-family: 'Inter', sans-serif;
                 }
-                .timeline-list {
+                .timeline-controls {
+                    display: flex;
+                    justify-content: flex-end;
+                    margin-bottom: 2rem;
+                }
+                .expand-link {
+                    background: none;
+                    border: none;
+                    color: var(--primary-color);
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    opacity: 0.8;
+                    transition: opacity 0.2s;
+                }
+                .expand-link:hover { opacity: 1; }
+
+                .timeline-rail {
                     display: flex;
                     flex-direction: column;
+                    gap: 0.5rem;
                 }
-                .timeline-row {
+
+                .timeline-entry {
                     display: flex;
-                    align-items: stretch; /* stretch to fill height for line */
-                    min-height: 2.5rem;
+                    align-items: flex-start;
+                    position: relative;
                 }
-                .t-marker {
+
+                .entry-time {
+                    width: 90px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                    padding-right: 1.5rem;
+                    margin-top: 0.75rem;
+                    flex-shrink: 0;
+                }
+                .entry-time .date { font-size: 0.75rem; font-weight: 700; color: #fff; }
+                .entry-time .time { font-size: 0.7rem; color: var(--text-secondary); }
+
+                .entry-rail-segment {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    width: 20px;
+                    width: 32px;
+                    flex-shrink: 0;
                     position: relative;
-                    margin-right: 1rem;
                 }
-                .t-dot {
-                    width: 10px;
-                    height: 10px;
+                .rail-dot {
+                    width: 24px;
+                    height: 24px;
                     border-radius: 50%;
-                    border: 2px solid var(--text-secondary);
-                    background: var(--glass-bg);
-                    z-index: 1;
-                    margin-top: 4px; /* Align with text roughly */
-                }
-                .t-line {
-                    width: 1px;
-                    background: rgba(255,255,255,0.1);
-                    flex: 1;
-                    margin-top: 2px;
-                }
-                .t-content {
-                    flex: 1;
-                    padding-bottom: 1rem;
-                }
-                .t-title {
-                    font-size: 0.9rem;
                     display: flex;
                     align-items: center;
+                    justify-content: center;
+                    z-index: 2;
+                    margin-top: 0.75rem;
+                }
+                .dot-icon { color: white; font-size: 0.75rem; font-weight: bold; }
+                .rail-line {
+                    width: 2px;
+                    background: linear-gradient(to bottom, var(--glass-border), transparent);
+                    flex: 1;
+                    height: 100%;
+                    min-height: 40px;
+                    position: absolute;
+                    top: 2rem;
+                    z-index: 1;
+                }
+
+                .entry-card {
+                    flex: 1;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 12px;
+                    padding: 1rem;
+                    margin-left: 1rem;
+                    margin-bottom: 1.5rem;
+                    transition: transform 0.2s, background 0.2s;
+                }
+                .entry-active .entry-card {
+                    background: rgba(255, 255, 255, 0.07);
+                    border-color: var(--primary-color);
+                    box-shadow: 0 0 20px rgba(24, 144, 255, 0.1);
+                    transform: scale(1.01);
+                }
+
+                .card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 0.5rem;
+                }
+                .type-chip {
+                    font-size: 0.65rem;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: var(--primary-color);
+                    background: rgba(24, 144, 255, 0.1);
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                }
+                .status-badge {
+                    font-size: 0.65rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    padding: 2px 8px;
+                    border-radius: 20px;
+                    border: 1px solid transparent;
+                }
+
+                .entry-name {
+                    margin: 0;
+                    font-size: 0.95rem;
+                    color: #fff;
+                    font-weight: 600;
+                }
+                .entry-meta {
+                    font-size: 0.75rem;
+                    color: var(--text-secondary);
+                    margin-top: 0.25rem;
+                }
+
+                .pulse {
+                    animation: pulse-ring 2s infinite;
+                }
+                @keyframes pulse-ring {
+                    0% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4); }
+                    70% { box-shadow: 0 0 0 10px rgba(24, 144, 255, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0); }
                 }
             `}</style>
         </div>

@@ -391,6 +391,51 @@ const CaseDetails = () => {
 
                 {activeTab === 'timeline' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        {/* Active Tasks Section */}
+                        <section className="glass-section highlight-border">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div className="pulse-dot"></div>
+                                    <h3 style={{ margin: 0 }}>Active Tasks</h3>
+                                </div>
+                                <span className="task-count-badge">{myTasks.length}</span>
+                            </div>
+
+                            <div className="task-list-simple">
+                                {myTasks.length > 0 ? myTasks.map(task => (
+                                    <div key={task.taskId} className="task-item-compact">
+                                        <div className="task-info">
+                                            <span className="task-type-tag">Workflow Task</span>
+                                            <h4 className="task-name">{task.name}</h4>
+                                            <p className="task-meta">Created on {new Date(task.createTime).toLocaleDateString()}</p>
+                                        </div>
+                                        <div className="task-actions">
+                                            <button
+                                                className="btn-primary-sm"
+                                                onClick={async () => {
+                                                    if (window.confirm(`Complete task: ${task.name}?`)) {
+                                                        try {
+                                                            await caseService.completeTask(task.taskId);
+                                                            alert('Task completed successfully');
+                                                            loadCaseData();
+                                                        } catch (err) {
+                                                            alert('Failed to complete task: ' + err.message);
+                                                        }
+                                                    }
+                                                }}
+                                            >
+                                                Complete Task
+                                            </button>
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="empty-state-tasks">
+                                        <p>No active tasks assigned to you for this case.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+
                         {/* Documents Section */}
                         <section className="glass-section">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
