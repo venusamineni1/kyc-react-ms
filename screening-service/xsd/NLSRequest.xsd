@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema  xmlns:nlstype="http://www.db.com/NLSTypes" xmlns:nlsparty="http://www.db.com/NLSPartyInformation" targetNamespace="http://www.db.com/NLSRequest" xmlns="http://www.db.com/NLSRequest" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:import schemaLocation="NLSTypes.xsd" namespace="http://www.db.com/NLSTypes" />
+	<xs:import schemaLocation="NLSPartyInformation.xsd" namespace="http://www.db.com/NLSPartyInformation"/>
+	<!-- NLSRequest.xsd v2.1.1 Related to NLS File Definitions v2.1 -->
+	
+	<xs:complexType name="FeedRequest">
+		<xs:sequence>
+			<xs:element name="Meta" type="MetaRequest" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="Recs" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Rec" type="SourceRecordType" minOccurs="1" maxOccurs="250000"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="MetaRequest">
+		<xs:sequence>
+			<xs:element name="SrcId" type="nlstype:SourceIDType" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="ToR" minOccurs="1" maxOccurs="1">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="NCA" />
+						<xs:enumeration value="RCFull" />
+						<xs:enumeration value="RCDelta" />
+						<xs:maxLength value="7"/>
+					</xs:restriction>
+				</xs:simpleType>	
+			</xs:element>
+			<xs:element name="CrtTm" type="nlstype:CreationTimestamp" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="AoD" type="nlstype:AsOfDate"/>
+			<xs:element name="NoR" minOccurs="1" maxOccurs="1">
+				<xs:simpleType>
+					<xs:restriction base="nlstype:NumbersOfRecords">
+						<xs:maxInclusive value="250000"></xs:maxInclusive>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="FInfo" minOccurs="1" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Name" type="nlstype:Feedname" minOccurs="1" maxOccurs="1"/>
+						<xs:element name="BatchNr" minOccurs="1" maxOccurs="1">
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="1"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="FBatch" type="nlstype:SimpleDescision" minOccurs="1" maxOccurs="1"/>
+						<xs:element name="Cntr" type="nlstype:CountryType" maxOccurs="1" />
+						<xs:element name="BD" type="nlstype:String20" maxOccurs="1" />
+						<xs:element name="LBJ" type="nlstype:CountryType" maxOccurs="1" />
+						<xs:element name="LAFCJ" type="nlstype:CountryType" maxOccurs="1" />
+						<xs:element name="BSRL" type="nlstype:CountryType" maxOccurs="1" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+		
+	<xs:complexType name="SourceRecordType">
+		<xs:sequence>
+			<xs:element name="Meta">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="UniRcrdId" type="nlstype:UniqueRecordIDType" minOccurs="1" maxOccurs="1" />
+						<xs:element name="RecStat">
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="A" />
+									<xs:enumeration value="D" />
+									<xs:enumeration value="M" />
+									<xs:enumeration value="U" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="ChkSum" type="nlstype:SHA256Checksum" minOccurs="1" maxOccurs="1" />
+						<xs:element name="Type" type="RecordType" minOccurs="1" maxOccurs="1" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="Data">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="PrtInfo" minOccurs="1" maxOccurs="1">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:choice minOccurs="1" maxOccurs="1">
+										<xs:element name="Ind" type="nlsparty:RequestIndividualType" maxOccurs="1" />
+										<xs:element name="Ent" type="nlsparty:RequestLegalEntity" maxOccurs="1" />
+									</xs:choice>
+									<xs:element name="Acc" minOccurs="0" maxOccurs="1">
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="Type" type="nlstype:String20" maxOccurs="1" />
+												<xs:element name="Nr" type="nlstype:String50" maxOccurs="1" />
+												<xs:element name="AI" maxOccurs="1">
+													<xs:simpleType>
+														<xs:restriction base="xs:decimal">
+															<xs:totalDigits value="10" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="SoW" type="nlstype:String20" maxOccurs="1" />
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>	
+						</xs:element>
+						<xs:element name="RelPrtInfos" minOccurs="0" maxOccurs="1">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="RelPrtInfo" maxOccurs="unbounded">
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="UniRcrdId" type="nlstype:UniqueRecordIDType" minOccurs="1" maxOccurs="1" />
+												<xs:element name="RelType" type="RecordType" minOccurs="1" maxOccurs="1" />
+												<xs:element name="LinkPerc" minOccurs="0" maxOccurs="1">
+													<xs:simpleType>
+														<xs:restriction base="xs:decimal">
+															<xs:minInclusive value="0" />
+															<xs:maxInclusive value="100" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="JuriInfo" minOccurs="1" maxOccurs="1">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="BU" minOccurs="1" maxOccurs="unbounded">
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="RelSrcId" type="nlstype:SourceIDType" minOccurs="1" maxOccurs="1"/>
+												<xs:element name="RecCntrOrg" type="nlstype:CountryType" minOccurs="1" maxOccurs="1" />
+												<xs:element name="RecBD" type="nlstype:String20" minOccurs="0" maxOccurs="1" />
+												<xs:element name="DBLE" type="nlstype:String50" minOccurs="0" maxOccurs="1" />
+												<xs:element name="DBLELoc" type="nlstype:String50" minOccurs="0" maxOccurs="1" />
+												<xs:element name="LBJ" type="nlstype:CountryType" maxOccurs="1" />
+												<xs:element name="LAFCJ" type="nlstype:CountryType" maxOccurs="1" />
+												<xs:element name="BSRL" type="nlstype:CountryType" maxOccurs="1" />
+												<xs:element name="RR" minOccurs="0" maxOccurs="1">
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:enumeration value="High" />
+															<xs:enumeration value="Medium" />
+															<xs:enumeration value="Low" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="HRPI" type="nlstype:SimpleDescision" minOccurs="0" maxOccurs="1"/>
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="KYCData" minOccurs="0" maxOccurs="1">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="PEPFlag" type="nlstype:PEPFlag" minOccurs="0" maxOccurs="1" />
+									<xs:element name="PEPStat" type="nlstype:String20" minOccurs="0" maxOccurs="1" />
+									<xs:element name="LastRvw" minOccurs="0" maxOccurs="1">
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="KYC" type="nlstype:SimpleDate" minOccurs="0" maxOccurs="1" />
+												<xs:element name="CDD" type="nlstype:SimpleDate" minOccurs="0" maxOccurs="1" />
+												<xs:element name="EDR" type="nlstype:SimpleDate" minOccurs="0" maxOccurs="1" />
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="NextRvw" minOccurs="0" maxOccurs="1">
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="KYC" type="nlstype:SimpleDate" minOccurs="0" maxOccurs="1" />
+												<xs:element name="CDD" type="nlstype:SimpleDate" minOccurs="0" maxOccurs="1" />
+												<xs:element name="EDR" type="nlstype:SimpleDate" minOccurs="0" maxOccurs="1" />
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="DBAdv" minOccurs="0" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="BU" type="nlstype:String20" maxOccurs="1"/>
+										<xs:element name="BC" type="nlstype:CountryType" maxOccurs="1" />
+										<xs:element name="Fir" type="nlstype:String35" maxOccurs="1" />
+										<xs:element name="Sur" type="nlstype:String35" maxOccurs="1" />
+										<xs:element name="IDC" maxOccurs="1">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+													<xs:pattern value="\+\+\d{2}" />
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="ADC" maxOccurs="1">
+											<xs:simpleType>
+												<xs:restriction base="xs:integer">
+													<xs:pattern value="\d{0,10}"></xs:pattern>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="TelNr" maxOccurs="1">
+											<xs:simpleType>
+												<xs:restriction base="xs:integer">
+													<xs:pattern value="\d{0,20}" />
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="EAddr" type="nlstype:String50" minOccurs="0" maxOccurs="1"/>
+										<xs:element name="Md" maxOccurs="1">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+													<xs:maxLength value="3"></xs:maxLength>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+						</xs:element>
+						<xs:element name="Comment" type="nlstype:String100" minOccurs="0" maxOccurs="1" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+		
+	<xs:simpleType name="RecordType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="AS"/>
+			<xs:enumeration value="PC" />
+			<xs:enumeration value="UBO" />
+			<xs:enumeration value="IBO" />
+			<xs:enumeration value="LR" />
+			<xs:enumeration value="RB" />
+			<xs:enumeration value="NC" />
+			<xs:enumeration value="EMP" />
+			<xs:enumeration value="TP" />
+			<xs:enumeration value="LL" />
+			<xs:enumeration value="VE" />
+			<xs:enumeration value="MPR"/>
+			<xs:enumeration value="OT" />
+			<xs:maxLength value="3"/>
+		</xs:restriction>
+	</xs:simpleType>	
+	
+		
+	<xs:element name="Request" type="FeedRequest"/>
+</xs:schema>
+

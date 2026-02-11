@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ClientDirectory from './pages/ClientDirectory';
 import ClientDetails from './pages/ClientDetails';
@@ -18,8 +19,10 @@ import AuditHistory from './pages/AuditHistory';
 import Questionnaire from './pages/Questionnaire';
 import TaskInbox from './pages/TaskInbox';
 import AdHocTaskList from './pages/AdHocTaskList';
-import Login from './pages/Login';
 import AdminMaterialConfig from './pages/AdminMaterialConfig';
+import BatchMappingConfig from './pages/BatchMappingConfig';
+import BatchRiskMappingConfig from './pages/BatchRiskMappingConfig';
+
 
 import Profile from './pages/Profile';
 
@@ -83,6 +86,16 @@ function App() {
                           <Route path="/admin/material-configs" element={
                             <ProtectedRoute requiredPermission="MANAGE_CONFIG">
                               <AdminMaterialConfig />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/admin/batch-mapping" element={
+                            <ProtectedRoute requiredPermission="MANAGE_CONFIG">
+                              <BatchMappingConfig />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/admin/risk-mapping" element={
+                            <ProtectedRoute requiredPermission="MANAGE_CONFIG">
+                              <BatchRiskMappingConfig />
                             </ProtectedRoute>
                           } />
                           <Route path="/inbox" element={<TaskInbox />} />

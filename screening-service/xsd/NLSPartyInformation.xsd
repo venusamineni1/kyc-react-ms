@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:nlstype="http://www.db.com/NLSTypes" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.db.com/NLSPartyInformation" xmlns="http://www.db.com/NLSPartyInformation"  elementFormDefault="qualified">
+	<xs:import schemaLocation="NLSTypes.xsd" namespace="http://www.db.com/NLSTypes"/>
+	<!-- NLSPartyInformation.xsd v2.1.3 Related to NLS File Definitions v2.1 -->
+	<xs:complexType name="RequestIndividualType">
+		<xs:sequence>
+			<xs:element name="Names">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Name" type="IndividualName" minOccurs="1" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="G" type="GenderType" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="DOB" type="DateBirthIncoperation" maxOccurs="1"/>
+			<xs:element name="Cntr" type="nlstype:CountryType" maxOccurs="1"/>
+			<xs:element name="Plc" type="nlstype:String35" maxOccurs="1"/>
+			<xs:element name="Occ" type="nlstype:String50" maxOccurs="1"/>
+			<xs:element name="Nats" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Nat" maxOccurs="5">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="Cntr" type="nlstype:CountryType" minOccurs="1" maxOccurs="1" />
+									<xs:element name="LegDoc" type="TypeOfLegitimisationDocumentIndividual" minOccurs="0" maxOccurs="1"/>
+									<xs:element name="IdNr" type="nlstype:String20" minOccurs="0" maxOccurs="1" />
+									<xs:element name="CA" type="nlstype:String20" minOccurs="0" maxOccurs="1" />
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>				
+			<xs:element name="Addrs" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Addr" type="AddressIndividual" minOccurs="1" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="FeedbackIndividual">
+		<xs:sequence>
+			<xs:element name="Name" type="IndividualName" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="G" type="GenderType" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="DOB" type="DateBirthIncoperation" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="Cntr" type="nlstype:CountryType" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="Nat" type="nlstype:CountryType" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="Addr" type="AddressIndividual" minOccurs="0" maxOccurs="1"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="RequestLegalEntity">
+		<xs:sequence>
+			<xs:element name="Names">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Name" type="EntityName" minOccurs="1" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="DOI" type="DateBirthIncoperation" minOccurs="1" maxOccurs="1" />
+			<xs:element name="DOD" type="DateBirthIncoperation" minOccurs="0" maxOccurs="1" />
+			<xs:element name="Cntr" type="nlstype:CountryType" minOccurs="1" maxOccurs="1" />
+			<xs:element name="LegDoc" type="TypeOfLegitimisationDocumentEntity" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="IdNr" type="nlstype:String20" minOccurs="0" maxOccurs="1" />
+			<xs:element name="CA" type="nlstype:String20" minOccurs="0" maxOccurs="1" />
+			<xs:element name="Addrs" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Addr" type="AddressEntity" minOccurs="1" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="IndCodes" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="IndCode" minOccurs="1" maxOccurs="unbounded">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="Name" type="nlstype:String10" maxOccurs="1"/>
+									<xs:element name="Code" type="nlstype:String10" maxOccurs="1"/>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="FeedbackLegalEntity">
+		<xs:sequence>
+			<xs:element name="Name" type="EntityName" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="DOI" type="DateBirthIncoperation" minOccurs="0" maxOccurs="1" />
+			<xs:element name="Cntr" type="nlstype:CountryType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="Addr" type="AddressEntity" minOccurs="0" maxOccurs="1"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="IndividualName">
+		<xs:sequence>
+			<xs:element name="Type" type="NameTypeIndividual" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="Tit" type="nlstype:String20" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="Fir" type="nlstype:String100" minOccurs="1" maxOccurs="1" />
+			<xs:element name="Mid" type="nlstype:String100" maxOccurs="1" />
+			<xs:element name="Sur" type="nlstype:String150" maxOccurs="1" />
+			<xs:element name="Ma" type="nlstype:String150" maxOccurs="1" />
+			<xs:element name="Full" type="nlstype:String600" minOccurs="1" maxOccurs="1" />
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:simpleType name="GenderType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="M" />
+			<xs:enumeration value="F" />
+			<xs:enumeration value="U" />
+			<xs:maxLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	
+	<xs:complexType name="EntityName">
+		<xs:sequence>
+			<xs:element name="Type" type="NameTypeEntity" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="Name" type="nlstype:String600" minOccurs="1" maxOccurs="1" />
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:simpleType name="NameTypeIndividual">
+		<xs:union memberTypes="NameTypeIndividualOnly NameTypeBase" />
+	</xs:simpleType>
+
+	<xs:simpleType name="NameTypeEntity">
+		<xs:union memberTypes="NameTypeEntityOnly NameTypeBase" />
+	</xs:simpleType>
+	
+	<xs:simpleType name="NameTypeBase">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="AKA" />
+			<xs:enumeration value="OT" />
+			<xs:maxLength value="3"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="NameTypeIndividualOnly">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="PN" />
+			<xs:enumeration value="AL" />
+			<xs:enumeration value="LOC" />
+			<xs:maxLength value="3"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="NameTypeEntityOnly">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="RN" />
+			<xs:enumeration value="TN" />
+			<xs:maxLength value="3"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	
+	<xs:simpleType name="DateBirthIncoperation">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="(\d{4}(\-(0[1-9]|1[0-2])\-([0-2][0-9]|3[0-1]))?)?"/>
+			<xs:maxLength value="10"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="TypeOfLegitimisationDocumentIndividual">
+		<xs:union memberTypes="TypeOfLegitimisationDocumentIndvidualOnly TypeOfLegitimisationDocumentBase"/>
+	</xs:simpleType>
+
+	<xs:simpleType name="TypeOfLegitimisationDocumentEntity">
+		<xs:union memberTypes="TypeOfLegitimisationDocumentEntityOnly TypeOfLegitimisationDocumentBase"></xs:union>
+	</xs:simpleType>
+	
+	<xs:simpleType name="TypeOfLegitimisationDocumentBase">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Other"/>
+			<xs:maxLength value="15"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="TypeOfLegitimisationDocumentEntityOnly">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="TaxId"/>
+			<xs:enumeration value="Company Number"/>
+			<xs:maxLength value="15"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="TypeOfLegitimisationDocumentIndvidualOnly">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Passport" />
+			<xs:enumeration value="Driving Licence" />
+			<xs:enumeration value="SSN" />
+			<xs:enumeration value="NID" />
+			<xs:enumeration value="Employee ID" />
+			<xs:maxLength value="15"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:complexType name="AddressIndividual">
+		<xs:sequence>
+			<xs:element name="Type" type="AddressType_Individual" minOccurs="1" maxOccurs="1" />
+			<xs:group ref="Address" minOccurs="1" maxOccurs="1" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="AddressEntity">
+		<xs:sequence>
+			<xs:element name="Type" type="AddressType_Entity" minOccurs="1" maxOccurs="1" />
+			<xs:group ref="Address" minOccurs="1" maxOccurs="1" />
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:group name="Address">
+		<xs:sequence>
+			<xs:element name="Line" type="nlstype:String400" minOccurs="1" maxOccurs="4" />
+			<xs:element name="City" type="nlstype:String35" minOccurs="1" maxOccurs="1" />
+			<xs:element name="ZipCode" type="nlstype:String10" minOccurs="1" maxOccurs="1" />
+			<xs:element name="Prov" type="nlstype:String50" minOccurs="1" maxOccurs="1" />
+			<xs:element name="Cntr" type="nlstype:CountryType" minOccurs="1" maxOccurs="1" />
+		</xs:sequence>
+	</xs:group>
+	
+	<xs:simpleType name="AddressType_Individual">
+		<xs:union memberTypes="AddressType_IndividualEnum AddressType_BaseEnum " />
+	</xs:simpleType>
+	
+
+	<xs:simpleType name="AddressType_Entity">
+		<xs:union memberTypes="AddressType_EntityEnum AddressType_BaseEnum " />
+	</xs:simpleType>
+	
+	
+	<xs:simpleType name="AddressType_IndividualEnum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Registered" />
+			<xs:enumeration value="Residential" />
+			<xs:maxLength value="11"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="AddressType_EntityEnum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Operating" />
+			<xs:enumeration value="Trading" />
+			<xs:maxLength value="11"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="AddressType_BaseEnum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Postal" />
+			<xs:enumeration value="Domicile"/>
+			<xs:enumeration value="Other" />
+			<xs:maxLength value="11"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+</xs:schema>

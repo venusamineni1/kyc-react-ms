@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org",
+  "title": "Client Risk Rating Request",
+  "type": "object",
+  "required": ["header", "clientRiskRatingRequest"],
+  "properties": {
+    "header": {
+      "type": "object",
+      "required": ["callerSystem", "requestID", "dbBusinessline", "requestTimeStamp", "crrmVersion"],
+      "properties": {
+        "callerSystem": { "type": "string" },
+        "requestID": { "type": "string" },
+        "dbBusinessline": { "type": "string" },
+        "requestTimeStamp": { "type": "string" },
+        "crrmVersion": { "type": "string" }
+      }
+    },
+    "clientRiskRatingRequest": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clientDetails", "entityRiskType", "industryRiskType", "geoRiskType", "productRiskType", "channelRiskType"],
+        "properties": {
+          "clientDetails": {
+            "type": "object",
+            "required": ["clientAdoptionCountry", "additionalRule"],
+            "properties": {
+              "defenceRevenue": { "type": ["number", "null"] },
+              "recordID": { "type": ["string", "null"] },
+              "clientAdoptionCountry": { "type": "string", "minLength": 2, "maxLength": 2 },
+              "additionalRule": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["ruleType", "question", "response"],
+                  "properties": {
+                    "ruleType": { "type": "string" },
+                    "question": { "type": "string" },
+                    "response": { "type": "string", "enum": ["Y", "N"] }
+                  }
+                }
+              }
+            }
+          },
+          "entityRiskType": {
+            "type": "object",
+            "properties": { "typeKYCLegalEntityCode": { "type": "string" } }
+          },
+          "industryRiskType": {
+            "type": "object",
+            "properties": {
+              "industryCode": { "type": "string" },
+              "codeType": { "type": "string" }
+            }
+          },
+          "geoRiskType": {
+            "type": "object",
+            "properties": {
+              "relatedParty": { "type": "array" },
+              "clientCountryReg": { "type": "array", "items": { "type": "string" } },
+              "countryOfOp": { "type": "array", "items": { "type": "string" } },
+              "ultimateParentLocation": { "type": "array" },
+              "originOfFunds": { "type": "array", "items": { "type": "string" } },
+              "addressType": {
+                "type": "object",
+                "properties": { "clientDomicile": { "type": "string" } }
+              }
+            }
+          },
+          "productRiskType": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": { "productCode": { "type": "string" } }
+            }
+          },
+          "channelRiskType": {
+            "type": "object",
+            "properties": { "channelCode": { "type": "string" } }
+          }
+        }
+      }
+    }
+  }
+}

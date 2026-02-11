@@ -10,9 +10,23 @@ import java.util.List;
 public class BatchScreeningController {
 
     private final BatchScreeningService batchScreeningService;
+    private final MappingConfigRepository mappingConfigRepository;
 
-    public BatchScreeningController(BatchScreeningService batchScreeningService) {
+    public BatchScreeningController(BatchScreeningService batchScreeningService,
+            MappingConfigRepository mappingConfigRepository) {
         this.batchScreeningService = batchScreeningService;
+        this.mappingConfigRepository = mappingConfigRepository;
+    }
+
+    @GetMapping("/mapping")
+    public ResponseEntity<List<MappingConfig>> getMapping() {
+        return ResponseEntity.ok(mappingConfigRepository.findAll());
+    }
+
+    @PostMapping("/mapping")
+    public ResponseEntity<Void> updateMapping(@RequestBody List<MappingConfig> configs) {
+        mappingConfigRepository.saveAll(configs);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/initiate")
@@ -34,6 +48,17 @@ public class BatchScreeningController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/test-generate")
+    public ResponseEntity<String> generateTestXml(@RequestBody com.venus.kyc.screening.batch.model.Client client) {
+        try {
+            String xml = batchScreeningService.generateTestXml(client);
+            return ResponseEntity.ok(xml);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed to generate test XML: " + e.getMessage());
         }
     }
 }

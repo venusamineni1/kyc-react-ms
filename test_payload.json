@@ -1,0 +1,14 @@
+{
+    "clientID": 12345,
+    "title": "Mr",
+    "firstName": "John",
+    "middleName": "D",
+    "lastName": "Doe",
+    "gender": "M",
+    "dateOfBirth": "1980-01-01",
+    "citizenship1": "US",
+    "citizenship2": "GB",
+    "residenceCountry": "US",
+    "status": "ACTIVE",
+    "email": "john.doe@example.com"
+}

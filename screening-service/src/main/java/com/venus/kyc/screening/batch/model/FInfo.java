@@ -18,6 +18,18 @@ public class FInfo {
     @XmlElement(name = "Cntr", namespace = "http://www.db.com/NLSRequest")
     private String cntr;
 
+    @XmlElement(name = "BD", namespace = "http://www.db.com/NLSRequest")
+    private String bd;
+
+    @XmlElement(name = "LBJ", namespace = "http://www.db.com/NLSRequest")
+    private String lbj;
+
+    @XmlElement(name = "LAFCJ", namespace = "http://www.db.com/NLSRequest")
+    private String lafcj;
+
+    @XmlElement(name = "BSRL", namespace = "http://www.db.com/NLSRequest")
+    private String bsrl;
+
     // Getters and Setters
     public String getName() {
         return name;
@@ -49,5 +61,37 @@ public class FInfo {
 
     public void setCntr(String cntr) {
         this.cntr = cntr;
+    }
+
+    public String getBd() {
+        return bd;
+    }
+
+    public void setBd(String bd) {
+        this.bd = bd;
+    }
+
+    public String getLbj() {
+        return lbj;
+    }
+
+    public void setLbj(String lbj) {
+        this.lbj = lbj;
+    }
+
+    public String getLafcj() {
+        return lafcj;
+    }
+
+    public void setLafcj(String lafcj) {
+        this.lafcj = lafcj;
+    }
+
+    public String getBsrl() {
+        return bsrl;
+    }
+
+    public void setBsrl(String bsrl) {
+        this.bsrl = bsrl;
     }
 }

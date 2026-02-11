@@ -12,19 +12,25 @@ spring:
           lower-case-service-id: true
       routes:
         - id: risk-service
-          uri: lb://risk-service
+          uri: lb://RISK-SERVICE
           predicates:
-            - Path=/api/internal/risk/**
+            - Path=/api/risk/**, /api/internal/risk/**
         - id: screening-service
-          uri: lb://screening-service
+          uri: lb://SCREENING-SERVICE
           predicates:
-            - Path=/api/internal/screening/**
+            - Path=/api/screening/**, /api/internal/screening/**
         - id: auth-service
-          uri: lb://auth-service
+          uri: lb://AUTH-SERVICE
           predicates:
-            - Path=/auth/**, /api/users/**, /api/permissions/**
+            - Path=/auth/**, /api/auth/**, /api/users/**, /api/permissions/**
+          filters:
+            - RewritePath=/api/auth/(?<remaining>.*), /auth/${remaining}
+        - id: document-service
+          uri: lb://DOCUMENT-SERVICE
+          predicates:
+            - Path=/api/documents/**
         - id: core-viewer
-          uri: lb://viewer-core
+          uri: lb://VIEWER-CORE
           predicates:
             - Path=/api/**, /login, /logout, /
             # Fallback for UI assets ??
@@ -32,7 +38,7 @@ spring:
             # If Viewer moves to 8083, Gateway at 8080 must proxy EVERYTHING deeper.
             # So Path=/** might be needed as a catch-all route to Viewer.
         - id: core-viewer-catchall
-          uri: lb://viewer-core
+          uri: lb://VIEWER-CORE
           predicates:
             - Path=/**
 

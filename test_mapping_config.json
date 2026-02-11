@@ -1,0 +1,93 @@
+[
+    {
+        "targetPath": "record.uniRcrdId",
+        "sourceField": "clientID"
+    },
+    {
+        "targetPath": "record.type",
+        "defaultValue": "PC"
+    },
+    {
+        "targetPath": "record.recStat",
+        "defaultValue": "M"
+    },
+    {
+        "targetPath": "name.full",
+        "sourceField": "fullName"
+    },
+    {
+        "targetPath": "name.type",
+        "defaultValue": "PN"
+    },
+    {
+        "targetPath": "name.fir",
+        "sourceField": "firstName"
+    },
+    {
+        "targetPath": "name.mid",
+        "sourceField": "middleName"
+    },
+    {
+        "targetPath": "name.sur",
+        "sourceField": "lastName"
+    },
+    {
+        "targetPath": "individual.gender",
+        "sourceField": "gender",
+        "defaultValue": "U"
+    },
+    {
+        "targetPath": "individual.dob",
+        "sourceField": "dateOfBirth"
+    },
+    {
+        "targetPath": "individual.cntr",
+        "sourceField": "residenceCountry",
+        "defaultValue": "US"
+    },
+    {
+        "targetPath": "individual.occupation",
+        "sourceField": "occupation",
+        "defaultValue": "Unknown"
+    },
+    {
+        "targetPath": "individual.address.line",
+        "sourceField": "addressLine1",
+        "defaultValue": "Unknown Line"
+    },
+    {
+        "targetPath": "individual.address.city",
+        "sourceField": "city",
+        "defaultValue": "Unknown City"
+    },
+    {
+        "targetPath": "individual.address.zip",
+        "sourceField": "zipCode",
+        "defaultValue": "00000"
+    },
+    {
+        "targetPath": "individual.address.prov",
+        "sourceField": "province",
+        "defaultValue": "Unknown Prov"
+    },
+    {
+        "targetPath": "individual.address.cntr",
+        "sourceField": "country",
+        "defaultValue": "US"
+    },
+    {
+        "targetPath": "individual.nationality",
+        "sourceField": "nationality",
+        "defaultValue": "US"
+    },
+    {
+        "targetPath": "individual.nationality.legDoc",
+        "sourceField": "legDocType",
+        "defaultValue": "Passport"
+    },
+    {
+        "targetPath": "individual.nationality.idNr",
+        "sourceField": "idNumber",
+        "defaultValue": "A12345678"
+    }
+]

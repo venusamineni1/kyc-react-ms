@@ -125,9 +125,17 @@ const Layout = ({ children }) => {
                                 </Link>
                             )}
                             {hasPermission('MANAGE_CONFIG') && (
-                                <Link to="/admin/material-configs" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
-                                    Material Change Rules
-                                </Link>
+                                <>
+                                    <Link to="/admin/material-configs" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
+                                        Material Change Rules
+                                    </Link>
+                                    <Link to="/admin/batch-mapping" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
+                                        Screening XML Mapping
+                                    </Link>
+                                    <Link to="/admin/risk-mapping" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
+                                        Risk JSON Mapping
+                                    </Link>
+                                </>
                             )}
                             {hasPermission('MANAGE_PERMISSIONS') && (
                                 <Link to="/permissions" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>

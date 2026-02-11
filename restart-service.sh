@@ -79,7 +79,7 @@ fi
 # 2. Start the service
 echo "Starting $NAME..."
 cd $DIR
-nohup ./mvnw spring-boot:run > ../$LOG 2>&1 &
+nohup ../mvnw spring-boot:run > ../$LOG 2>&1 &
 cd ..
 
 # 3. Wait for startup

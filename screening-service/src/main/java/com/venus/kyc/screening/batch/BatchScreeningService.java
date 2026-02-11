@@ -35,13 +35,15 @@ public class BatchScreeningService {
     private String publicKeyPath; // Public key for encrypting requests
 
     private final BatchRepository batchRepository;
+    private final MappingConfigRepository mappingConfigRepository;
 
     public BatchScreeningService(EncryptionService encryptionService, CompressionService compressionService,
-            SftpService sftpService, BatchRepository batchRepository) {
+            SftpService sftpService, BatchRepository batchRepository, MappingConfigRepository mappingConfigRepository) {
         this.encryptionService = encryptionService;
         this.compressionService = compressionService;
         this.sftpService = sftpService;
         this.batchRepository = batchRepository;
+        this.mappingConfigRepository = mappingConfigRepository;
     }
 
     public Long initiateBatch(List<Client> clients) throws Exception {
@@ -81,6 +83,19 @@ public class BatchScreeningService {
         return dbBatchId;
     }
 
+    public String generateTestXml(Client client) throws Exception {
+        String batchName = "TEST_BATCH_" + System.currentTimeMillis();
+        NLSFeed feed = createFeed(batchName, List.of(client));
+
+        JAXBContext context = JAXBContext.newInstance(NLSFeed.class);
+        Marshaller marshaller = context.createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+
+        StringWriter sw = new StringWriter();
+        marshaller.marshal(feed, sw);
+        return sw.toString();
+    }
+
     private NLSFeed createFeed(String batchName, List<Client> clients) {
         NLSFeed feed = new NLSFeed();
         Request request = new Request();
@@ -90,11 +105,18 @@ public class BatchScreeningService {
         meta.setSrcId("2475");
         meta.setTor("RCDelta");
         meta.setCrtTm(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format(new Date()));
+        meta.setAod(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
         meta.setNor(clients.size());
 
         FInfo fInfo = new FInfo();
         fInfo.setName(batchName);
         fInfo.setBatchNr("1"); // Incremental?
+        fInfo.setfBatch("N");
+        fInfo.setCntr("US");
+        fInfo.setBd("20250101");
+        fInfo.setLbj("US");
+        fInfo.setLafcj("US");
+        fInfo.setBsrl("US");
         meta.setfInfo(fInfo);
 
         request.setMeta(meta);
@@ -103,8 +125,13 @@ public class BatchScreeningService {
         Records records = new Records();
         List<com.venus.kyc.screening.batch.model.Record> recList = new ArrayList<>();
 
+        List<MappingConfig> mappingConfigs = mappingConfigRepository.findAll();
+        if (mappingConfigs.isEmpty()) {
+            mappingConfigs = getDefaultMappings();
+        }
+
         for (Client client : clients) {
-            recList.add(createRecord(client));
+            recList.add(createRecord(client, mappingConfigs));
         }
         records.setRecList(recList);
         request.setRecords(records);
@@ -113,60 +140,290 @@ public class BatchScreeningService {
         return feed;
     }
 
-    private com.venus.kyc.screening.batch.model.Record createRecord(Client client) {
+    private List<MappingConfig> getDefaultMappings() {
+        return List.of(
+                new MappingConfig(null, "record.uniRcrdId", "clientID", null, null),
+                new MappingConfig(null, "record.type", null, "PC", null),
+                new MappingConfig(null, "record.recStat", null, "M", null),
+                new MappingConfig(null, "name.full", "fullName", null, null),
+                new MappingConfig(null, "name.type", null, "PN", null),
+                new MappingConfig(null, "name.fir", "firstName", "Unknown", null),
+                new MappingConfig(null, "name.mid", "middleName", "", null),
+                new MappingConfig(null, "name.sur", "lastName", "Unknown", null),
+                new MappingConfig(null, "name.ma", "maidenName", "", null),
+                new MappingConfig(null, "individual.gender", "gender", "U", null),
+                new MappingConfig(null, "individual.dob", "dateOfBirth", null, null),
+                new MappingConfig(null, "individual.cntr", "residenceCountry", "US", null),
+                new MappingConfig(null, "individual.placeOfBirth", "residenceCountry", "Unknown", null),
+                new MappingConfig(null, "individual.occupation", "occupation", "Unknown", null));
+    }
+
+    private com.venus.kyc.screening.batch.model.Record createRecord(Client client, List<MappingConfig> mappings) {
         com.venus.kyc.screening.batch.model.Record record = new com.venus.kyc.screening.batch.model.Record();
-
-        // Basic mapping logic
         RecordMeta meta = new RecordMeta();
-        meta.setUniRcrdId(client.clientID() != null ? String.valueOf(client.clientID()) : UUID.randomUUID().toString());
-        meta.setType("PC");
-        meta.setRecStat("M");
-
         RecordData data = new RecordData();
         PartyInfo info = new PartyInfo();
         Individual ind = new Individual();
-
         Names names = new Names();
         Name n = new Name();
 
-        // Construct full name
-        StringBuilder fullName = new StringBuilder();
-        if (client.firstName() != null)
-            fullName.append(client.firstName()).append(" ");
-        if (client.middleName() != null && !client.middleName().isEmpty())
-            fullName.append(client.middleName()).append(" ");
-        if (client.lastName() != null)
-            fullName.append(client.lastName());
-
-        n.setFull(fullName.toString().trim());
-        n.setType("PN"); // Primary Name
-        names.setNameList(List.of(n));
-
-        ind.setNames(names);
-
-        // Map Gender if available
-        if (client.gender() != null) {
-            ind.setGender(client.gender());
-        }
-
-        // Map DOB if available
-        if (client.dateOfBirth() != null) {
-            // Assuming XML expects YYYY-MM-DD or similar, usually standard format
-            // The model classes are generated likely, or simple POJOs.
-            // Without checking Individual.java, I'll assume it can take a String or Date.
-            // Looking at previous code, specific fields weren't set.
-            // I'll skip specific DOB mapping for now unless I verify the Individual class
-            // supports it.
-            // I will modify this later if I see defects.
-        }
-
-        info.setInd(ind);
-        data.setPrtInfo(info);
-
         record.setMeta(meta);
         record.setData(data);
+        data.setPrtInfo(info);
+
+        JuridicalInfo juri = new JuridicalInfo();
+        List<BUInfo> bus = new ArrayList<>();
+        BUInfo bu = new BUInfo();
+        bu.setRelSrcId("2475");
+        bu.setRecCntrOrg("US");
+        bu.setLbj("US");
+        bu.setLafcj("US");
+        bu.setBsrl("US");
+        bus.add(bu);
+        juri.setBu(bus);
+        data.setJuriInfo(juri);
+
+        info.setInd(ind);
+        ind.setNames(names);
+        List<Name> nameList = new ArrayList<>();
+        nameList.add(n);
+        names.setNameList(nameList);
+
+        // Mandatory Address
+        Addresses addrs = new Addresses();
+        List<Address> addrList = new ArrayList<>();
+        Address addr = new Address();
+        addr.setType("Residential");
+        addr.setLine("Unknown Line 1");
+        addr.setCity("Unknown City");
+        addr.setZipCode("00000");
+        addr.setProv("Unknown Prov");
+        addr.setCntr("US");
+        addrList.add(addr);
+        addrs.setAddrList(addrList);
+        ind.setAddresses(addrs);
+
+        for (MappingConfig config : mappings) {
+            String value = getValueFromClient(client, config);
+            if (value == null)
+                value = config.defaultValue();
+
+            if (value != null) {
+                setMappedValue(record, n, ind, meta, data, config.targetPath(), value);
+            }
+        }
+
+        // Calculate Checksum after all fields are populated
+        meta.setChkSum(calculateRecordChecksum(data));
 
         return record;
+    }
+
+    private String calculateRecordChecksum(RecordData data) {
+        try {
+            StringBuilder sb = new StringBuilder();
+            collectValues(data, sb);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(sb.toString().getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                hexString.append(String.format("%02x", b));
+            }
+            return hexString.toString().toUpperCase();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private void collectValues(Object obj, StringBuilder sb) {
+        if (obj == null)
+            return;
+        if (obj instanceof String) {
+            sb.append(obj);
+            return;
+        }
+        if (obj instanceof List) {
+            for (Object item : (List<?>) obj) {
+                collectValues(item, sb);
+            }
+            return;
+        }
+        // Use reflection to get all fields recursively
+        for (java.lang.reflect.Field field : obj.getClass().getDeclaredFields()) {
+            try {
+                field.setAccessible(true);
+                Object val = field.get(obj);
+                if (val != null) {
+                    collectValues(val, sb);
+                }
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+    }
+
+    private String getValueFromClient(Client client, MappingConfig config) {
+        if (config.sourceField() == null)
+            return null;
+
+        // Special logic for fullName
+        if ("fullName".equals(config.sourceField())) {
+            StringBuilder fullName = new StringBuilder();
+            if (client.firstName() != null)
+                fullName.append(client.firstName()).append(" ");
+            if (client.middleName() != null && !client.middleName().isEmpty())
+                fullName.append(client.middleName()).append(" ");
+            if (client.lastName() != null)
+                fullName.append(client.lastName());
+            return fullName.toString().trim();
+        }
+
+        try {
+            java.lang.reflect.Method method = Client.class.getMethod(config.sourceField());
+            Object result = method.invoke(client);
+            return result != null ? String.valueOf(result) : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void setMappedValue(com.venus.kyc.screening.batch.model.Record record, Name n, Individual ind,
+            RecordMeta meta, RecordData data, String targetPath, String value) {
+        switch (targetPath) {
+            case "record.uniRcrdId":
+                meta.setUniRcrdId(value);
+                break;
+            case "record.type":
+                meta.setType(value);
+                break;
+            case "record.recStat":
+                meta.setRecStat(value);
+                break;
+            case "name.full":
+                n.setFull(value);
+                break;
+            case "name.type":
+                n.setType(value);
+                break;
+            case "name.tit":
+                n.setTit(value);
+                break;
+            case "name.fir":
+                n.setFir(value);
+                break;
+            case "name.mid":
+                n.setMid(value);
+                break;
+            case "name.sur":
+                n.setSur(value);
+                break;
+            case "name.ma":
+                n.setMa(value);
+                break;
+            case "individual.gender":
+                ind.setGender(value);
+                break;
+            case "individual.dob":
+                ind.setDob(value);
+                break;
+            case "individual.placeOfBirth":
+                ind.setPlaceOfBirth(value);
+                break;
+            case "individual.cntr":
+                ind.setCntr(value);
+                break;
+            case "individual.occupation":
+                ind.setOccupation(value);
+                break;
+            case "comment":
+                data.setComment(value);
+                break;
+            // Simplified: first entry for lists
+            case "individual.nationality":
+                if (ind.getNationalities() == null)
+                    ind.setNationalities(new Nationalities());
+                if (ind.getNationalities().getNatList() == null)
+                    ind.getNationalities().setNatList(new ArrayList<>());
+                if (ind.getNationalities().getNatList().isEmpty())
+                    ind.getNationalities().getNatList().add(new Nationality());
+                ind.getNationalities().getNatList().get(0).setCntr(value);
+                break;
+            case "individual.address":
+            case "individual.address.line":
+                if (ind.getAddresses() == null)
+                    ind.setAddresses(new Addresses());
+                if (ind.getAddresses().getAddrList() == null)
+                    ind.getAddresses().setAddrList(new ArrayList<>());
+                if (ind.getAddresses().getAddrList().isEmpty())
+                    ind.getAddresses().getAddrList().add(new Address());
+                ind.getAddresses().getAddrList().get(0).setLine(value);
+                break;
+            case "individual.address.city":
+                if (ind.getAddresses() == null)
+                    ind.setAddresses(new Addresses());
+                if (ind.getAddresses().getAddrList() == null)
+                    ind.getAddresses().setAddrList(new ArrayList<>());
+                if (ind.getAddresses().getAddrList().isEmpty())
+                    ind.getAddresses().getAddrList().add(new Address());
+                ind.getAddresses().getAddrList().get(0).setCity(value);
+                break;
+            case "individual.address.zip":
+                if (ind.getAddresses() == null)
+                    ind.setAddresses(new Addresses());
+                if (ind.getAddresses().getAddrList() == null)
+                    ind.getAddresses().setAddrList(new ArrayList<>());
+                if (ind.getAddresses().getAddrList().isEmpty())
+                    ind.getAddresses().getAddrList().add(new Address());
+                ind.getAddresses().getAddrList().get(0).setZipCode(value);
+                break;
+            case "individual.address.prov":
+                if (ind.getAddresses() == null)
+                    ind.setAddresses(new Addresses());
+                if (ind.getAddresses().getAddrList() == null)
+                    ind.getAddresses().setAddrList(new ArrayList<>());
+                if (ind.getAddresses().getAddrList().isEmpty())
+                    ind.getAddresses().getAddrList().add(new Address());
+                ind.getAddresses().getAddrList().get(0).setProv(value);
+                break;
+            case "individual.address.cntr":
+                if (ind.getAddresses() == null)
+                    ind.setAddresses(new Addresses());
+                if (ind.getAddresses().getAddrList() == null)
+                    ind.getAddresses().setAddrList(new ArrayList<>());
+                if (ind.getAddresses().getAddrList().isEmpty())
+                    ind.getAddresses().getAddrList().add(new Address());
+                ind.getAddresses().getAddrList().get(0).setCntr(value);
+                break;
+            case "account.nr":
+                if (data.getPrtInfo().getAccount() == null)
+                    data.getPrtInfo().setAccount(new Account());
+                data.getPrtInfo().getAccount().setNr(value);
+                break;
+            case "kyc.pepFlag":
+                if (data.getKycData() == null)
+                    data.setKycData(new KYCData());
+                data.getKycData().setPepFlag(value);
+                break;
+
+            case "individual.nationality.legDoc":
+                if (ind.getNationalities() == null)
+                    ind.setNationalities(new Nationalities());
+                if (ind.getNationalities().getNatList() == null)
+                    ind.getNationalities().setNatList(new ArrayList<>());
+                if (ind.getNationalities().getNatList().isEmpty())
+                    ind.getNationalities().getNatList().add(new Nationality());
+                ind.getNationalities().getNatList().get(0).setLegDoc(value);
+                break;
+            case "individual.nationality.idNr":
+                if (ind.getNationalities() == null)
+                    ind.setNationalities(new Nationalities());
+                if (ind.getNationalities().getNatList() == null)
+                    ind.getNationalities().setNatList(new ArrayList<>());
+                if (ind.getNationalities().getNatList().isEmpty())
+                    ind.getNationalities().getNatList().add(new Nationality());
+                ind.getNationalities().getNatList().get(0).setIdNr(value);
+                break;
+        }
     }
 
     private void marshalToXml(NLSFeed feed, File outputFile) throws Exception {

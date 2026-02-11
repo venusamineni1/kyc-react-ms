@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns3:NLSFeed xmlns="http://www.db.com/NLSRequest" xmlns:ns5="http://www.db.com/NLSFeedback" xmlns:ns2="http://www.db.com/NLSPartyInformation" xmlns:ns4="http://www.db.com/NLSNotification" xmlns:ns3="http://www.db.com/NLSFileDefinition">
+    <ns3:Request>
+        <Meta>
+            <SrcId>2475</SrcId>
+            <ToR>RCDelta</ToR>
+            <CrtTm>2026-02-11T05:16:47.105</CrtTm>
+            <AoD>2026-02-11</AoD>
+            <NoR>1</NoR>
+            <FInfo>
+                <Name>TEST_BATCH_1770808607104</Name>
+                <BatchNr>1</BatchNr>
+                <FBatch>N</FBatch>
+                <Cntr>US</Cntr>
+                <BD>20250101</BD>
+                <LBJ>US</LBJ>
+                <LAFCJ>US</LAFCJ>
+                <BSRL>US</BSRL>
+            </FInfo>
+        </Meta>
+        <Recs>
+            <Rec>
+                <Meta>
+                    <UniRcrdId>12345</UniRcrdId>
+                    <RecStat>M</RecStat>
+                    <ChkSum>38DB60CE2ADA7E2FBF0EBA07E381BCDF3C881A1A2DFF341B762121C4790AB67F</ChkSum>
+                    <Type>PC</Type>
+                </Meta>
+                <Data>
+                    <PrtInfo>
+                        <Ind>
+                            <ns2:Names>
+                                <ns2:Name>
+                                    <ns2:Type>PN</ns2:Type>
+                                    <ns2:Fir>John</ns2:Fir>
+                                    <ns2:Mid>D</ns2:Mid>
+                                    <ns2:Sur>Doe</ns2:Sur>
+                                    <ns2:Ma></ns2:Ma>
+                                    <ns2:Full>John D Doe</ns2:Full>
+                                </ns2:Name>
+                            </ns2:Names>
+                            <ns2:G>M</ns2:G>
+                            <ns2:DOB>1980-01-01</ns2:DOB>
+                            <ns2:Cntr>US</ns2:Cntr>
+                            <ns2:Plc>Unknown</ns2:Plc>
+                            <ns2:Occ>Unknown</ns2:Occ>
+                            <ns2:Addrs>
+                                <ns2:Addr>
+                                    <ns2:Type>Residential</ns2:Type>
+                                    <ns2:Line>Unknown Line 1</ns2:Line>
+                                    <ns2:City>Unknown City</ns2:City>
+                                    <ns2:ZipCode>00000</ns2:ZipCode>
+                                    <ns2:Prov>Unknown Prov</ns2:Prov>
+                                    <ns2:Cntr>US</ns2:Cntr>
+                                </ns2:Addr>
+                            </ns2:Addrs>
+                        </Ind>
+                    </PrtInfo>
+                    <JuriInfo>
+                        <BU>
+                            <RelSrcId>2475</RelSrcId>
+                            <RecCntrOrg>US</RecCntrOrg>
+                            <LBJ>US</LBJ>
+                            <LAFCJ>US</LAFCJ>
+                            <BSRL>US</BSRL>
+                        </BU>
+                    </JuriInfo>
+                </Data>
+            </Rec>
+        </Recs>
+    </ns3:Request>
+</ns3:NLSFeed>

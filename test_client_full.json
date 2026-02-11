@@ -1,0 +1,19 @@
+{
+    "clientID": 99999,
+    "firstName": "Alice",
+    "middleName": "M",
+    "lastName": "Wonderland",
+    "fullName": "Alice M Wonderland",
+    "gender": "F",
+    "dateOfBirth": "1990-05-15",
+    "residenceCountry": "US",
+    "occupation": "Engineer",
+    "addressLine1": "123 Rabbit Hole Lane",
+    "city": "Wonderland City",
+    "zipCode": "99999",
+    "province": "Fantasy State",
+    "country": "US",
+    "nationality": "US",
+    "legDocType": "Passport",
+    "idNumber": "P123456789"
+}
