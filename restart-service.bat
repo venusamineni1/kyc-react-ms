@@ -71,7 +71,7 @@ if %errorlevel% neq 0 (
 )
 
 set PID=
-for /f "tokens=5" %%a in ('type "%TEMP%\%NAME%.pid" 2^>nul') do set PID=%%a
+for /f "tokens=5" %%a in ('type "%TEMP%\%NAME%.pid"') do set PID=%%a
 if exist "%TEMP%\%NAME%.pid" del "%TEMP%\%NAME%.pid"
 
 if defined PID (
@@ -84,7 +84,7 @@ if defined PID (
     
     :WaitStop
     timeout /t 1 /nobreak >nul
-    netstat -ano | findstr ":%PORT%" | findstr "LISTENING" >nul
+    netstat -aon | findstr ":%PORT%" | findstr "LISTENING" >nul
     if !errorlevel!==0 goto WaitStop
     echo Process stopped.
 ) else (
@@ -120,7 +120,7 @@ REM 3. Wait for startup
 echo Waiting for %NAME% to be ready on port %PORT%...
 :WaitStart
 timeout /t 2 /nobreak >nul
-netstat -ano | findstr ":%PORT%" | findstr "LISTENING" >nul
+netstat -aon | findstr ":%PORT%" | findstr "LISTENING" >nul
 if !errorlevel! neq 0 goto WaitStart
 
 echo %NAME% restarted successfully!
