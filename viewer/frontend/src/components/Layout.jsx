@@ -135,6 +135,9 @@ const Layout = ({ children }) => {
                                     <Link to="/admin/risk-mapping" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
                                         Risk JSON Mapping
                                     </Link>
+                                    <Link to="/admin/services" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
+                                        System Status
+                                    </Link>
                                 </>
                             )}
                             {hasPermission('MANAGE_PERMISSIONS') && (

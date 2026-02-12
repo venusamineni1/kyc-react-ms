@@ -22,6 +22,7 @@ import AdHocTaskList from './pages/AdHocTaskList';
 import AdminMaterialConfig from './pages/AdminMaterialConfig';
 import BatchMappingConfig from './pages/BatchMappingConfig';
 import BatchRiskMappingConfig from './pages/BatchRiskMappingConfig';
+import ServiceStatus from './pages/ServiceStatus';
 
 
 import Profile from './pages/Profile';
@@ -96,6 +97,11 @@ function App() {
                           <Route path="/admin/risk-mapping" element={
                             <ProtectedRoute requiredPermission="MANAGE_CONFIG">
                               <BatchRiskMappingConfig />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/admin/services" element={
+                            <ProtectedRoute requiredPermission="MANAGE_CONFIG">
+                              <ServiceStatus />
                             </ProtectedRoute>
                           } />
                           <Route path="/inbox" element={<TaskInbox />} />
