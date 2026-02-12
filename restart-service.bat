@@ -65,9 +65,9 @@ if "%PORT%"=="" (
 echo Restarting %NAME%...
 
 REM 1. Stop the service
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%PORT%" ^| findstr "LISTENING"') do (
-    set PID=%%a
-)
+netstat -aon | findstr ":%PORT%" | findstr "LISTENING" > "%TEMP%\%NAME%.pid"
+for /f "tokens=5" %%a in ('type "%TEMP%\%NAME%.pid"') do set PID=%%a
+if exist "%TEMP%\%NAME%.pid" del "%TEMP%\%NAME%.pid"
 
 if defined PID (
     echo Stopping existing process (PID %PID%) on port %PORT%...
