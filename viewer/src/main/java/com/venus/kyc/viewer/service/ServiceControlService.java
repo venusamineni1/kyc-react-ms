@@ -54,17 +54,46 @@ public class ServiceControlService {
          if (info == null) throw new IllegalArgumentException("Unknown service");
          
          if (System.getProperty("os.name").toLowerCase().contains("win")) {
-             // Windows Stop using taskkill
-             // We use a simplified PID finding logic similar to our batch fix, but direct cmd
-             ProcessBuilder pb = new ProcessBuilder("cmd", "/c", 
-                 "for /f \"tokens=5\" %a in ('netstat -aon ^| findstr \":" + info.port + "\" ^| findstr \"LISTENING\"') do taskkill /F /PID %a");
-             pb.start().waitFor();
+             // Windows Stop using taskkill with Java-based PID finding
+             Integer pid = findPidOnPort(info.port);
+             if (pid != null) {
+                 ProcessBuilder pb = new ProcessBuilder("taskkill", "/F", "/PID", pid.toString());
+                 pb.start().waitFor();
+             }
          } else {
              // Unix Stop
              String command = String.format("lsof -t -i:%d -sTCP:LISTEN | xargs kill", info.port);
              ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
              pb.start().waitFor();
          }
+    }
+
+    private Integer findPidOnPort(int port) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("netstat", "-aon");
+            Process process = pb.start();
+            
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains(":" + port) && line.contains("LISTENING")) {
+                        // Line format: TCP    0.0.0.0:8081           0.0.0.0:0              LISTENING       1234
+                        String[] parts = line.trim().split("\\s+");
+                        if (parts.length > 0) {
+                            try {
+                                return Integer.parseInt(parts[parts.length - 1]);
+                            } catch (NumberFormatException e) {
+                                // ignore
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void startService(String serviceKey) throws IOException {
