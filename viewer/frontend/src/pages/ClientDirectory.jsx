@@ -77,8 +77,8 @@ const ClientDirectory = () => {
     return (
         <div className="client-directory-page">
             {/* Header & Stats */}
-            <div className="page-header" style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+            <div style={{ marginBottom: '2rem' }}>
+                <div className="page-header" style={{ alignItems: 'flex-start', borderBottom: 'none', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
                     <div>
                         <h1 style={{ fontSize: '2rem', margin: '0 0 0.5rem 0', background: 'var(--header-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                             Client Directory
