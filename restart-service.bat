@@ -66,12 +66,21 @@ echo Restarting %NAME%...
 
 REM 1. Stop the service
 netstat -aon | findstr ":%PORT%" | findstr "LISTENING" > "%TEMP%\%NAME%.pid"
-for /f "tokens=5" %%a in ('type "%TEMP%\%NAME%.pid"') do set PID=%%a
+if %errorlevel% neq 0 (
+    REM Not found is fine.
+)
+
+set PID=
+for /f "tokens=5" %%a in ('type "%TEMP%\%NAME%.pid" 2^>nul') do set PID=%%a
 if exist "%TEMP%\%NAME%.pid" del "%TEMP%\%NAME%.pid"
 
 if defined PID (
     echo Stopping existing process (PID %PID%) on port %PORT%...
     taskkill /F /PID %PID% >nul 2>&1
+    if !errorlevel! neq 0 (
+        echo [ERROR] Line 74: Failed to kill process %PID%
+        exit /b 1
+    )
     
     :WaitStop
     timeout /t 1 /nobreak >nul
@@ -84,8 +93,27 @@ if defined PID (
 
 REM 2. Start the service
 echo Starting %NAME%...
-cd %DIR%
+
+if not exist "%DIR%" (
+   echo [ERROR] Line 88: Directory %DIR% not found.
+   exit /b 1
+)
+
+cd %DIR% || (
+   echo [ERROR] Line 92: Failed to change directory to %DIR%
+   exit /b 1
+)
+
+if not exist "mvnw.cmd" (
+    if not exist "..\mvnw.cmd" (
+         echo [ERROR] Line 97: mvnw.cmd not found in %DIR% or parent.
+         exit /b 1
+    )
+)
+
 start "%NAME%" /MIN cmd /c "mvnw.cmd spring-boot:run > ..\%LOG% 2>&1"
+REM start does not usually return errorlevel unless binary missing.
+
 cd ..
 
 REM 3. Wait for startup
@@ -97,3 +125,4 @@ if !errorlevel! neq 0 goto WaitStart
 
 echo %NAME% restarted successfully!
 echo Logs available in %LOG%
+exit /b 0
