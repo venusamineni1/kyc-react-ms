@@ -86,4 +86,47 @@ public class ScreeningService {
             return Collections.emptyList();
         }
     }
+
+    // Batch Screening Proxy Methods
+
+    public List<java.util.Map<String, Object>> getBatchMapping() {
+        String url = this.screeningServiceUrl + "/batch/mapping";
+        try {
+            return restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(new org.springframework.core.ParameterizedTypeReference<List<java.util.Map<String, Object>>>() {
+                    });
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    public void updateBatchMapping(List<java.util.Map<String, Object>> configs) {
+        String url = this.screeningServiceUrl + "/batch/mapping";
+        try {
+            restClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(configs)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update batch mapping", e);
+        }
+    }
+
+    public String generateBatchTestXml(java.util.Map<String, Object> clientData) {
+        String url = this.screeningServiceUrl + "/batch/test-generate";
+        try {
+            return restClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(clientData)
+                    .retrieve()
+                    .body(String.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate test XML", e);
+        }
+    }
 }

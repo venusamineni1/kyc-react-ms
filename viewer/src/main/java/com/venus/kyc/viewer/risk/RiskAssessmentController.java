@@ -51,4 +51,24 @@ public class RiskAssessmentController {
       @org.springframework.web.bind.annotation.PathVariable Long assessmentId) {
     return service.getAssessmentDetails(assessmentId);
   }
+
+  // Batch Risk Endpoints
+
+  @org.springframework.web.bind.annotation.GetMapping("/batch/mapping")
+  public ResponseEntity<java.util.List<java.util.Map<String, Object>>> getBatchMapping() {
+    return ResponseEntity.ok(service.getBatchMapping());
+  }
+
+  @PostMapping("/batch/mapping")
+  public ResponseEntity<Void> updateBatchMapping(
+      @RequestBody java.util.List<java.util.Map<String, Object>> configs) {
+    service.updateBatchMapping(configs);
+    return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/batch/test-generate")
+  public ResponseEntity<String> generateBatchTestJson(
+      @RequestBody java.util.Map<String, Object> clientData) {
+    return ResponseEntity.ok(service.generateBatchTestJson(clientData));
+  }
 }

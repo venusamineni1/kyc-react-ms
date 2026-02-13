@@ -216,4 +216,47 @@ public class RiskAssessmentService {
             return new ArrayList<>();
         }
     }
+
+    // Batch Risk Proxy Methods
+
+    public java.util.List<java.util.Map<String, Object>> getBatchMapping() {
+        String url = this.riskServiceUrl + "/batch/mapping";
+        try {
+            return restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(new org.springframework.core.ParameterizedTypeReference<java.util.List<java.util.Map<String, Object>>>() {
+                    });
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
+    public void updateBatchMapping(java.util.List<java.util.Map<String, Object>> configs) {
+        String url = this.riskServiceUrl + "/batch/mapping";
+        try {
+            restClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(configs)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update batch mapping", e);
+        }
+    }
+
+    public String generateBatchTestJson(java.util.Map<String, Object> clientData) {
+        String url = this.riskServiceUrl + "/batch/test-generate";
+        try {
+            return restClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(clientData)
+                    .retrieve()
+                    .body(String.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate test JSON", e);
+        }
+    }
 }

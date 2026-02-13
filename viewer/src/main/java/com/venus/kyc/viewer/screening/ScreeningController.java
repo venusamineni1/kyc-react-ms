@@ -39,4 +39,22 @@ public class ScreeningController {
     public ResponseEntity<String> handleException(Exception e) {
         return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
     }
+
+    // Batch Screening Endpoints
+
+    @GetMapping("/batch/mapping")
+    public ResponseEntity<List<java.util.Map<String, Object>>> getBatchMapping() {
+        return ResponseEntity.ok(service.getBatchMapping());
+    }
+
+    @PostMapping("/batch/mapping")
+    public ResponseEntity<Void> updateBatchMapping(@RequestBody List<java.util.Map<String, Object>> configs) {
+        service.updateBatchMapping(configs);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/batch/test-generate")
+    public ResponseEntity<String> generateBatchTestXml(@RequestBody java.util.Map<String, Object> clientData) {
+        return ResponseEntity.ok(service.generateBatchTestXml(clientData));
+    }
 }

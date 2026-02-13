@@ -8,7 +8,7 @@ import java.io.File;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/risk/batch")
+@RequestMapping("/api/internal/risk/batch")
 public class BatchRiskController {
 
     private final BatchRiskService batchRiskService;

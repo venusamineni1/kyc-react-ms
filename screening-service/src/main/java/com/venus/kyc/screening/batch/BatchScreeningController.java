@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/screening/batch")
+@RequestMapping("/api/internal/screening/batch")
 public class BatchScreeningController {
 
     private final BatchScreeningService batchScreeningService;
