@@ -104,14 +104,17 @@ cd %DIR% || (
    exit /b 1
 )
 
+set WRAPPER=mvnw.cmd
 if not exist "mvnw.cmd" (
-    if not exist "..\mvnw.cmd" (
+    if exist "..\mvnw.cmd" (
+        set WRAPPER=..\mvnw.cmd
+    ) else (
          echo [ERROR] Line 97: mvnw.cmd not found in %DIR% or parent.
          exit /b 1
     )
 )
 
-start "%NAME%" /MIN cmd /c "mvnw.cmd spring-boot:run > ..\%LOG% 2>&1"
+start "%NAME%" /MIN cmd /c "%WRAPPER% spring-boot:run > ..\%LOG% 2>&1"
 REM start does not usually return errorlevel unless binary missing.
 
 cd ..

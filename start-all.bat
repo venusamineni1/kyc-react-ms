@@ -48,7 +48,7 @@ if %errorlevel%==0 (
     REM Start in a new minimized window. Use cmd /c to run the command and redirect output.
     REM Using "start /B" keeps it in the same window, but logging redirection might interfere.
     REM Using separate window is safer for visibility.
-    start "%NAME%" /MIN cmd /c "mvnw.cmd spring-boot:run > ..\%LOG% 2>&1"
+    start "%NAME%" /MIN cmd /c "..\mvnw.cmd spring-boot:run > ..\%LOG% 2>&1"
     cd ..
     
     echo Waiting for %NAME% to start on port %PORT%...
