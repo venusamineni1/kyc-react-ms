@@ -11,28 +11,28 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
-        - id: risk-service
-          uri: lb://risk-service
-          predicates:
-            - Path=/api/risk/**, /api/internal/risk/**
-          filters:
-            - RewritePath=/api/risk/(?<remaining>.*), /api/internal/risk/${remaining}
-        - id: screening-service
-          uri: lb://screening-service
-          predicates:
-            - Path=/api/screening/**, /api/internal/screening/**
-          filters:
-            - RewritePath=/api/screening/(?<remaining>.*), /api/internal/screening/${remaining}
-        - id: auth-service
-          uri: lb://auth-service
-          predicates:
-            - Path=/auth/**, /api/auth/**, /api/users/**, /api/permissions/**
-          filters:
-            - RewritePath=/api/auth/(?<remaining>.*), /auth/${remaining}
-        - id: document-service
-          uri: lb://document-service
-          predicates:
-            - Path=/api/documents/**
+#        - id: risk-service
+#          uri: lb://risk-service
+#          predicates:
+#            - Path=/api/risk/**, /api/internal/risk/**
+#          filters:
+#            - RewritePath=/api/risk/(?<remaining>.*), /api/internal/risk/${remaining}
+#        - id: screening-service
+#          uri: lb://screening-service
+#          predicates:
+#            - Path=/api/screening/**, /api/internal/screening/**
+#          filters:
+#            - RewritePath=/api/screening/(?<remaining>.*), /api/internal/screening/${remaining}
+#        - id: auth-service
+#          uri: lb://auth-service
+#          predicates:
+#            - Path=/auth/**, /api/auth/**, /api/users/**, /api/permissions/**
+#          filters:
+#            - RewritePath=/api/auth/(?<remaining>.*), /auth/${remaining}
+#        - id: document-service
+#          uri: lb://document-service
+#          predicates:
+#            - Path=/api/documents/**
         - id: core-viewer
           uri: lb://viewer-core
           predicates:
