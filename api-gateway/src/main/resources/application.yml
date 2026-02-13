@@ -15,10 +15,14 @@ spring:
           uri: lb://RISK-SERVICE
           predicates:
             - Path=/api/risk/**, /api/internal/risk/**
+          filters:
+            - RewritePath=/api/risk/(?<remaining>.*), /api/internal/risk/${remaining}
         - id: screening-service
           uri: lb://SCREENING-SERVICE
           predicates:
             - Path=/api/screening/**, /api/internal/screening/**
+          filters:
+            - RewritePath=/api/screening/(?<remaining>.*), /api/internal/screening/${remaining}
         - id: auth-service
           uri: lb://AUTH-SERVICE
           predicates:
