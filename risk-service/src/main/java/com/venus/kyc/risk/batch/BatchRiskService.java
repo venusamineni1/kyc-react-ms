@@ -7,10 +7,12 @@ import com.venus.kyc.risk.batch.model.Client;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -19,70 +21,157 @@ public class BatchRiskService {
 
     private final RiskMappingRepository mappingRepository;
     private final ObjectMapper objectMapper;
+    private final SftpService sftpService;
+    private final CompressionService compressionService;
 
     @Value("${batch.work.dir:/tmp/risk-batch}")
     private String workDir;
 
-    public BatchRiskService(RiskMappingRepository mappingRepository, ObjectMapper objectMapper) {
+    @Value("${batch.sftp.upload.dir:upload}")
+    private String sftpUploadDir;
+
+    public BatchRiskService(RiskMappingRepository mappingRepository, ObjectMapper objectMapper,
+            SftpService sftpService, CompressionService compressionService) {
         this.mappingRepository = mappingRepository;
         this.objectMapper = objectMapper;
+        this.sftpService = sftpService;
+        this.compressionService = compressionService;
     }
 
     public String generateTestJson(Client client) throws Exception {
-        ObjectNode root = createRiskPayload(List.of(client));
+        ObjectNode root = createClientRequest(client, mappingRepository.findAll());
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
     }
 
-    public File initiateBatch(List<Client> clients) throws Exception {
+    public String createBatch(List<Client> clients) throws Exception {
         String batchTimestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-        String fileName = "RISK_BATCH_" + batchTimestamp + ".json";
+        String batchBaseName = "RISK_BATCH_" + batchTimestamp;
 
-        File batchDir = new File(workDir);
-        batchDir.mkdirs();
+        File batchDir = new File(workDir, batchBaseName);
+        if (!batchDir.exists()) {
+            batchDir.mkdirs();
+        }
 
-        ObjectNode root = createRiskPayload(clients);
-        String jsonContent = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
+        // Save clients selection for later steps
+        File clientsFile = new File(batchDir, "selected_clients.json");
+        objectMapper.writerWithDefaultPrettyPrinter().writeValue(clientsFile, clients);
 
-        File outputFile = new File(batchDir, fileName);
-        Files.writeString(outputFile.toPath(), jsonContent, StandardCharsets.UTF_8);
-
-        return outputFile;
+        return batchBaseName;
     }
 
-    private ObjectNode createRiskPayload(List<Client> clients) {
+    public void generateBatchJsonl(String batchId) throws Exception {
+        File batchDir = new File(workDir, batchId);
+        if (!batchDir.exists())
+            throw new RuntimeException("Batch not found: " + batchId);
+
+        File clientsFile = new File(batchDir, "selected_clients.json");
+        List<Client> clients = objectMapper.readValue(clientsFile,
+                objectMapper.getTypeFactory().constructCollectionType(List.class, Client.class));
+
+        File jsonlFile = new File(batchDir, "clients.jsonl");
+        List<RiskMapping> mappings = mappingRepository.findAll();
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(jsonlFile))) {
+            for (Client client : clients) {
+                ObjectNode clientJson = createClientRequest(client, mappings);
+                writer.println(objectMapper.writeValueAsString(clientJson));
+            }
+        }
+    }
+
+    public void zipBatch(String batchId) throws Exception {
+        File batchDir = new File(workDir, batchId);
+        File jsonlFile = new File(batchDir, "clients.jsonl");
+        File zipFile = new File(batchDir, batchId + ".zip");
+        compressionService.zipFiles(Collections.singletonList(jsonlFile), zipFile);
+    }
+
+    public void generateControlFile(String batchId) throws Exception {
+        File batchDir = new File(workDir, batchId);
+        File zipFile = new File(batchDir, batchId + ".zip");
+
+        // 3. Generate Checksum of Zip
+        String checksum = calculateChecksum(zipFile);
+
+        File clientsFile = new File(batchDir, "selected_clients.json");
+        List<Client> clients = objectMapper.readValue(clientsFile,
+                objectMapper.getTypeFactory().constructCollectionType(List.class, Client.class));
+
+        // 4. Generate Control File
+        File controlFile = new File(batchDir, "control.json");
+        ObjectNode controlJson = objectMapper.createObjectNode();
+        controlJson.put("requestFilename", zipFile.getName());
+        controlJson.put("totalNoOfRequests", clients.size());
+        controlJson.put("checkSum", checksum);
+        controlJson.put("requestTimeStamp", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").format(new Date()));
+        controlJson.put("callerSystem", "36073-1");
+        controlJson.put("mode", "CRRE");
+        controlJson.put("processType", "batch");
+
+        objectMapper.writerWithDefaultPrettyPrinter().writeValue(controlFile, controlJson);
+    }
+
+    public void uploadBatch(String batchId) throws Exception {
+        File batchDir = new File(workDir, batchId);
+        File zipFile = new File(batchDir, batchId + ".zip");
+        File controlFile = new File(batchDir, "control.json");
+
+        // 5. Send both json zip file and control file via sftp
+        sftpService.uploadFile(zipFile, sftpUploadDir);
+        sftpService.uploadFile(controlFile, sftpUploadDir);
+    }
+
+    public String initiateBatch(List<Client> clients) throws Exception {
+        String batchId = createBatch(clients);
+        generateBatchJsonl(batchId);
+        zipBatch(batchId);
+        generateControlFile(batchId);
+        uploadBatch(batchId);
+        return batchId;
+    }
+
+    private String calculateChecksum(File file) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        try (InputStream fis = new FileInputStream(file)) {
+            byte[] byteArray = new byte[1024];
+            int bytesCount;
+            while ((bytesCount = fis.read(byteArray)) != -1) {
+                digest.update(byteArray, 0, bytesCount);
+            }
+        }
+        byte[] bytes = digest.digest();
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    private ObjectNode createClientRequest(Client client, List<RiskMapping> mappings) {
         ObjectNode root = objectMapper.createObjectNode();
 
         // Header
         ObjectNode header = root.putObject("header");
         header.put("callerSystem", "173471-1");
-        header.put("requestID", "REQ-" + System.currentTimeMillis());
+        header.put("requestID", "REQ-" + System.currentTimeMillis() + "-" + client.clientID()); // Unique ID
         header.put("dbBusinessline", "WM");
         header.put("requestTimeStamp", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").format(new Date()));
         header.put("crrmVersion", "2.0");
 
         ArrayNode requests = root.putArray("clientRiskRatingRequest");
-        List<RiskMapping> mappings = mappingRepository.findAll();
-
-        for (Client client : clients) {
-            requests.add(createClientRequest(client, mappings));
-        }
-
-        return root;
-    }
-
-    private ObjectNode createClientRequest(Client client, List<RiskMapping> mappings) {
-        ObjectNode request = objectMapper.createObjectNode();
+        ObjectNode clientData = objectMapper.createObjectNode();
+        requests.add(clientData);
 
         // Initialize sections
-        request.putObject("clientDetails");
-        request.putObject("entityRiskType");
-        request.putObject("industryRiskType");
-        request.putObject("geoRiskType");
-        request.putArray("productRiskType");
-        request.putObject("channelRiskType");
+        clientData.putObject("clientDetails");
+        clientData.putObject("entityRiskType");
+        clientData.putObject("industryRiskType");
+        clientData.putObject("geoRiskType");
+        clientData.putArray("productRiskType");
+        clientData.putObject("channelRiskType");
 
         // Defaults required by schema
-        ((ObjectNode) request.get("clientDetails")).putArray("additionalRule");
+        ((ObjectNode) clientData.get("clientDetails")).putArray("additionalRule");
 
         for (RiskMapping mapping : mappings) {
             String value = getValueFromClient(client, mapping);
@@ -90,11 +179,11 @@ public class BatchRiskService {
                 value = mapping.defaultValue();
 
             if (value != null) {
-                setMappedValue(request, mapping.targetPath(), value);
+                setMappedValue(clientData, mapping.targetPath(), value);
             }
         }
 
-        return request;
+        return root;
     }
 
     private String getValueFromClient(Client client, RiskMapping mapping) {
@@ -107,6 +196,26 @@ public class BatchRiskService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public String getFileContent(String batchName, String fileType) throws IOException {
+        File batchDir = new File(workDir, batchName);
+        File file = null;
+        switch (fileType) {
+            case "jsonl":
+                file = new File(batchDir, "clients.jsonl");
+                break;
+            case "control":
+                file = new File(batchDir, "control.json");
+                break;
+            default:
+                return "Unsupported file type";
+        }
+
+        if (file.exists()) {
+            return Files.readString(file.toPath(), StandardCharsets.UTF_8);
+        }
+        return "File not found";
     }
 
     private void setMappedValue(ObjectNode request, String targetPath, String value) {

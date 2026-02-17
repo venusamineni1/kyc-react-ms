@@ -1,0 +1,281 @@
+.batch-pipeline-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #ffffff;
+}
+
+.pipeline-header {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 3rem;
+    text-align: center;
+    letter-spacing: -0.025em;
+    text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Stepper Styles */
+.stepper-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    margin-bottom: 4rem;
+    padding: 0 2rem;
+}
+
+.step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+    flex: 1;
+    cursor: pointer;
+}
+
+.step-circle {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background-color: rgba(31, 41, 55, 0.8);
+    /* Dark glass */
+    border: 2px solid rgba(156, 163, 175, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+}
+
+.step-circle.active {
+    border-color: #60a5fa;
+    color: #ffffff;
+    background-color: #3b82f6;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.step-circle.completed {
+    background-color: #10b981;
+    border-color: #10b981;
+    color: white;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.step-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    transition: all 0.3s ease;
+    max-width: 120px;
+    line-height: 1.4;
+    margin-top: 0.5rem;
+}
+
+.step-label.active {
+    color: #ffffff;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.step-label.completed {
+    color: #d1d5db;
+}
+
+/* Connecting Lines */
+.progress-bar-bg {
+    position: absolute;
+    top: 1.75rem;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    z-index: 0;
+}
+
+.progress-bar-fill {
+    position: absolute;
+    top: 1.75rem;
+    left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    border-radius: 2px;
+    z-index: 0;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Content Area */
+.content-card {
+    background-color: rgba(31, 41, 55, 0.5);
+    /* Dark semi-transparent */
+    border-radius: 1rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    padding: 2.5rem;
+    min-height: 500px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: fadeIn 0.5s ease-out;
+    color: #e5e7eb;
+    /* Light text */
+    backdrop-filter: blur(10px);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.step-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    /* White text */
+    letter-spacing: -0.01em;
+}
+
+.action-btn {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px rgba(37, 99, 235, 0.3);
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+}
+
+/* Table Styles */
+.client-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+}
+
+.client-table th {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 700;
+    color: #9ca3af;
+    /* Muted light text */
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    background-color: rgba(31, 41, 55, 0.5);
+    /* Darker header */
+}
+
+.client-table td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: #d1d5db;
+    /* Light text */
+    font-size: 0.95rem;
+    transition: background-color 0.2s;
+}
+
+.client-table tr:last-child td {
+    border-bottom: none;
+}
+
+.client-table tr:hover td {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
+/* File Viewer */
+.file-viewer {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    background-color: #111827;
+    /* Very dark background */
+    padding: 1.5rem;
+    position: relative;
+    margin-top: 1.5rem;
+    color: #e5e7eb;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.file-content-pre {
+    white-space: pre-wrap;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    max-height: 600px;
+    color: #d1d5db;
+}
+
+.close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: #f87171;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.view-btn {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #e5e7eb;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-right: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+}

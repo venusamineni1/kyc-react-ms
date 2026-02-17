@@ -18,7 +18,10 @@ CREATE TABLE IF NOT EXISTS Clients (
     CountryOfTax VARCHAR(100),
     SourceOfFundsCountry VARCHAR(100),
     FATCAStatus VARCHAR(50),
-    CRSStatus VARCHAR(50)
+    CRSStatus VARCHAR(50),
+    PlaceOfBirth VARCHAR(100),
+    CityOfBirth VARCHAR(100),
+    CountryOfBirth VARCHAR(100)
 );
 
 CREATE TABLE IF NOT EXISTS ClientAddresses (

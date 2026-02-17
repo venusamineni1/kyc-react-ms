@@ -39,7 +39,7 @@ public class DynamicMappingTest {
                 Client client = new Client(12345L, "Mr", "John", "D", "Doe", null, "US", null, null, "ACTIVE", null,
                                 null, "M",
                                 null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-                                null);
+                                null, null, null, null);
 
                 // 3. Trigger batch (we only care about the XML generation part for this test)
                 // Since initiateBatch does many things (SFTP, Encryption), we might want to

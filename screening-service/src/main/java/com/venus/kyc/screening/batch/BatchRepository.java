@@ -19,12 +19,12 @@ public class BatchRepository {
     }
 
     public Long saveBatchRun(BatchRun run) {
-        String sql = "INSERT INTO BatchRuns (BatchName, Status, NotificationStatus, FeedbackCount, CreatedAt, UpdatedAt) VALUES (:batchName, :status, :notificationStatus, :feedbackCount, :createdAt, :updatedAt)";
+        String sql = "INSERT INTO BatchRuns (BatchName, RunStatus, NotificationStatus, FeedbackCount, CreatedAt, UpdatedAt) VALUES (:batchName, :runStatus, :notificationStatus, :feedbackCount, :createdAt, :updatedAt)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcClient.sql(sql)
                 .param("batchName", run.batchName())
-                .param("status", run.status())
+                .param("runStatus", run.runStatus())
                 .param("notificationStatus", run.notificationStatus())
                 .param("feedbackCount", run.feedbackCount())
                 .param("createdAt", run.createdAt() != null ? run.createdAt() : LocalDateTime.now())
@@ -35,7 +35,7 @@ public class BatchRepository {
     }
 
     public void updateBatchStatus(Long batchId, String status, String notificationStatus, Integer feedbackCount) {
-        String sql = "UPDATE BatchRuns SET Status = :status, NotificationStatus = :notificationStatus, FeedbackCount = :feedbackCount, UpdatedAt = :updatedAt WHERE BatchID = :batchId";
+        String sql = "UPDATE BatchRuns SET RunStatus = :status, NotificationStatus = :notificationStatus, FeedbackCount = :feedbackCount, UpdatedAt = :updatedAt WHERE BatchID = :batchId";
         jdbcClient.sql(sql)
                 .param("status", status)
                 .param("notificationStatus", notificationStatus)

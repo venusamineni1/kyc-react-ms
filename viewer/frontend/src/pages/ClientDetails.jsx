@@ -80,7 +80,13 @@ const ClientDetails = () => {
     const [viewQuestionnaireCaseId, setViewQuestionnaireCaseId] = useState(null);
     const [selectedAssessment, setSelectedAssessment] = useState(null);
     const [assessmentDetails, setAssessmentDetails] = useState([]);
+    const [activePartyTab, setActivePartyTab] = useState('identity');
     const [viewParty, setViewParty] = useState(null);
+
+    const handleViewParty = (party) => {
+        setViewParty(party);
+        setActivePartyTab('identity');
+    };
 
     const fetchDetails = async () => {
         setLoading(true);
@@ -182,6 +188,7 @@ const ClientDetails = () => {
             <div className="glass-section" style={{ padding: '0', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)' }}>
                     <TabButton active={activeTab === 'overview'} label="Overview" icon="👤" onClick={() => setActiveTab('overview')} />
+                    <TabButton active={activeTab === 'financials'} label="Financials" icon="💳" onClick={() => setActiveTab('financials')} />
                     <TabButton active={activeTab === 'compliance'} label="Compliance & Risk" icon="🛡️" onClick={() => setActiveTab('compliance')} />
                     <TabButton active={activeTab === 'parties'} label="Related Parties" icon="👥" onClick={() => setActiveTab('parties')} />
                     <TabButton active={activeTab === 'activity'} label="Activity & Audit" icon="📊" onClick={() => setActiveTab('activity')} />
@@ -191,14 +198,30 @@ const ClientDetails = () => {
                     {activeTab === 'overview' && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem' }}>
                             <div>
-                                <h4 style={{ color: 'var(--accent-primary)', marginBottom: '1.5rem' }}>Personal Details</h4>
+                                <h4 style={{ color: 'var(--accent-primary)', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>Identity</h4>
                                 <div className="case-info-grid">
                                     <DetailItem label="Prefix" value={client.titlePrefix} />
                                     <DetailItem label="Full Name" value={`${client.firstName} ${client.middleName || ''} ${client.lastName}`} />
+                                    <DetailItem label="Title Suffix" value={client.titleSuffix} />
+                                    <DetailItem label="Name at Birth" value={client.nameAtBirth} />
+                                    <DetailItem label="Nickname" value={client.nickName} />
+                                </div>
+
+                                <h4 style={{ color: 'var(--accent-primary)', margin: '2rem 0 1.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>Demographics & Background</h4>
+                                <div className="case-info-grid">
                                     <DetailItem label="Gender" value={client.gender} />
                                     <DetailItem label="Date of Birth" value={client.dateOfBirth} />
-                                    <DetailItem label="Occupation" value={client.occupation} />
                                     <DetailItem label="Language" value={client.language} />
+                                    <DetailItem label="Occupation" value={client.occupation} />
+                                    <DetailItem label="Primary Citizenship" value={client.citizenship1} />
+                                    <DetailItem label="Secondary Citizenship" value={client.citizenship2} />
+                                </div>
+
+                                <h4 style={{ color: 'var(--accent-primary)', margin: '2rem 0 1.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>Birth Details</h4>
+                                <div className="case-info-grid">
+                                    <DetailItem label="Place of Birth" value={client.placeOfBirth} />
+                                    <DetailItem label="City of Birth" value={client.cityOfBirth} />
+                                    <DetailItem label="Country of Birth" value={client.countryOfBirth} />
                                 </div>
                             </div>
                             <div>
@@ -228,6 +251,64 @@ const ClientDetails = () => {
                             </div>
                         </div>
                     )}
+
+                    {activeTab === 'financials' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                            <Section title="Accounts">
+                                {client.accounts && client.accounts.length > 0 ? (
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Account Number</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {client.accounts.map((acc, i) => (
+                                                <tr key={i}>
+                                                    <td>{acc.accountNumber}</td>
+                                                    <td><span className="status-badge">{acc.accountStatus}</span></td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>No accounts linked</p>
+                                )}
+                            </Section>
+
+                            <Section title="Portfolios">
+                                {client.portfolios && client.portfolios.length > 0 ? (
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Portfolio</th>
+                                                <th>Ref Account</th>
+                                                <th>Status</th>
+                                                <th>Onboarded</th>
+                                                <th>Offboarded</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {client.portfolios.map((port, i) => (
+                                                <tr key={i}>
+                                                    <td>{port.portfolioText}</td>
+                                                    <td>{port.accountNumber}</td>
+                                                    <td><span className="status-badge">{port.status}</span></td>
+                                                    <td>{port.onboardingDate}</td>
+                                                    <td>{port.offboardingDate || '-'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>No portfolios linked</p>
+                                )}
+                            </Section>
+                        </div>
+                    )}
+
+
 
                     {activeTab === 'compliance' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -284,10 +365,8 @@ const ClientDetails = () => {
                                 <ScreeningPanel clientId={id} hasPermission={hasPermission('MANAGE_SCREENING')} />
                             </div>
 
-                            <Section title="Compliance Profile">
+                            <Section title="Tax & Financial Declarations">
                                 <div className="case-info-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
-                                    <DetailItem label="Primary Citizenship" value={client.citizenship1} />
-                                    <DetailItem label="Secondary Citizenship" value={client.citizenship2} />
                                     <DetailItem label="Country of Tax" value={client.countryOfTax} />
                                     <DetailItem label="Source of Funds" value={client.sourceOfFundsCountry} />
                                     <DetailItem label="FATCA Status" value={client.fatcaStatus} />
@@ -524,24 +603,99 @@ const ClientDetails = () => {
 
             {viewParty && (
                 <Modal isOpen={true} onClose={() => setViewParty(null)} title={`${viewParty.firstName} ${viewParty.lastName} Profile`} maxWidth="800px">
-                    <div className="case-info-grid" style={{ marginBottom: '2rem' }}>
-                        <DetailItem label="Relationship" value={viewParty.relationType} />
-                        <DetailItem label="Status" value={viewParty.status} />
-                        <DetailItem label="Citizenship" value={viewParty.citizenship1} />
-                        <DetailItem label="Role" value={viewParty.role} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        {/* Header Status - Always Visible */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <div style={{ fontSize: '2rem', background: 'var(--accent-primary)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                    {viewParty.firstName[0]}{viewParty.lastName[0]}
+                                </div>
+                                <div>
+                                    <h3 style={{ margin: 0 }}>{viewParty.titlePrefix} {viewParty.firstName} {viewParty.middleName} {viewParty.lastName} {viewParty.titleSuffix}</h3>
+                                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{viewParty.relationType}</div>
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <span className={`status-badge ${viewParty.status === 'ACTIVE' ? 'active' : 'suspended'}`}>{viewParty.status}</span>
+                                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Onboarded: {viewParty.onboardingDate || '-'}</div>
+                            </div>
+                        </div>
+
+                        {/* Modal Tabs */}
+                        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)', marginBottom: '1rem' }}>
+                            <TabButton active={activePartyTab === 'identity'} label="Identity" icon="👤" onClick={() => setActivePartyTab('identity')} />
+                            <TabButton active={activePartyTab === 'risk'} label="Tax & Risk" icon="🛡️" onClick={() => setActivePartyTab('risk')} />
+                            <TabButton active={activePartyTab === 'contact'} label="Contact & IDs" icon="📇" onClick={() => setActivePartyTab('contact')} />
+                        </div>
+
+                        {/* Tab Content */}
+                        <div style={{ minHeight: '300px' }}>
+                            {activePartyTab === 'identity' && (
+                                <div>
+                                    <h4 style={{ color: 'var(--accent-primary)', marginBottom: '1rem' }}>Identity & Demographics</h4>
+                                    <div className="case-info-grid">
+                                        <DetailItem label="Full Name" value={`${viewParty.titlePrefix || ''} ${viewParty.firstName} ${viewParty.middleName || ''} ${viewParty.lastName} ${viewParty.titleSuffix || ''}`.trim()} />
+                                        <DetailItem label="Name at Birth" value={viewParty.nameAtBirth} />
+                                        <DetailItem label="Nickname" value={viewParty.nickName} />
+                                        <DetailItem label="Gender" value={viewParty.gender} />
+                                        <DetailItem label="Date of Birth" value={viewParty.dateOfBirth} />
+                                        <DetailItem label="Language" value={viewParty.language} />
+                                        <DetailItem label="Occupation" value={viewParty.occupation} />
+                                        <DetailItem label="Primary Citizenship" value={viewParty.citizenship1} />
+                                        <DetailItem label="Secondary Citizenship" value={viewParty.citizenship2} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {activePartyTab === 'risk' && (
+                                <div>
+                                    <h4 style={{ color: 'var(--accent-primary)', marginBottom: '1rem' }}>Tax & Financial Declarations</h4>
+                                    <div className="case-info-grid">
+                                        <DetailItem label="Country of Tax" value={viewParty.countryOfTax} />
+                                        <DetailItem label="Source of Funds" value={viewParty.sourceOfFundsCountry} />
+                                        <DetailItem label="FATCA Status" value={viewParty.fatcaStatus} />
+                                        <DetailItem label="CRS Status" value={viewParty.crsStatus} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {activePartyTab === 'contact' && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                    <div>
+                                        <h4 style={{ color: 'var(--accent-primary)', marginBottom: '1rem' }}>Addresses</h4>
+                                        {viewParty.addresses && viewParty.addresses.length > 0 ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                                {viewParty.addresses.map((a, i) => (
+                                                    <div key={i} style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: '2px' }}>{a.addressType}</div>
+                                                        <div>{a.addressLine1}, {a.city}, {a.country}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No addresses recorded.</p>}
+                                    </div>
+
+                                    <div>
+                                        <h4 style={{ color: 'var(--accent-primary)', marginBottom: '1rem' }}>Identifiers</h4>
+                                        {viewParty.identifiers && viewParty.identifiers.length > 0 ? (
+                                            <table>
+                                                <thead><tr><th>Type</th><th>Value</th><th>Authority</th></tr></thead>
+                                                <tbody>
+                                                    {viewParty.identifiers.map((id, i) => (
+                                                        <tr key={i}>
+                                                            <td>{id.identifierType}</td>
+                                                            <td>{id.identifierNumber || id.identifierValue}</td>
+                                                            <td>{id.issuingAuthority}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        ) : <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No identifiers recorded.</p>}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    {viewParty.identifiers && (
-                        <Section title="Identifiers">
-                            <table>
-                                <thead><tr><th>Type</th><th>Value</th></tr></thead>
-                                <tbody>
-                                    {viewParty.identifiers.map((id, i) => (
-                                        <tr key={i}><td>{id.identifierType}</td><td>{id.identifierValue}</td></tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </Section>
-                    )}
                 </Modal>
             )}
 

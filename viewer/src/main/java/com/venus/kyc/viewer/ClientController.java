@@ -73,12 +73,17 @@ public class ClientController {
                 response.totalElements(), response.totalPages());
     }
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ClientController.class);
+
     @GetMapping("/{id}")
     public ResponseEntity<Client> getClientById(@PathVariable Long id,
             org.springframework.security.core.Authentication authentication) {
         userAuditService.log(authentication.getName(), "VIEW_CLIENT", "Viewed Client ID: " + id);
         return clientRepository.findById(id)
-                .map(client -> isAdmin(authentication) ? client : maskSensitiveData(client))
+                .map(client -> {
+                    logger.info("DEBUG Authorities: {}", authentication.getAuthorities());
+                    return isAdmin(authentication) ? client : maskSensitiveData(client);
+                })
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -160,7 +165,7 @@ public class ClientController {
 
     private boolean isAdmin(org.springframework.security.core.Authentication authentication) {
         return authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ADMIN"));
     }
 
     private Client maskSensitiveData(Client client) {
@@ -187,6 +192,9 @@ public class ClientController {
                 client.sourceOfFundsCountry(),
                 client.fatcaStatus(),
                 client.crsStatus(),
+                client.placeOfBirth(),
+                client.cityOfBirth(),
+                client.countryOfBirth(),
                 null, // Masked addresses
                 null, // Masked identifiers
                 null, // Masked related parties

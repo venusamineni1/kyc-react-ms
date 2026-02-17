@@ -23,6 +23,8 @@ import AdminMaterialConfig from './pages/AdminMaterialConfig';
 import BatchMappingConfig from './pages/BatchMappingConfig';
 import BatchRiskMappingConfig from './pages/BatchRiskMappingConfig';
 import ServiceStatus from './pages/ServiceStatus';
+import BatchPipeline from './pages/BatchPipeline';
+import BatchRiskPipeline from './pages/BatchRiskPipeline';
 
 
 import Profile from './pages/Profile';
@@ -102,6 +104,16 @@ function App() {
                           <Route path="/admin/services" element={
                             <ProtectedRoute requiredPermission="MANAGE_CONFIG">
                               <ServiceStatus />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/admin/batch-pipeline" element={
+                            <ProtectedRoute requiredPermission="MANAGE_CONFIG">
+                              <BatchPipeline />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/admin/risk-pipeline" element={
+                            <ProtectedRoute requiredPermission="MANAGE_CONFIG">
+                              <BatchRiskPipeline />
                             </ProtectedRoute>
                           } />
                           <Route path="/inbox" element={<TaskInbox />} />

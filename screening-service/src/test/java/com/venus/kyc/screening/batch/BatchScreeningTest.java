@@ -62,9 +62,11 @@ public class BatchScreeningTest {
         doNothing().when(sftpService).uploadFile(any(File.class), anyString());
 
         Client client1 = new Client(1L, null, "John", null, "Doe", null, null, null, null, null, null, null, "Male",
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null);
         Client client2 = new Client(2L, null, "Jane", null, "Smith", null, null, null, null, null, null, null, "Female",
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null);
         List<Client> clients = List.of(client1, client2);
         Long batchId = batchScreeningService.initiateBatch(clients);
 
@@ -172,7 +174,8 @@ public class BatchScreeningTest {
         doNothing().when(sftpService).uploadFile(any(File.class), anyString());
 
         Client client1 = new Client(1L, null, "John", null, "Doe", null, null, null, null, null, null, null, "Male",
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null);
         List<Client> clients = List.of(client1);
 
         org.springframework.test.web.servlet.ResultActions result = mockMvc.perform(

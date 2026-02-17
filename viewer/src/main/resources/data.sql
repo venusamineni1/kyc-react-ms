@@ -25,11 +25,11 @@ INSERT INTO RolePermissions (Role, Permission) VALUES ('ACO_REVIEWER', 'VIEW_CLI
 INSERT INTO RolePermissions (Role, Permission) VALUES ('AUDITOR', 'VIEW_CLIENTS');
 INSERT INTO RolePermissions (Role, Permission) VALUES ('AUDITOR', 'VIEW_CHANGES');
 
-INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES ('Mr', 'John', 'Doe', '2023-01-15', 'ACTIVE', 'USA', 'CAN', 'Male', '1980-05-20', 'English', 'Engineer', 'USA', 'USA', 'Reportable', 'Reportable');
+INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES ('Mr', 'John', 'Doe', '2023-01-15', 'ACTIVE', 'USA', 'CAN', 'Male', '1980-05-20', 'English', 'Engineer', 'USA', 'USA', 'Reportable', 'Reportable', 'New York Hospital', 'New York', 'USA');
 
-INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (NULL, 'Acme', 'Corp', '2023-02-10', 'ACTIVE', 'USA', NULL, NULL, NULL, 'English', 'Manufacturing', 'USA', 'USA', 'Active NFFE', 'Active NFE');
+INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (NULL, 'Acme', 'Corp', '2023-02-10', 'ACTIVE', 'USA', NULL, NULL, NULL, 'English', 'Manufacturing', 'USA', 'USA', 'Active NFFE', 'Active NFE', NULL, NULL, NULL);
 
 INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, City, Zip, Country)
 VALUES (1, 'Residential', '123 Main St', 'New York', '10001', 'USA');
@@ -54,36 +54,36 @@ VALUES (1, 'Passport', 'B98765432', 'USA Dept of State');
 
 -- Additional Test Clients
 -- 3. Corporate: Global Tech Solutions (DEU)
-INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (NULL, 'Global Tech', 'Solutions', '2023-05-12', 'ACTIVE', 'DEU', NULL, NULL, NULL, 'German', 'Technology', 'DEU', 'DEU', 'Active NFFE', 'Active NFE');
+INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (NULL, 'Global Tech', 'Solutions', '2023-05-12', 'ACTIVE', 'DEU', NULL, NULL, NULL, 'German', 'Technology', 'DEU', 'DEU', 'Active NFFE', 'Active NFE', NULL, NULL, NULL);
 INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, City, Zip, Country)
 VALUES (3, 'Business', 'Friedrichstraße 12', 'Berlin', '10117', 'DEU');
 INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority)
 VALUES (3, 'LEI', '1234567890ABCDEFGHIJ', 'GLEIF');
 
 -- 4. Individual: Elena Rodriguez (ESP) - High Risk profile
-INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES ('Ms', 'Elena', 'Rodriguez', '2023-08-20', 'SUSPENDED', 'ESP', 'MEX', 'Female', '1975-11-03', 'Spanish', 'Art Dealer', 'ESP', 'MEX', 'Reportable', 'Reportable');
+INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES ('Ms', 'Elena', 'Rodriguez', '2023-08-20', 'SUSPENDED', 'ESP', 'MEX', 'Female', '1975-11-03', 'Spanish', 'Art Dealer', 'ESP', 'MEX', 'Reportable', 'Reportable', 'Clinica Madrid', 'Madrid', 'ESP');
 INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, City, Zip, Country)
 VALUES (4, 'Residential', 'Calle de Alcalá 45', 'Madrid', '28014', 'ESP');
 INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority)
 VALUES (4, 'DNI', '12345678Z', 'Ministerio del Interior');
 
 -- 5. Individual: Yuki Tanaka (JPN)
-INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES ('Mr', 'Yuki', 'Tanaka', '2024-01-05', 'IN_REVIEW', 'JPN', NULL, 'Male', '1992-04-12', 'Japanese', 'Software Developer', 'JPN', 'JPN', 'Reportable', 'Reportable');
+INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES ('Mr', 'Yuki', 'Tanaka', '2024-01-05', 'IN_REVIEW', 'JPN', NULL, 'Male', '1992-04-12', 'Japanese', 'Software Developer', 'JPN', 'JPN', 'Reportable', 'Reportable', 'Tokyo General Hospital', 'Tokyo', 'JPN');
 INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, City, Zip, Country)
 VALUES (5, 'Residential', '1-2-1 Shibaura', 'Tokyo', '105-0023', 'JPN');
 
 -- 6. Individual: Sarah Al-Farsi (ARE)
-INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES ('Ms', 'Sarah', 'Al-Farsi', '2024-02-14', 'ACTIVE', 'ARE', NULL, 'Female', '1988-09-30', 'Arabic', 'Financial Analyst', 'ARE', 'ARE', 'Reportable', 'Reportable');
+INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES ('Ms', 'Sarah', 'Al-Farsi', '2024-02-14', 'ACTIVE', 'ARE', NULL, 'Female', '1988-09-30', 'Arabic', 'Financial Analyst', 'ARE', 'ARE', 'Reportable', 'Reportable', 'Burjeel Hospital', 'Abu Dhabi', 'ARE');
 INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, City, Zip, Country)
 VALUES (6, 'Residential', 'Dubai Marina Tower 1', 'Dubai', '00000', 'ARE');
 
 -- 7. Corporate: Nordic Innovations (FIN)
-INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (NULL, 'Nordic', 'Innovations', '2024-02-28', 'ACTIVE', 'FIN', NULL, NULL, NULL, 'Finnish', 'Renewable Energy', 'FIN', 'FIN', 'Active NFFE', 'Active NFE');
+INSERT INTO Clients (TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (NULL, 'Nordic', 'Innovations', '2024-02-28', 'ACTIVE', 'FIN', NULL, NULL, NULL, 'Finnish', 'Renewable Energy', 'FIN', 'FIN', 'Active NFFE', 'Active NFE', NULL, NULL, NULL);
 
 INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
 VALUES (1, 'CMMN', 'KYC_ANALYST', 'New Onboarding', CURRENT_TIMESTAMP, 'analyst');
@@ -183,30 +183,30 @@ INSERT INTO MaterialChangeConfigs (EntityName, ColumnName, Category) VALUES ('Re
 INSERT INTO MaterialChangeConfigs (EntityName, ColumnName, Category) VALUES ('RelatedParty', 'ALL', 'SCREENING');
 
 -- 101. Corporate: Global Corp (SGP)
-INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (101, NULL, 'Global', 'Corp', '2024-03-01', 'ACTIVE', 'SGP', NULL, NULL, NULL, 'Logistics', 'SGP', 'SGP', 'Active NFFE', 'Active NFE');
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (101, NULL, 'Global', 'Corp', '2024-03-01', 'ACTIVE', 'SGP', NULL, NULL, NULL, NULL, 'Logistics', 'SGP', 'SGP', 'Active NFFE', 'Active NFE', NULL, NULL, NULL);
 INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, City, Zip, Country)
 VALUES (101, 'Business', 'Marina Bay Financial Centre', 'Singapore', '018981', 'SGP');
 INSERT INTO ClientIdentifiers (ClientID, IdentifierType, IdentifierValue, IssuingAuthority)
 VALUES (101, 'UEN', '202410101G', 'ACRA');
 
 -- 102. Individual: Amara Okafor (NGA)
-INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (102, 'Ms', 'Amara', 'Okafor', '2024-03-02', 'ACTIVE', 'NGA', NULL, 'Female', '1995-07-22', 'English', 'Doctor', 'NGA', 'NGA', 'Reportable', 'Reportable');
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (102, 'Ms', 'Amara', 'Okafor', '2024-03-02', 'ACTIVE', 'NGA', NULL, 'Female', '1995-07-22', 'English', 'Doctor', 'NGA', 'NGA', 'Reportable', 'Reportable', 'Lagos Hospital', 'Lagos', 'NGA');
 INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, City, Zip, Country)
 VALUES (102, 'Residential', '15 Victoria Island', 'Lagos', '101241', 'NGA');
 
 -- 103. Individual: Liam O''Connor (IRL)
-INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (103, 'Mr', 'Liam', 'O''Connor', '2024-03-03', 'IN_REVIEW', 'IRL', NULL, 'Male', '1982-11-15', 'English', 'Writer', 'IRL', 'IRL', 'Reportable', 'Reportable');
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (103, 'Mr', 'Liam', 'O''Connor', '2024-03-03', 'IN_REVIEW', 'IRL', NULL, 'Male', '1982-11-15', 'English', 'Writer', 'IRL', 'IRL', 'Reportable', 'Reportable', 'Dublin Maternity', 'Dublin', 'IRL');
 
 -- 104. Corporate: TechFlow Systems (USA)
-INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (104, NULL, 'TechFlow', 'Systems', '2024-03-04', 'ACTIVE', 'USA', NULL, NULL, NULL, 'Software', 'USA', 'USA', 'Active NFFE', 'Active NFE');
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (104, NULL, 'TechFlow', 'Systems', '2024-03-04', 'ACTIVE', 'USA', NULL, NULL, NULL, NULL, 'Software', 'USA', 'USA', 'Active NFFE', 'Active NFE', NULL, NULL, NULL);
 
 -- 105. Individual: Carlos Silva (BRA)
-INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (105, 'Mr', 'Carlos', 'Silva', '2024-03-05', 'SUSPENDED', 'BRA', NULL, 'Male', '1970-01-20', 'Portuguese', 'Business Owner', 'BRA', 'BRA', 'Reportable', 'Reportable');
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (105, 'Mr', 'Carlos', 'Silva', '2024-03-05', 'SUSPENDED', 'BRA', NULL, 'Male', '1970-01-20', 'Portuguese', 'Business Owner', 'BRA', 'BRA', 'Reportable', 'Reportable', 'Sao Paulo Medical', 'Sao Paulo', 'BRA');
 
 -- Current Material Changes (PENDING)
 INSERT INTO MaterialChanges (ClientID, EntityID, EntityName, ColumnName, OperationType, OldValue, NewValue, Status, Category, ChangeDate)
@@ -230,31 +230,66 @@ VALUES (3, 3, 'Client', 'FirstName', 'UPDATE', 'Global Tech', 'Global Tech Group
 
 -- New Seed Clients & Cases for UI Testing
 -- 106. Individual: Hans Schmidt (DEU)
-INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (106, 'Mr', 'Hans', 'Schmidt', '2024-03-06', 'ACTIVE', 'DEU', NULL, 'Male', '1985-08-15', 'German', 'Consultant', 'DEU', 'DEU', 'Reportable', 'Reportable');
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (106, 'Mr', 'Hans', 'Schmidt', '2024-03-06', 'ACTIVE', 'DEU', NULL, 'Male', '1985-08-15', 'German', 'Consultant', 'DEU', 'DEU', 'Reportable', 'Reportable', 'Berlin Clinic', 'Berlin', 'DEU');
 INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
 VALUES (106, 'CMMN', 'KYC_ANALYST', 'Periodic Review', CURRENT_TIMESTAMP, 'analyst');
 
 -- 107. Corporate: SolarTech Energy (AUS)
-INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (107, NULL, 'SolarTech', 'Energy', '2024-03-07', 'ACTIVE', 'AUS', NULL, NULL, NULL, 'Energy', 'AUS', 'AUS', 'Active NFFE', 'Active NFE');
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (107, NULL, 'SolarTech', 'Energy', '2024-03-07', 'ACTIVE', 'AUS', NULL, NULL, NULL, NULL, 'Energy', 'AUS', 'AUS', 'Active NFFE', 'Active NFE', NULL, NULL, NULL);
 INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
 VALUES (107, 'CMMN', 'KYC_ANALYST', 'New Onboarding', CURRENT_TIMESTAMP, 'analyst2');
 
 -- 108. Individual: Maria Garcia (ESP)
-INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (108, 'Ms', 'Maria', 'Garcia', '2024-03-08', 'ACTIVE', 'ESP', NULL, 'Female', '1990-03-12', 'Spanish', 'Architect', 'ESP', 'ESP', 'Reportable', 'Reportable');
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (108, 'Ms', 'Maria', 'Garcia', '2024-03-08', 'ACTIVE', 'ESP', NULL, 'Female', '1990-03-12', 'Spanish', 'Architect', 'ESP', 'ESP', 'Reportable', 'Reportable', 'Barcelona Health', 'Barcelona', 'ESP');
 INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
 VALUES (108, 'CMMN', 'KYC_ANALYST', 'New Onboarding', CURRENT_TIMESTAMP, NULL);
 
 -- 109. Individual: Chen Wei (CHN)
-INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (109, 'Mr', 'Chen', 'Wei', '2024-03-09', 'IN_REVIEW', 'CHN', NULL, 'Male', '1982-12-05', 'Chinese', 'Entrepreneur', 'CHN', 'CHN', 'Reportable', 'Reportable');
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (109, 'Mr', 'Chen', 'Wei', '2024-03-09', 'IN_REVIEW', 'CHN', NULL, 'Male', '1982-12-05', 'Chinese', 'Entrepreneur', 'CHN', 'CHN', 'Reportable', 'Reportable', 'Shanghai Medical', 'Shanghai', 'CHN');
 INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
 VALUES (109, 'CMMN', 'REVIEWER_REVIEW', 'Risk Elevation', CURRENT_TIMESTAMP, 'reviewer');
 
 -- 110. Individual: Olivia Brown (GBR)
-INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus)
-VALUES (110, 'Ms', 'Olivia', 'Brown', '2024-03-10', 'ACTIVE', 'GBR', NULL, 'Female', '1993-06-25', 'English', 'Pilatist', 'GBR', 'GBR', 'Reportable', 'Reportable');
+INSERT INTO Clients (ClientID, TitlePrefix, FirstName, LastName, OnboardingDate, Status, Citizenship1, Citizenship2, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth)
+VALUES (110, 'Ms', 'Olivia', 'Brown', '2024-03-10', 'ACTIVE', 'GBR', NULL, 'Female', '1993-06-25', 'English', 'Pilatist', 'GBR', 'GBR', 'Reportable', 'Reportable', 'London Hospital', 'London', 'GBR');
 INSERT INTO Cases (ClientID, WorkflowType, Status, Reason, CreatedDate, AssignedTo)
 VALUES (110, 'CMMN', 'KYC_ANALYST', 'Standard Review', CURRENT_TIMESTAMP, 'analyst');
+
+-- Financials Seeding for Client 1 (John Doe)
+INSERT INTO Accounts (ClientID, AccountNumber, AccountStatus) VALUES (1, 'ACC-1001', 'ACTIVE');
+INSERT INTO Accounts (ClientID, AccountNumber, AccountStatus) VALUES (1, 'ACC-1002', 'DORMANT');
+
+INSERT INTO Portfolios (ClientID, AccountNumber, PortfolioText, OnboardingDate, Status) 
+VALUES (1, 'ACC-1001', 'Wealth Management Aggressive', '2023-02-01', 'ACTIVE');
+
+-- Financials Seeding for Client 2 (Acme Corp)
+INSERT INTO Accounts (ClientID, AccountNumber, AccountStatus) VALUES (2, 'CORP-2001', 'ACTIVE');
+INSERT INTO Accounts (ClientID, AccountNumber, AccountStatus) VALUES (2, 'CORP-2002', 'ACTIVE');
+INSERT INTO Accounts (ClientID, AccountNumber, AccountStatus) VALUES (2, 'CORP-2003', 'CLOSED');
+
+INSERT INTO Portfolios (ClientID, AccountNumber, PortfolioText, OnboardingDate, Status) 
+VALUES (2, 'CORP-2001', 'Treasury Holdings', '2023-03-15', 'ACTIVE');
+INSERT INTO Portfolios (ClientID, AccountNumber, PortfolioText, OnboardingDate, OffboardingDate, Status) 
+VALUES (2, 'CORP-2003', 'Previous Year Bonds', '2022-01-10', '2023-12-31', 'CLOSED');
+
+-- Related Parties for Client 101 (Global Corp)
+-- 2. Director: Michael Chang (SGP)
+INSERT INTO RelatedParties (ClientID, RelationType, TitlePrefix, FirstName, LastName, Citizenship1, Status)
+VALUES (101, 'Director', 'Mr', 'Michael', 'Chang', 'SGP', 'ACTIVE');
+
+INSERT INTO RelatedPartyAddresses (RelatedPartyID, AddressType, AddressLine1, City, Zip, Country)
+VALUES (2, 'Business', 'Marina Bay Financial Centre', 'Singapore', '018981', 'SGP');
+
+-- Related Parties for Client 102 (Amara Okafor)
+-- 3. Spouse: David Okafor (NGA)
+INSERT INTO RelatedParties (ClientID, RelationType, TitlePrefix, FirstName, LastName, Citizenship1, Status)
+VALUES (102, 'Spouse', 'Mr', 'David', 'Okafor', 'NGA', 'ACTIVE');
+
+-- Related Parties for Client 107 (SolarTech Energy)
+-- 4. Beneficial Owner: Sarah Jenkins (AUS)
+INSERT INTO RelatedParties (ClientID, RelationType, TitlePrefix, FirstName, LastName, Citizenship1, Status)
+VALUES (107, 'Beneficial Owner', 'Ms', 'Sarah', 'Jenkins', 'AUS', 'ACTIVE');

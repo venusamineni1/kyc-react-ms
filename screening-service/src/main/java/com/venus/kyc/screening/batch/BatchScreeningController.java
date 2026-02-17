@@ -29,6 +29,84 @@ public class BatchScreeningController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/create")
+    public ResponseEntity<String> createBatch(@RequestBody List<com.venus.kyc.screening.batch.model.Client> clients) {
+        try {
+            Long batchId = batchScreeningService.createBatch(clients);
+            return ResponseEntity.ok(String.valueOf(batchId));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{batchId}/generate-xml")
+    public ResponseEntity<String> generateBatchXml(@PathVariable Long batchId) {
+        try {
+            batchScreeningService.generateBatchXml(batchId);
+            return ResponseEntity.ok("XML Generated");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{batchId}/generate-checksum")
+    public ResponseEntity<String> generateBatchChecksum(@PathVariable Long batchId) {
+        try {
+            batchScreeningService.generateBatchChecksum(batchId);
+            return ResponseEntity.ok("Checksum Generated");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{batchId}/zip")
+    public ResponseEntity<String> zipBatchFiles(@PathVariable Long batchId) {
+        try {
+            batchScreeningService.zipBatchFiles(batchId);
+            return ResponseEntity.ok("Files Zipped");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{batchId}/encrypt")
+    public ResponseEntity<String> encryptBatchFile(@PathVariable Long batchId) {
+        try {
+            batchScreeningService.encryptBatchFile(batchId);
+            return ResponseEntity.ok("File Encrypted");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{batchId}/upload")
+    public ResponseEntity<String> uploadBatchToSftp(@PathVariable Long batchId) {
+        try {
+            batchScreeningService.uploadBatchToSftp(batchId);
+            return ResponseEntity.ok("File Uploaded");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{batchId}/file-content")
+    public ResponseEntity<String> getFileContent(@PathVariable Long batchId, @RequestParam String type) {
+        try {
+            String content = batchScreeningService.getFileContent(batchId, type);
+            return ResponseEntity.ok(content);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed: " + e.getMessage());
+        }
+    }
+
+    @Deprecated
     @PostMapping("/initiate")
     public ResponseEntity<String> initiateBatch(@RequestBody List<com.venus.kyc.screening.batch.model.Client> clients) {
         try {

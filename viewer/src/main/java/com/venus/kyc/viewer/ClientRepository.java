@@ -30,7 +30,7 @@ public class ClientRepository {
                 int totalPages = (int) Math.ceil((double) totalElements / size);
 
                 List<Client> clients = jdbcClient.sql(
-                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus FROM Clients LIMIT :limit OFFSET :offset")
+                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients LIMIT :limit OFFSET :offset")
                                 .param("limit", size)
                                 .param("offset", page * size)
                                 .query((rs, rowNum) -> new Client(
@@ -56,6 +56,9 @@ public class ClientRepository {
                                                 rs.getString("SourceOfFundsCountry"),
                                                 rs.getString("FATCAStatus"),
                                                 rs.getString("CRSStatus"),
+                                                rs.getString("PlaceOfBirth"),
+                                                rs.getString("CityOfBirth"),
+                                                rs.getString("CountryOfBirth"),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
@@ -76,7 +79,7 @@ public class ClientRepository {
 
         public Optional<Client> findById(Long id) {
                 Optional<Client> clientOpt = jdbcClient.sql(
-                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus FROM Clients WHERE ClientID = :id")
+                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients WHERE ClientID = :id")
                                 .param("id", id)
                                 .query((rs, rowNum) -> new Client(
                                                 rs.getLong("ClientID"),
@@ -101,6 +104,9 @@ public class ClientRepository {
                                                 rs.getString("SourceOfFundsCountry"),
                                                 rs.getString("FATCAStatus"),
                                                 rs.getString("CRSStatus"),
+                                                rs.getString("PlaceOfBirth"),
+                                                rs.getString("CityOfBirth"),
+                                                rs.getString("CountryOfBirth"),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
@@ -299,7 +305,7 @@ public class ClientRepository {
                 int totalPages = (int) Math.ceil((double) totalElements / size);
 
                 List<Client> clients = jdbcClient.sql(
-                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus FROM Clients WHERE FirstName LIKE :query OR MiddleName LIKE :query OR LastName LIKE :query LIMIT :limit OFFSET :offset")
+                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients WHERE FirstName LIKE :query OR MiddleName LIKE :query OR LastName LIKE :query LIMIT :limit OFFSET :offset")
                                 .param("query", likeQuery)
                                 .param("limit", size)
                                 .param("offset", page * size)
@@ -326,6 +332,9 @@ public class ClientRepository {
                                                 rs.getString("SourceOfFundsCountry"),
                                                 rs.getString("FATCAStatus"),
                                                 rs.getString("CRSStatus"),
+                                                rs.getString("PlaceOfBirth"),
+                                                rs.getString("CityOfBirth"),
+                                                rs.getString("CountryOfBirth"),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
@@ -346,7 +355,7 @@ public class ClientRepository {
 
         public void updateClient(Client client) {
                 jdbcClient.sql(
-                                "UPDATE Clients SET TitlePrefix = :titlePrefix, FirstName = :firstName, MiddleName = :middleName, LastName = :lastName, TitleSuffix = :titleSuffix, Citizenship1 = :citizenship1, Citizenship2 = :citizenship2, Status = :status, NameAtBirth = :nameAtBirth, NickName = :nickName, Gender = :gender, DateOfBirth = :dateOfBirth, Language = :language, Occupation = :occupation, CountryOfTax = :countryOfTax, SourceOfFundsCountry = :sourceOfFundsCountry, FATCAStatus = :fatcaStatus, CRSStatus = :crsStatus WHERE ClientID = :id")
+                                "UPDATE Clients SET TitlePrefix = :titlePrefix, FirstName = :firstName, MiddleName = :middleName, LastName = :lastName, TitleSuffix = :titleSuffix, Citizenship1 = :citizenship1, Citizenship2 = :citizenship2, Status = :status, NameAtBirth = :nameAtBirth, NickName = :nickName, Gender = :gender, DateOfBirth = :dateOfBirth, Language = :language, Occupation = :occupation, CountryOfTax = :countryOfTax, SourceOfFundsCountry = :sourceOfFundsCountry, FATCAStatus = :fatcaStatus, CRSStatus = :crsStatus, PlaceOfBirth = :placeOfBirth, CityOfBirth = :cityOfBirth, CountryOfBirth = :countryOfBirth WHERE ClientID = :id")
                                 .param("id", client.clientID())
                                 .param("titlePrefix", client.titlePrefix())
                                 .param("firstName", client.firstName())
@@ -366,6 +375,9 @@ public class ClientRepository {
                                 .param("sourceOfFundsCountry", client.sourceOfFundsCountry())
                                 .param("fatcaStatus", client.fatcaStatus())
                                 .param("crsStatus", client.crsStatus())
+                                .param("placeOfBirth", client.placeOfBirth())
+                                .param("cityOfBirth", client.cityOfBirth())
+                                .param("countryOfBirth", client.countryOfBirth())
                                 .update();
         }
 }

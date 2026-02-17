@@ -15,6 +15,8 @@ const TARGET_PATHS = [
     { path: 'name.fir', label: 'First Name', category: 'Personal Info', description: 'Individual\'s given name.' },
     { path: 'name.mid', label: 'Middle Name', category: 'Personal Info', description: 'Individual\'s middle name.' },
     { path: 'name.sur', label: 'Surname', category: 'Personal Info', description: 'Individual\'s last name.' },
+    { path: 'name.type', label: 'Name Type', category: 'Personal Info', description: 'Type of name (e.g., K for Known As).' },
+    { path: 'name.ma', label: 'Maiden Name', category: 'Personal Info', description: 'Mother\'s maiden name.' },
 
     // Individual Details
     { path: 'individual.gender', label: 'Gender', category: 'Details', description: 'Gender of the individual.' },
@@ -23,22 +25,39 @@ const TARGET_PATHS = [
     { path: 'individual.cntr', label: 'Country of Birth', category: 'Details', description: 'Country of birth code.' },
     { path: 'individual.occupation', label: 'Occupation', category: 'Details', description: 'Individual\'s primary occupation.' },
 
-    // Nationality & Address
-    { path: 'individual.nationality', label: 'Primary Nationality (Country)', category: 'Regional', description: 'Primary citizenship code.' },
-    { path: 'individual.nationality.legDoc', label: 'Legitimisation Doc', category: 'Regional', description: 'Type of ID (e.g., Passport).' },
-    { path: 'individual.nationality.idNr', label: 'ID Number', category: 'Regional', description: 'ID document number.' },
+    // Nationality
+    { path: 'individual.nationality', label: 'Primary Nationality (Country)', category: 'Nationality', description: 'Primary citizenship code.' },
+    { path: 'individual.nationality.legDoc', label: 'Legitimisation Doc', category: 'Nationality', description: 'Type of ID (e.g., Passport).' },
+    { path: 'individual.nationality.idNr', label: 'ID Number', category: 'Nationality', description: 'ID document number.' },
+    { path: 'individual.nationality.ca', label: 'Certifying Authority', category: 'Nationality', description: 'Authority that issued the ID.' },
 
-    { path: 'individual.address', label: 'Address Line 1', category: 'Regional', description: 'Primary residential street address.' },
-    { path: 'individual.address.line', label: 'Address Line 1 (Alias)', category: 'Regional', description: 'Same as Address Line 1.' },
-    { path: 'individual.address.city', label: 'City', category: 'Regional', description: 'City name.' },
-    { path: 'individual.address.zip', label: 'Zip Code', category: 'Regional', description: 'Postal/Zip code.' },
-    { path: 'individual.address.prov', label: 'Province/State', category: 'Regional', description: 'State or Province.' },
-    { path: 'individual.address.cntr', label: 'Country', category: 'Regional', description: 'Country code.' },
+    // Address
+    { path: 'individual.address', label: 'Address Line 1', category: 'Address', description: 'Primary residential street address.' },
+    { path: 'individual.address.line', label: 'Address Line 1 (Alias)', category: 'Address', description: 'Same as Address Line 1.' },
+    { path: 'individual.address.city', label: 'City', category: 'Address', description: 'City name.' },
+    { path: 'individual.address.zip', label: 'Zip Code', category: 'Address', description: 'Postal/Zip code.' },
+    { path: 'individual.address.prov', label: 'Province/State', category: 'Address', description: 'State or Province.' },
+    { path: 'individual.address.cntr', label: 'Country', category: 'Address', description: 'Country code.' },
+
+    // KYC
+    { path: 'kyc.pepFlag', label: 'PEP Flag', category: 'KYC', description: 'Politically Exposed Person flag (Y/N).' },
+    { path: 'kyc.nextRvw', label: 'Next Review Date', category: 'KYC', description: 'Date of next KYC review.' },
+    { path: 'comment', label: 'Record Comment', category: 'KYC', description: 'Any additional internal comments.' },
+
+    // Juridical Info
+    { path: 'juridical.bu.relSrcId', label: 'Rel Src ID', category: 'Juridical Info', description: 'Related Source ID.' },
+    { path: 'juridical.bu.recCntrOrg', label: 'Rec Cntr Org', category: 'Juridical Info', description: 'Record Country of Origin.' },
+    { path: 'juridical.bu.recBD', label: 'Rec BD', category: 'Juridical Info', description: 'Record Business Date.' },
+    { path: 'juridical.bu.dble', label: 'DBLE', category: 'Juridical Info', description: 'DB Legal Entity.' },
+    { path: 'juridical.bu.dbleLoc', label: 'DBLE Loc', category: 'Juridical Info', description: 'DBLE Location.' },
+    { path: 'juridical.bu.lbj', label: 'LBJ', category: 'Juridical Info', description: 'Local Business Jurisdiction.' },
+    { path: 'juridical.bu.lafcj', label: 'LAFCJ', category: 'Juridical Info', description: 'Local Anti-Financial Crime Jurisdiction.' },
+    { path: 'juridical.bu.bsrl', label: 'BSRL', category: 'Juridical Info', description: 'Business Specific Risk Level.' },
+    { path: 'juridical.bu.rr', label: 'RR', category: 'Juridical Info', description: 'Risk Rating.' },
+    { path: 'juridical.bu.hrpi', label: 'HRPI', category: 'Juridical Info', description: 'High Risk Political Indicator.' },
 
     // Others
-    { path: 'account.nr', label: 'Account Number', category: 'Account Info', description: 'Associated account identifier.' },
-    { path: 'kyc.pepFlag', label: 'PEP Flag', category: 'KYC', description: 'Politically Exposed Person flag (Y/N).' },
-    { path: 'comment', label: 'Record Comment', category: 'Other', description: 'Any additional internal comments.' }
+    { path: 'account.nr', label: 'Account Number', category: 'Account Info', description: 'Associated account identifier.' }
 ];
 
 const SOURCE_FIELDS = [
@@ -57,7 +76,15 @@ const SOURCE_FIELDS = [
     { value: 'sourceOfFundsCountry', label: 'Source of Funds Country' },
     { value: 'fatcaStatus', label: 'FATCA Status' },
     { value: 'crsStatus', label: 'CRS Status' },
-    { value: 'status', label: 'Client Status' }
+    { value: 'status', label: 'Client Status' },
+    { value: 'titlePrefix', label: 'Title Prefix' },
+    { value: 'titleSuffix', label: 'Title Suffix' },
+    { value: 'onboardingDate', label: 'Onboarding Date' },
+    { value: 'nameAtBirth', label: 'Name at Birth' },
+    { value: 'nickName', label: 'Nick Name' },
+    { value: 'placeOfBirth', label: 'Place of Birth' },
+    { value: 'cityOfBirth', label: 'City of Birth' },
+    { value: 'countryOfBirth', label: 'Country of Birth' }
 ];
 
 const BatchMappingConfig = () => {
