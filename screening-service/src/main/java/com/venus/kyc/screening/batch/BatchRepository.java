@@ -59,6 +59,12 @@ public class BatchRepository {
                 .optional().orElse(null);
     }
 
+    public List<BatchRun> findAll() {
+        return jdbcClient.sql("SELECT * FROM BatchRuns ORDER BY CreatedAt DESC")
+                .query(BatchRun.class)
+                .list();
+    }
+
     public void saveError(BatchRunError error) {
         String sql = "INSERT INTO BatchRunErrors (BatchID, RecordID, ErrorCode, ErrorMessage) VALUES (:batchId, :recordId, :errorCode, :errorMessage)";
         jdbcClient.sql(sql)

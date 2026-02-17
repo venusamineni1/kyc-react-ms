@@ -25,6 +25,7 @@ import BatchRiskMappingConfig from './pages/BatchRiskMappingConfig';
 import ServiceStatus from './pages/ServiceStatus';
 import BatchPipeline from './pages/BatchPipeline';
 import BatchRiskPipeline from './pages/BatchRiskPipeline';
+import History from './pages/History';
 
 
 import Profile from './pages/Profile';
@@ -116,6 +117,11 @@ function App() {
                               <BatchRiskPipeline />
                             </ProtectedRoute>
                           } />
+                          <Route path="/history" element={
+                            <ProtectedRoute requiredPermission="MANAGE_CONFIG">
+                              <History />
+                            </ProtectedRoute>
+                          } />
                           <Route path="/inbox" element={<TaskInbox />} />
                           <Route path="/adhoc-tasks" element={<AdHocTaskList />} />
                           <Route path="/profile" element={<Profile />} />
@@ -129,7 +135,7 @@ function App() {
           </InboxProvider>
         </NotificationProvider>
       </ThemeProvider>
-    </AuthProvider>
+    </AuthProvider >
   );
 }
 

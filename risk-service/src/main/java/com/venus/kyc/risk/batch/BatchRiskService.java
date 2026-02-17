@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 public class BatchRiskService {
@@ -30,12 +31,15 @@ public class BatchRiskService {
     @Value("${batch.sftp.upload.dir:upload}")
     private String sftpUploadDir;
 
+    private final BatchRepository batchRepository;
+
     public BatchRiskService(RiskMappingRepository mappingRepository, ObjectMapper objectMapper,
-            SftpService sftpService, CompressionService compressionService) {
+            SftpService sftpService, CompressionService compressionService, BatchRepository batchRepository) {
         this.mappingRepository = mappingRepository;
         this.objectMapper = objectMapper;
         this.sftpService = sftpService;
         this.compressionService = compressionService;
+        this.batchRepository = batchRepository;
     }
 
     public String generateTestJson(Client client) throws Exception {
@@ -56,7 +60,16 @@ public class BatchRiskService {
         File clientsFile = new File(batchDir, "selected_clients.json");
         objectMapper.writerWithDefaultPrettyPrinter().writeValue(clientsFile, clients);
 
+        // Save Batch Run to DB
+        BatchRun run = new BatchRun(null, batchBaseName, "INITIATED", "PENDING", 0, LocalDateTime.now(),
+                LocalDateTime.now());
+        batchRepository.saveBatchRun(run);
+
         return batchBaseName;
+    }
+
+    public List<BatchRun> getBatchHistory() {
+        return batchRepository.findAll();
     }
 
     public void generateBatchJsonl(String batchId) throws Exception {

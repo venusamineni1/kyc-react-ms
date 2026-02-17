@@ -731,4 +731,8 @@ public class BatchScreeningService {
             data.getJuriInfo().getBu().add(new BUInfo());
         }
     }
+
+    public List<BatchRun> getBatchHistory() {
+        return batchRepository.findAll();
+    }
 }

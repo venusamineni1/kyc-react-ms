@@ -29,6 +29,11 @@ public class BatchRiskController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/history")
+    public ResponseEntity<List<BatchRun>> getHistory() {
+        return ResponseEntity.ok(batchRiskService.getBatchHistory());
+    }
+
     @PostMapping("/initiate")
     public ResponseEntity<String> initiateBatch(@RequestBody List<Client> clients) {
         try {

@@ -144,6 +144,9 @@ const Layout = ({ children }) => {
                                     <Link to="/admin/services" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
                                         System Status
                                     </Link>
+                                    <Link to="/history" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
+                                        Batch History
+                                    </Link>
                                 </>
                             )}
                             {hasPermission('MANAGE_PERMISSIONS') && (

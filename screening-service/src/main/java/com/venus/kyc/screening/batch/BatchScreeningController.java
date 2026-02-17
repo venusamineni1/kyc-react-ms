@@ -29,6 +29,11 @@ public class BatchScreeningController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/history")
+    public ResponseEntity<List<BatchRun>> getHistory() {
+        return ResponseEntity.ok(batchScreeningService.getBatchHistory());
+    }
+
     @PostMapping("/create")
     public ResponseEntity<String> createBatch(@RequestBody List<com.venus.kyc.screening.batch.model.Client> clients) {
         try {

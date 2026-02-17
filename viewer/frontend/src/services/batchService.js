@@ -34,5 +34,13 @@ export const batchService = {
     // For legacy or test
     generateTestXml: async (client) => {
         return apiClient.post(`${API_BASE_URL}/test-generate`, client);
+    },
+    // History
+    getRiskHistory: async () => {
+        return apiClient.get('/risk/batch/history');
+    },
+
+    getScreeningHistory: async () => {
+        return apiClient.get('/screening/batch/history');
     }
 };
