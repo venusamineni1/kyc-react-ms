@@ -75,6 +75,13 @@ const Dashboard = () => {
                     permission="MANAGE_CASES"
                 />
                 <DashboardCard
+                    to="/inbox"
+                    id="inboxCard"
+                    title="My Task Inbox"
+                    description="View and action your assigned KYC workflow tasks."
+                    color="#48c6ef"
+                />
+                <DashboardCard
                     to="/admin/questionnaire"
                     id="questionnaireCard"
                     title="Questionnaire Config"
