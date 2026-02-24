@@ -26,6 +26,7 @@ import ServiceStatus from './pages/ServiceStatus';
 import BatchPipeline from './pages/BatchPipeline';
 import BatchRiskPipeline from './pages/BatchRiskPipeline';
 import History from './pages/History';
+import AdminControlCenter from './pages/AdminControlCenter';
 
 
 import Profile from './pages/Profile';
@@ -85,6 +86,11 @@ function App() {
                           <Route path="/admin/config" element={
                             <ProtectedRoute requiredPermission="MANAGE_CONFIG">
                               <Configuration />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/admin/control-center" element={
+                            <ProtectedRoute requiredPermission="MANAGE_CONFIG">
+                              <AdminControlCenter />
                             </ProtectedRoute>
                           } />
                           <Route path="/admin/material-configs" element={

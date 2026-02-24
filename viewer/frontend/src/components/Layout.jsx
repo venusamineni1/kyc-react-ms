@@ -125,29 +125,9 @@ const Layout = ({ children }) => {
                                 </Link>
                             )}
                             {hasPermission('MANAGE_CONFIG') && (
-                                <>
-                                    <Link to="/admin/material-configs" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
-                                        Material Change Rules
-                                    </Link>
-                                    <Link to="/admin/batch-mapping" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
-                                        Screening XML Mapping
-                                    </Link>
-                                    <Link to="/admin/batch-pipeline" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
-                                        Screening Pipeline
-                                    </Link>
-                                    <Link to="/admin/risk-mapping" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
-                                        Risk JSON Mapping
-                                    </Link>
-                                    <Link to="/admin/risk-pipeline" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
-                                        Risk Pipeline
-                                    </Link>
-                                    <Link to="/admin/services" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
-                                        System Status
-                                    </Link>
-                                    <Link to="/history" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
-                                        Batch History
-                                    </Link>
-                                </>
+                                <Link to="/admin/control-center" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
+                                    Admin Settings
+                                </Link>
                             )}
                             {hasPermission('MANAGE_PERMISSIONS') && (
                                 <Link to="/permissions" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
