@@ -1,23 +1,40 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useInbox } from '../contexts/InboxContext';
 import { clientService } from '../services/clientService';
 
-const DashboardCard = ({ to, id, title, description, color, permission }) => {
+const DashboardCard = ({ to, id, title, description, color, permission, badgeCount }) => {
     const { hasPermission } = useAuth();
 
     if (permission && !hasPermission(permission)) return null;
 
     return (
-        <Link to={to} id={id} className="glass-section dashboard-card" style={{ textDecoration: 'none', transition: 'transform 0.2s' }}>
-            <h3 style={{ marginTop: 0, color }}>{title}</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{description}</p>
+        <Link to={to} id={id} className="glass-section dashboard-card" style={{ textDecoration: 'none', transition: 'transform 0.2s', position: 'relative' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <h3 style={{ marginTop: 0, color }}>{title}</h3>
+                {badgeCount > 0 && (
+                    <span style={{
+                        backgroundColor: '#ef4444',
+                        color: '#fff',
+                        fontSize: '0.75rem',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '12px',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}>
+                        {badgeCount} New
+                    </span>
+                )}
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>{description}</p>
         </Link>
     );
 };
 
 const Dashboard = () => {
     const { hasPermission } = useAuth();
+    const { inboxCount } = useInbox();
     const [recentChanges, setRecentChanges] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
 
@@ -80,6 +97,7 @@ const Dashboard = () => {
                     title="My Task Inbox"
                     description="View and action your assigned KYC workflow tasks."
                     color="#48c6ef"
+                    badgeCount={inboxCount}
                 />
                 <DashboardCard
                     to="/admin/questionnaire"
