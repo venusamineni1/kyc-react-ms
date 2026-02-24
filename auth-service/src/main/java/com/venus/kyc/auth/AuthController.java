@@ -1,5 +1,7 @@
 package com.venus.kyc.auth;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "Endpoints for user authentication and JWT token generation")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -21,6 +24,7 @@ public class AuthController {
         this.tokenProvider = tokenProvider;
     }
 
+    @Operation(summary = "Authenticate user", description = "Validates user credentials and returns a JWT access token for subsequent API calls")
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         try {

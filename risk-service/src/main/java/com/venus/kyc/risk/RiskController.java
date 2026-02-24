@@ -1,5 +1,8 @@
 package com.venus.kyc.risk;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -9,6 +12,7 @@ import java.util.Collections;
 
 @RestController
 @RequestMapping("/api/internal/risk")
+@Tag(name = "Risk Assessment", description = "Endpoints for calculating client risk ratings using entity, industry, geo, product, and channel risk pillars")
 public class RiskController {
 
   private final RiskAssessmentRepository repository;
@@ -22,6 +26,7 @@ public class RiskController {
     this.restClient = RestClient.create();
   }
 
+  @Operation(summary = "Calculate client risk rating", description = "Submits a risk rating request to the external CRRE engine and stores the assessment results including entity, industry, geo, product, and channel risk scores")
   @PostMapping("/calculate")
   public RiskDTOs.CalculateRiskResponse calculateRisk(@RequestBody RiskDTOs.CalculateRiskRequest request) {
     // Log Request
@@ -115,26 +120,33 @@ public class RiskController {
         rc.localRuleApplied());
   }
 
+  @Operation(summary = "Get all risk assessment logs", description = "Returns the full history of risk assessment API calls including request/response payloads and status")
   @GetMapping("/logs")
   public java.util.List<RiskAssessmentLog> getLogs() {
     return repository.findAllLogs();
   }
 
+  @Operation(summary = "Get all risk assessments", description = "Returns all stored risk assessment results with overall risk scores and levels")
   @GetMapping("/assessments")
   public java.util.List<RiskAssessment> getAllAssessments() {
     return repository.findAllAssessments();
   }
 
+  @Operation(summary = "Get assessments by record ID", description = "Returns risk assessments for a specific client record ID")
   @GetMapping("/assessments/{recordId}")
-  public java.util.List<RiskAssessment> getAssessmentsByRecordId(@PathVariable String recordId) {
+  public java.util.List<RiskAssessment> getAssessmentsByRecordId(
+      @Parameter(description = "Client record identifier") @PathVariable String recordId) {
     return repository.findAssessmentsByRecordId(recordId);
   }
 
+  @Operation(summary = "Get assessment details", description = "Returns the detailed risk classification breakdown for a specific assessment, including individual pillar scores")
   @GetMapping("/assessment-details/{assessmentId}")
-  public java.util.List<RiskAssessmentDetail> getAssessmentDetails(@PathVariable Long assessmentId) {
+  public java.util.List<RiskAssessmentDetail> getAssessmentDetails(
+      @Parameter(description = "Assessment ID") @PathVariable Long assessmentId) {
     return repository.findDetailsByAssessmentId(assessmentId);
   }
 
+  @Operation(summary = "Mock external CRRE API", description = "Simulates the external risk rating engine response for development and testing purposes")
   @PostMapping("/dummy-external-api")
   public org.springframework.http.ResponseEntity<String> mockExternalApi(@RequestBody String request) {
     String recordId = "00001497165";

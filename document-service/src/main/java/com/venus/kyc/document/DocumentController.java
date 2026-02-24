@@ -1,5 +1,8 @@
 package com.venus.kyc.document;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/documents")
+@Tag(name = "Document Management", description = "Endpoints for uploading, downloading, and versioning case documents")
 public class DocumentController {
 
     private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
@@ -22,18 +26,22 @@ public class DocumentController {
         this.repository = repository;
     }
 
+    @Operation(summary = "Get documents by case", description = "Returns all documents associated with a specific case")
     @GetMapping
-    public List<Document> getDocuments(@RequestParam Long caseId) {
+    public List<Document> getDocuments(@Parameter(description = "Case ID") @RequestParam Long caseId) {
         return repository.findByCaseId(caseId);
     }
 
+    @Operation(summary = "Get document versions", description = "Returns all versions of a specific document in a case")
     @GetMapping("/versions")
-    public List<Document> getDocumentVersions(@RequestParam Long caseId, @RequestParam String name) {
+    public List<Document> getDocumentVersions(@Parameter(description = "Case ID") @RequestParam Long caseId,
+            @Parameter(description = "Document name") @RequestParam String name) {
         return repository.findVersions(caseId, name);
     }
 
+    @Operation(summary = "Download a document", description = "Downloads the binary content of a document by its ID")
     @GetMapping("/{id}")
-    public ResponseEntity<byte[]> downloadDocument(@PathVariable Long id) {
+    public ResponseEntity<byte[]> downloadDocument(@Parameter(description = "Document ID") @PathVariable Long id) {
         return repository.findById(id)
                 .map(doc -> ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(doc.mimeType()))
@@ -42,6 +50,7 @@ public class DocumentController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @Operation(summary = "Upload a document", description = "Uploads a new document file and associates it with a case, supporting versioning and categorization")
     @PostMapping
     public ResponseEntity<String> uploadDocument(
             @RequestParam("caseId") Long caseId,

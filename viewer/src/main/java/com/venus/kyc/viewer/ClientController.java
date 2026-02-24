@@ -1,5 +1,8 @@
 package com.venus.kyc.viewer;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/clients")
+@Tag(name = "Client Management", description = "Endpoints for managing clients, material changes, related parties, and triggering risk/screening workflows")
 public class ClientController {
 
     private final ClientRepository clientRepository;
@@ -36,6 +40,7 @@ public class ClientController {
         this.screeningService = screeningService;
     }
 
+    @Operation(summary = "Get material changes", description = "Returns paginated material changes with optional date filtering and sorting")
     @GetMapping("/changes")
     public PaginatedResponse<MaterialChange> getMaterialChanges(
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
@@ -49,6 +54,7 @@ public class ClientController {
         return materialChangeRepository.findAllPaginated(page, size, startDate, endDate, sortBy, sortDir);
     }
 
+    @Operation(summary = "Export material changes", description = "Exports material changes as a flat list for download, with optional date filtering")
     @GetMapping("/changes/export")
     public List<MaterialChange> exportMaterialChanges(
             @org.springframework.web.bind.annotation.RequestParam(required = false) String startDate,
@@ -59,6 +65,7 @@ public class ClientController {
         return materialChangeRepository.findAllForExport(startDate, endDate);
     }
 
+    @Operation(summary = "Get all clients", description = "Returns paginated client list with sensitive data masked for non-admin users")
     @GetMapping
     public PaginatedResponse<Client> getAllClients(
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
@@ -75,8 +82,9 @@ public class ClientController {
 
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ClientController.class);
 
+    @Operation(summary = "Get client by ID", description = "Returns client details by ID with sensitive data masked for non-admin users")
     @GetMapping("/{id}")
-    public ResponseEntity<Client> getClientById(@PathVariable Long id,
+    public ResponseEntity<Client> getClientById(@Parameter(description = "Client ID") @PathVariable Long id,
             org.springframework.security.core.Authentication authentication) {
         userAuditService.log(authentication.getName(), "VIEW_CLIENT", "Viewed Client ID: " + id);
         return clientRepository.findById(id)
@@ -88,14 +96,18 @@ public class ClientController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @Operation(summary = "Add related party", description = "Adds a related party to a client")
     @PostMapping("/{id}/related-parties")
-    public ResponseEntity<Void> addRelatedParty(@PathVariable Long id, @RequestBody RelatedParty rp) {
+    public ResponseEntity<Void> addRelatedParty(@Parameter(description = "Client ID") @PathVariable Long id,
+            @RequestBody RelatedParty rp) {
         clientRepository.saveRelatedParty(id, rp);
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Get related party by ID", description = "Returns a specific related party with sensitive data masked for non-admin users")
     @GetMapping("/related-parties/{id}")
-    public ResponseEntity<RelatedParty> getRelatedPartyById(@PathVariable Long id,
+    public ResponseEntity<RelatedParty> getRelatedPartyById(
+            @Parameter(description = "Related party ID") @PathVariable Long id,
             org.springframework.security.core.Authentication authentication) {
         return clientRepository.findRelatedPartyById(id)
                 .map(party -> isAdmin(authentication) ? party : maskRelatedPartySensitiveData(party))
@@ -103,6 +115,7 @@ public class ClientController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @Operation(summary = "Search clients", description = "Searches clients by name with pagination and data masking for non-admin users")
     @GetMapping("/search")
     public PaginatedResponse<Client> searchClients(
             @org.springframework.web.bind.annotation.RequestParam String query,
@@ -118,45 +131,56 @@ public class ClientController {
                 response.totalElements(), response.totalPages());
     }
 
+    @Operation(summary = "Ingest client data change", description = "Processes a client data update, detecting and recording material changes")
     @PostMapping("/{id}/ingest")
-    public ResponseEntity<Void> ingestClientChange(@PathVariable Long id, @RequestBody Client newData) {
+    public ResponseEntity<Void> ingestClientChange(@Parameter(description = "Client ID") @PathVariable Long id,
+            @RequestBody Client newData) {
         Client oldData = clientRepository.findById(id).orElseThrow();
         clientDataChangeService.processClientChanges(oldData, newData);
         clientRepository.updateClient(newData);
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Get client material changes", description = "Returns all material changes for a specific client")
     @GetMapping("/{id}/changes")
-    public List<MaterialChange> getClientMaterialChanges(@PathVariable Long id) {
+    public List<MaterialChange> getClientMaterialChanges(@Parameter(description = "Client ID") @PathVariable Long id) {
         return materialChangeRepository.findByClientId(id);
     }
 
+    @Operation(summary = "Trigger risk for change", description = "Triggers a risk assessment for the client related to a material change")
     @PostMapping("/changes/{changeId}/trigger-risk")
-    public ResponseEntity<Void> triggerRiskForChange(@PathVariable Long changeId) {
+    public ResponseEntity<Void> triggerRiskForChange(
+            @Parameter(description = "Material change ID") @PathVariable Long changeId) {
         MaterialChange mc = materialChangeRepository.findById(changeId).orElseThrow();
         riskService.evaluateRiskForClient(mc.clientID());
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Trigger screening for change", description = "Triggers a screening for the client related to a material change")
     @PostMapping("/changes/{changeId}/trigger-screening")
-    public ResponseEntity<Void> triggerScreeningForChange(@PathVariable Long changeId) {
+    public ResponseEntity<Void> triggerScreeningForChange(
+            @Parameter(description = "Material change ID") @PathVariable Long changeId) {
         MaterialChange mc = materialChangeRepository.findById(changeId).orElseThrow();
         screeningService.initiateScreening(mc.clientID());
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Mark change as reviewed", description = "Updates a material change status to REVIEWED")
     @PostMapping("/changes/{changeId}/review")
-    public ResponseEntity<Void> markAsReviewed(@PathVariable Long changeId) {
+    public ResponseEntity<Void> markAsReviewed(
+            @Parameter(description = "Material change ID") @PathVariable Long changeId) {
         materialChangeRepository.updateStatus(changeId, "REVIEWED");
         return ResponseEntity.ok().build();
     }
 
     // Admin Config Endpoints
+    @Operation(summary = "Get material change configs", description = "Returns all material change detection configuration rules")
     @GetMapping("/admin/configs")
     public List<MaterialChangeConfig> getConfigs() {
         return configRepository.findAll();
     }
 
+    @Operation(summary = "Save material change config", description = "Saves or updates a material change detection configuration rule")
     @PostMapping("/admin/configs")
     public ResponseEntity<Void> saveConfig(@RequestBody MaterialChangeConfig config) {
         configRepository.save(config);

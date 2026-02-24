@@ -1,5 +1,7 @@
 package com.venus.kyc.viewer;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +21,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
+@Tag(name = "Viewer Authentication", description = "Authentication endpoints for the KYC viewer application")
 public class AuthController {
 
     @Value("${app.jwtSecret}")
@@ -32,6 +35,7 @@ public class AuthController {
         this.userAuditService = userAuditService;
     }
 
+    @Operation(summary = "User login", description = "Authenticates a user with username/password and returns a JWT access token with role and permissions")
     @PostMapping("/api/auth/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
         String username = request.username();
@@ -49,7 +53,7 @@ public class AuthController {
         // Validate password (plaintext for demo/dev as per requirement)
         if (!password.equals(user.password())) {
             // Optional: Log failed login attempt
-           userAuditService.log(username, "LOGIN_FAILED", "Invalid password");
+            userAuditService.log(username, "LOGIN_FAILED", "Invalid password");
             return ResponseEntity.status(401).build();
         }
 
@@ -83,6 +87,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "User logout", description = "Logs out the current user and records the action in the audit trail")
     @PostMapping("/api/auth/logout")
     public ResponseEntity<Void> logout(org.springframework.security.core.Authentication authentication) {
         if (authentication != null) {

@@ -1,5 +1,8 @@
 package com.venus.kyc.auth;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -7,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "User Management", description = "Endpoints for managing user accounts, passwords, and roles")
 public class UserController {
 
     private final UserRepository userRepository;
@@ -20,16 +24,19 @@ public class UserController {
         this.userAuditService = userAuditService;
     }
 
+    @Operation(summary = "Get all users", description = "Returns a list of all registered users in the system")
     @GetMapping
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
+    @Operation(summary = "Get users by role", description = "Returns users filtered by the specified role")
     @GetMapping("/role/{role}")
-    public List<User> getUsersByRole(@PathVariable String role) {
+    public List<User> getUsersByRole(@Parameter(description = "Role name to filter by") @PathVariable String role) {
         return userRepository.findByRole(role);
     }
 
+    @Operation(summary = "Create a new user", description = "Creates a new user account with the specified username, password, and role")
     @PostMapping
     public ResponseEntity<Void> createUser(@RequestBody CreateUserRequest request, java.security.Principal principal) {
         String password = request.password();
@@ -45,6 +52,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Update password", description = "Allows the authenticated user to change their password by providing the old and new passwords")
     @PostMapping("/password")
     public ResponseEntity<String> updatePassword(
             @RequestBody PasswordChangeRequest request,
@@ -74,8 +82,10 @@ public class UserController {
         return ResponseEntity.ok("Password updated");
     }
 
+    @Operation(summary = "Update user role", description = "Changes the role assigned to a specific user")
     @PutMapping("/{username}/role")
-    public ResponseEntity<Void> updateRole(@PathVariable String username, @RequestBody RoleUpdateRequest request,
+    public ResponseEntity<Void> updateRole(@Parameter(description = "Username") @PathVariable String username,
+            @RequestBody RoleUpdateRequest request,
             java.security.Principal principal) {
         userRepository.updateRole(username, request.role());
         userAuditService.log(principal != null ? principal.getName() : "system", "UPDATE_ROLE",
@@ -83,6 +93,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Get current user info", description = "Returns the profile information and permissions of the currently authenticated user")
     @GetMapping("/me")
     public ResponseEntity<UserInfo> getCurrentUser(java.security.Principal principal) {
         String username = principal.getName();

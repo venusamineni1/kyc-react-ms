@@ -34,7 +34,8 @@ public class SecurityConfig {
                                                                 "/style.css",
                                                                 "/assets/**",
                                                                 "/*.js", "/*.css", "/*.ico", "/*.png", "/*.jpg",
-                                                                "/api/risk/**") // Allow risk service callbacks if any
+                                                                "/api/risk/**",
+                                                                "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                                                 .permitAll()
                                                 // APIs that moved to auth-service will be routed by Gateway, but if
                                                 // someone calls viewer directly:

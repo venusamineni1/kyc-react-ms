@@ -98,11 +98,16 @@
 			<artifactId>flowable-spring-boot-starter-cmmn</artifactId>
 			<version>7.0.1</version>
 		</dependency>
-		<dependency>
+        <dependency>
 			<groupId>org.flowable</groupId>
 			<artifactId>flowable-cmmn-spring-configurator</artifactId>
 			<version>7.0.1</version>
 		</dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.7.0</version>
+        </dependency>
 	</dependencies>
     
     <dependencyManagement>
