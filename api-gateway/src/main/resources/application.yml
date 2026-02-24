@@ -22,22 +22,22 @@ spring:
           predicates:
             - Path=/api/internal/screening/**
           # Direct pass-through for batch controller
-        - id: screening-service-legacy
-          uri: lb://screening-service
-          predicates:
-            - Path=/api/screening/**
-          filters:
-            - RewritePath=/api/screening/(?<remaining>.*), /api/internal/screening/${remaining}
-        - id: auth-service-login
-          uri: lb://auth-service
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - StripPrefix=1
-        - id: auth-service-api
-          uri: lb://auth-service
-          predicates:
-            - Path=/api/users/**, /api/permissions/**
+        # - id: screening-service-legacy
+        #   uri: lb://screening-service
+        #   predicates:
+        #     - Path=/api/screening/**
+        #   filters:
+        #     - RewritePath=/api/screening/(?<remaining>.*), /api/internal/screening/${remaining}
+        # - id: auth-service-login
+        #   uri: lb://auth-service
+        #   predicates:
+        #     - Path=/api/auth/**
+        #   filters:
+        #     - StripPrefix=1
+        # - id: auth-service-api
+        #   uri: lb://auth-service
+        #   predicates:
+        #     - Path=/api/users/**, /api/permissions/**
           # No StripPrefix for these, as controllers are mapped to /api/...
 #        - id: document-service
 #          uri: lb://document-service

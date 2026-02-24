@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/risk")
+@RequestMapping("/api/internal/viewer/risk")
 @Tag(name = "Viewer Risk Assessment", description = "Proxy endpoints for risk assessment operations including calculation, evaluation, and batch risk management")
 public class RiskAssessmentController {
 

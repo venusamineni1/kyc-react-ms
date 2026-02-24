@@ -1,6 +1,6 @@
 import apiClient from './apiClient';
 
-const API_BASE_URL = '/risk';
+const API_BASE_URL = '/internal/viewer/risk';
 
 export const riskService = {
     calculateRisk: async (clientId) => {
