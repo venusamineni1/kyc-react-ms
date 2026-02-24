@@ -76,6 +76,13 @@ const AdminControlCenter = () => {
                 />
 
                 <AdminCard
+                    to="/admin/workflow"
+                    title="Workflow Dashboard"
+                    description="Monitor active CMMN cases and system-wide task execution metrics."
+                    icon="🌊"
+                />
+
+                <AdminCard
                     to="/history"
                     title="Batch Execution History"
                     description="Audit logs and status reports for all completed screening and risk batch jobs."
