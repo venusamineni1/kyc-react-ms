@@ -111,6 +111,10 @@ public class CaseService {
     }
 
     public List<Map<String, Object>> getTasksForCase(Long caseId) {
+        return getTasksForCase(caseId, null, null);
+    }
+
+    public List<Map<String, Object>> getTasksForCase(Long caseId, String userId, List<String> groups) {
         var caseInstances = cmmnRuntimeService.createCaseInstanceQuery()
                 .variableValueEquals("caseId", caseId)
                 .list();
@@ -120,11 +124,24 @@ public class CaseService {
         }
 
         String caseInstanceId = caseInstances.get(0).getId();
-        List<Task> cmmnTasks = cmmnTaskService.createTaskQuery()
+        var query = cmmnTaskService.createTaskQuery()
                 .caseInstanceId(caseInstanceId)
-                .includeCaseVariables()
-                .orderByTaskCreateTime().desc()
-                .list();
+                .includeCaseVariables();
+
+        if (userId != null && groups != null) {
+            List<String> expandedGroups = new ArrayList<>(groups);
+            for (String g : groups) {
+                if (!g.startsWith("ROLE_")) {
+                    expandedGroups.add("ROLE_" + g);
+                }
+            }
+            query = query.or()
+                    .taskAssignee(userId)
+                    .taskCandidateGroupIn(expandedGroups)
+                    .endOr();
+        }
+
+        List<Task> cmmnTasks = query.orderByTaskCreateTime().desc().list();
 
         return cmmnTasks.stream().map(task -> {
             Map<String, Object> map = new HashMap<>();

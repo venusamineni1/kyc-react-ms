@@ -148,10 +148,13 @@ public class CaseController {
         return caseService.getCaseTimeline(c.instanceID());
     }
 
-    @Operation(summary = "Get case tasks", description = "Returns active workflow tasks for a specific case")
+    @Operation(summary = "Get case tasks", description = "Returns active workflow tasks for a specific case, filtered by current user permissions")
     @GetMapping("/{id}/tasks")
-    public List<Map<String, Object>> getCaseTasks(@Parameter(description = "Case ID") @PathVariable Long id) {
-        return caseService.getTasksForCase(id);
+    public List<Map<String, Object>> getCaseTasks(@Parameter(description = "Case ID") @PathVariable Long id, Authentication authentication) {
+        List<String> groups = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+        return caseService.getTasksForCase(id, authentication.getName(), groups);
     }
 
     @Operation(summary = "Get available actions", description = "Returns discretionary CMMN actions available for a case")
