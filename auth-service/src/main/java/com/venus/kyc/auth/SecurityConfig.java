@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/users/me").authenticated()
+                        .requestMatchers("/api/users/role/**").authenticated()
                         .requestMatchers("/api/users/**").hasAuthority("MANAGE_USERS")
                         .requestMatchers("/api/permissions/**").hasAuthority("MANAGE_PERMISSIONS")
                         .anyRequest().authenticated() // All other endpoints require auth

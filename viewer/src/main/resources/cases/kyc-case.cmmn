@@ -89,12 +89,12 @@
             <humanTask id="ht_clientComm" name="Request Additional Documentation" flowable:assignee="${initiator}">
                 <documentation>Requested Info: ${requestedInfo}, Due Date: ${dueDate}</documentation>
             </humanTask>
-
+ 
             <userEventListener id="evtChallengeScreening" name="Challenge Screening Hit" />
-            <humanTask id="ht_afcDiscretionaryReview" name="AFC Screening Approval" flowable:candidateGroups="ROLE_AFC_REVIEWER" />
-
+            <humanTask id="ht_afcDiscretionaryReview" name="AFC Screening Approval" flowable:assignee="${taskAssignee}" flowable:candidateGroups="ROLE_AFC_REVIEWER" />
+ 
             <userEventListener id="evtOverrideRisk" name="Override Risk Assessment" />
-            <humanTask id="ht_riskOverride" name="Risk Override Peer Approval" flowable:candidateGroups="ROLE_KYC_REVIEWER" />
+            <humanTask id="ht_riskOverride" name="Risk Override Peer Approval" flowable:assignee="${taskAssignee}" flowable:candidateGroups="ROLE_KYC_REVIEWER,ROLE_KYC_ANALYST" />
 
         </casePlanModel>
     </case>

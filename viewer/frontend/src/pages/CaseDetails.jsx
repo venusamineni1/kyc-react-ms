@@ -48,6 +48,12 @@ const CaseDetails = () => {
     const [assignableUsers, setAssignableUsers] = useState([]);
     const [selectedAssignee, setSelectedAssignee] = useState('');
     const [assigning, setAssigning] = useState(false);
+    const [runningRisk, setRunningRisk] = useState(false);
+ 
+    // Task Completion States
+    const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+    const [taskToComplete, setTaskToComplete] = useState(null);
+    const [isCompleting, setIsCompleting] = useState(false);
 
     const loadCaseData = async () => {
         if (!kycCase) setLoading(true);
@@ -87,14 +93,9 @@ const CaseDetails = () => {
                 }
             }
 
-            // Fetch My Active Tasks for this Case
+            // Fetch Active Tasks directly for this Case
             try {
-                const tasks = await caseService.getUserTasks();
-                const caseTasks = tasks.filter(t => {
-                    if (t.caseId && String(t.caseId) === String(id)) return true;
-                    if (caseData.instanceID && t.caseInstanceId === caseData.instanceID) return true;
-                    return false;
-                });
+                const caseTasks = await caseService.getCaseTasks(id);
                 setMyTasks(caseTasks);
             } catch (taskErr) {
                 console.error("Failed to fetch user tasks", taskErr);
@@ -185,14 +186,40 @@ const CaseDetails = () => {
         }
     };
 
-    const handleCompleteTask = async (taskId) => {
-        if (!window.confirm('Are you sure you want to complete this task?')) return;
+    const handleConfirmTaskCompletion = async () => {
+        if (!taskToComplete) return;
+        setIsCompleting(true);
         try {
-            await caseService.completeTask(taskId);
+            await caseService.completeTask(taskToComplete.taskId);
             notify('Task completed successfully', 'success');
+            setIsCompleteModalOpen(false);
+            setTaskToComplete(null);
             loadCaseData();
         } catch (err) {
             notify('Failed to complete task: ' + err.message, 'error');
+        } finally {
+            setIsCompleting(false);
+        }
+    };
+
+    const handleOpenCompleteModal = (task) => {
+        setTaskToComplete(task);
+        setIsCompleteModalOpen(true);
+    };
+
+    const handleRecalculateRisk = async () => {
+        if (runningRisk) return;
+        setRunningRisk(true);
+        try {
+            await riskService.calculateRisk(kycCase.clientID);
+            notify('Risk Recalculation Successful', 'success');
+            // Reload risk history and latest assessment
+            const riskData = await riskService.getRiskHistory(kycCase.clientID);
+            setRiskHistory(riskData);
+        } catch (err) {
+            notify('Risk Calculation Failed: ' + err.message, 'error');
+        } finally {
+            setRunningRisk(false);
         }
     };
 
@@ -359,23 +386,59 @@ const CaseDetails = () => {
 
                 {activeTab === 'profile' && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                        <section className="glass-section">
-                            <h3 style={{ marginBottom: '1.5rem' }}>Client Risk Pulse</h3>
-                            {riskHistory.length > 0 ? (
-                                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                                    <div className="risk-score-large" style={{
-                                        color: riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'
-                                    }}>
-                                        {riskHistory[0].overallRiskScore}
+                        <section className="glass-section" style={{ padding: '0', overflow: 'hidden' }}>
+                            <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '1.5rem' }}>
+                                    <h3 style={{ margin: 0 }}>Client Risk Pulse</h3>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        {/* history button can be added later if needed, mirroring client details */}
+                                        <button 
+                                            onClick={handleRecalculateRisk} 
+                                            className={`btn-icon ${runningRisk ? 'spinning' : ''}`}
+                                            title="Recalculate Risk"
+                                            disabled={runningRisk}
+                                            style={{
+                                                background: 'rgba(255,255,255,0.1)',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                borderRadius: '4px',
+                                                padding: '4px 8px',
+                                                cursor: 'pointer',
+                                                color: 'white'
+                                            }}
+                                        >
+                                            🔄
+                                        </button>
                                     </div>
-                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '1rem' }}>
-                                        {riskHistory[0].overallRiskLevel} RISK
-                                    </div>
-                                    <p style={{ color: 'var(--text-secondary)' }}>Last calculated on {new Date(riskHistory[0].calculationDate).toLocaleDateString()}</p>
                                 </div>
-                            ) : (
-                                <div style={{ padding: '3rem', textAlign: 'center', color: '#666' }}>No risk assessments available for this client.</div>
-                            )}
+
+                                {riskHistory.length > 0 ? (
+                                    <>
+                                        <div style={{
+                                            width: '120px', height: '120px', borderRadius: '50%',
+                                            border: `8px solid ${riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'}`,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem',
+                                            boxShadow: `inset 0 0 20px ${riskHistory[0].overallRiskLevel === 'HIGH' ? 'rgba(255,77,79,0.2)' : 'rgba(82,196,26,0.2)'}`,
+                                            color: 'white'
+                                        }}>
+                                            {riskHistory[0].overallRiskScore}
+                                        </div>
+                                        <div style={{ 
+                                            fontSize: '1.2rem', 
+                                            fontWeight: 'bold', 
+                                            textTransform: 'uppercase',
+                                            color: riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a' 
+                                        }}>
+                                            {riskHistory[0].overallRiskLevel} RISK
+                                        </div>
+                                        <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                                            Last assessed on {new Date(riskHistory[0].calculationDate || riskHistory[0].createdAt).toLocaleDateString()}
+                                        </p>
+                                    </>
+                                ) : (
+                                    <div style={{ padding: '3rem', textAlign: 'center', color: '#666' }}>No risk assessments available for this client.</div>
+                                )}
+                            </div>
                         </section>
 
                         <section className="glass-section">
@@ -412,17 +475,7 @@ const CaseDetails = () => {
                                         <div className="task-actions">
                                             <button
                                                 className="btn-primary-sm"
-                                                onClick={async () => {
-                                                    if (window.confirm(`Complete task: ${task.name}?`)) {
-                                                        try {
-                                                            await caseService.completeTask(task.taskId);
-                                                            alert('Task completed successfully');
-                                                            loadCaseData();
-                                                        } catch (err) {
-                                                            alert('Failed to complete task: ' + err.message);
-                                                        }
-                                                    }
-                                                }}
+                                                onClick={() => handleOpenCompleteModal(task)}
                                             >
                                                 Complete Task
                                             </button>
@@ -568,6 +621,20 @@ const CaseDetails = () => {
                                 {u.username} {kycCase.assignedTo === u.username && <span className="current-label">Current</span>}
                             </button>
                         ))}
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal isOpen={isCompleteModalOpen} onClose={() => setIsCompleteModalOpen(false)} title="Confirm Task Completion" maxWidth="450px">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
+                        Are you sure you want to complete the task: <strong>{taskToComplete?.name}</strong>?
+                    </p>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                        <Button variant="secondary" onClick={() => setIsCompleteModalOpen(false)}>Cancel</Button>
+                        <Button onClick={handleConfirmTaskCompletion} disabled={isCompleting}>
+                            {isCompleting ? 'Completing...' : 'Complete Task'}
+                        </Button>
                     </div>
                 </div>
             </Modal>

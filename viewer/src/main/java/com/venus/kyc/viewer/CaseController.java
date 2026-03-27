@@ -103,8 +103,10 @@ public class CaseController {
     @Operation(summary = "Complete a task", description = "Marks a workflow task as completed, advancing the case to the next stage")
     @PostMapping("/tasks/{taskId}/complete")
     public ResponseEntity<Void> completeTask(@Parameter(description = "Task ID") @PathVariable String taskId,
+            @RequestBody(required = false) Map<String, String> request,
             Authentication authentication) {
-        caseService.completeTask(taskId, authentication.getName());
+        String action = request != null ? request.get("action") : null;
+        caseService.completeTask(taskId, authentication.getName(), action);
         return ResponseEntity.ok().build();
     }
 
@@ -144,6 +146,12 @@ public class CaseController {
             return List.of();
         }
         return caseService.getCaseTimeline(c.instanceID());
+    }
+
+    @Operation(summary = "Get case tasks", description = "Returns active workflow tasks for a specific case")
+    @GetMapping("/{id}/tasks")
+    public List<Map<String, Object>> getCaseTasks(@Parameter(description = "Case ID") @PathVariable Long id) {
+        return caseService.getTasksForCase(id);
     }
 
     @Operation(summary = "Get available actions", description = "Returns discretionary CMMN actions available for a case")
@@ -202,12 +210,13 @@ public class CaseController {
         }
 
         String comment = request.get("comment");
+        String action = request.get("action");
         if (comment != null) {
             caseRepository.addComment(id, authentication.getName(), comment, role);
         }
 
         try {
-            caseService.completeTask(taskId, authentication.getName());
+            caseService.completeTask(taskId, authentication.getName(), action);
             userAuditService.log(authentication.getName(), "TRANSITION_CASE", "Transitioned case " + id);
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();

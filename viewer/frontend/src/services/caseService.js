@@ -35,8 +35,11 @@ export const caseService = {
         return apiClient.get(`${API_BASE_URL}/${id}/actions`);
     },
 
-    triggerCaseAction: async (id, actionId, variables = {}) => {
-        return apiClient.post(`${API_BASE_URL}/${id}/actions/${actionId}`, variables);
+    getCaseTasks: async (caseId) => {
+        return apiClient.get(`/cases/${caseId}/tasks`);
+    },
+    triggerAction: async (caseId, actionId, variables = {}) => {
+        return apiClient.post(`${API_BASE_URL}/${caseId}/actions/${actionId}`, variables);
     },
 
     getCaseDocuments: async (id) => {

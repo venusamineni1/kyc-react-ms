@@ -141,6 +141,15 @@ const Layout = ({ children }) => {
 
                             <hr style={{ width: '100%', border: 'none', borderTop: '1px solid var(--glass-border)', margin: '0.2rem 0' }} />
 
+                            <Link to="/prospects" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
+                                Prospects Directory
+                            </Link>
+                            <Link to="/clients" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
+                                Client Directory
+                            </Link>
+
+                            <hr style={{ width: '100%', border: 'none', borderTop: '1px solid var(--glass-border)', margin: '0.2rem 0' }} />
+
                             <Button onClick={() => { logout(); setIsMenuOpen(false); }} style={{ backgroundColor: '#ff5555', width: '100%' }}>
                                 Logout
                             </Button>

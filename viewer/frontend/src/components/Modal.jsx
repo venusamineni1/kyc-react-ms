@@ -1,11 +1,11 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 
-const Modal = ({ isOpen, onClose, title, children, maxWidth = '600px' }) => {
+const Modal = ({ isOpen, onClose, title, children, maxWidth = '600px', closeOnOutsideClick = true }) => {
     if (!isOpen) return null;
 
     const modalContent = (
-        <div className="modal" style={{ display: 'block' }} onClick={onClose}>
+        <div className="modal" style={{ display: 'block' }} onClick={closeOnOutsideClick ? onClose : undefined}>
             <div
                 className="modal-content"
                 style={{ maxWidth }}

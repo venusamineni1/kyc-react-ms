@@ -110,6 +110,11 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
     const [currentRequestId, setCurrentRequestId] = useState(null);
     const [historyOpen, setHistoryOpen] = useState(false);
     const [history, setHistory] = useState([]);
+    
+    // Detailed Analysis State
+    const [analyzeModalOpen, setAnalyzeModalOpen] = useState(false);
+    const [analyzeResult, setAnalyzeResult] = useState(null);
+    const [loadingAnalyze, setLoadingAnalyze] = useState(false);
 
     // Auto-polling effect
     useEffect(() => {
@@ -139,14 +144,17 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
                     const sorted = log.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                     const latest = sorted[0];
 
+                    const reqId = latest.externalRequestID || latest.externalRequestId;
                     if (latest.overallStatus === 'COMPLETED' || latest.overallStatus === 'HIT' || latest.overallStatus === 'NO_HIT' || latest.overallStatus === 'CLEAR') {
-                        // We don't have the granular results here without calling status again
-                        // So we should fetch the status details if we have an ID
-                        if (latest.externalRequestID) {
-                            await checkStatus(latest.externalRequestID, true);
+                        if (reqId) {
+                            await checkStatus(reqId, true);
                         }
-                        // Fallback if checkStatus fails or returns nothing?
-                        // checkStatus sets 'results' and 'status' state.
+                    } else if (latest.overallStatus === 'IN_PROGRESS') {
+                        if (reqId) {
+                            setCurrentRequestId(reqId);
+                            setStatus('IN_PROGRESS');
+                            await checkStatus(reqId, true);
+                        }
                     }
                 }
             } catch (e) {
@@ -164,6 +172,21 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
             setHistory(log);
         } catch (e) {
             console.error("Failed to load history", e);
+        }
+    };
+
+    const handleAnalyze = async (reqId) => {
+        if (!reqId) return;
+        setAnalyzeModalOpen(true);
+        setLoadingAnalyze(true);
+        try {
+            const res = await screeningService.getScreeningStatus(reqId);
+            setAnalyzeResult(res);
+        } catch (e) {
+            notify('Failed to load screening analysis details', 'error');
+            setAnalyzeModalOpen(false);
+        } finally {
+            setLoadingAnalyze(false);
         }
     };
 
@@ -319,22 +342,97 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
                     }}>
                         <div style={{
                             background: '#1f1f1f', padding: '20px', borderRadius: '8px',
-                            width: '500px', maxHeight: '80vh', overflowY: 'auto',
+                            width: '550px', maxHeight: '80vh', overflowY: 'auto',
                             border: '1px solid var(--glass-border)'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
                                 <h3>Screening History</h3>
                                 <button onClick={() => setHistoryOpen(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
                             </div>
-                            {history.map((h, idx) => (
-                                <div key={idx} style={{ borderBottom: '1px solid #333', padding: '10px 0' }}>
-                                    <div><strong>Date:</strong> {new Date(h.createdAt || Date.now()).toLocaleString()}</div>
-                                    <div style={{ color: h.overallStatus === 'COMPLETED' ? '#52c41a' : '#faad14' }}>
-                                        <strong>Status:</strong> {h.overallStatus}
+                            {history.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>No screening history recorded.</p> : history.map((h, idx) => (
+                                <div key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '12px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.9rem' }}><strong>Date:</strong> {new Date(h.createdAt || Date.now()).toLocaleString()}</div>
+                                        <div style={{ color: h.overallStatus === 'COMPLETED' || h.overallStatus === 'CLEAR' || h.overallStatus === 'NO_HIT' ? '#52c41a' : '#faad14', margin: '4px 0', fontWeight: '500' }}>
+                                            <strong>Status:</strong> {h.overallStatus}
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: '#888' }}>ID: {h.externalRequestID || h.externalRequestId}</div>
                                     </div>
-                                    <div style={{ fontSize: '0.8rem', color: '#aaa' }}>{h.externalRequestID}</div>
+                                    <div>
+                                        <button 
+                                            onClick={() => handleAnalyze(h.externalRequestID || h.externalRequestId)} 
+                                            style={{
+                                                background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                                                color: '#fff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem'
+                                            }}
+                                        >
+                                            Analyze
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Analysis Breakdown Modal */}
+            {
+                analyzeModalOpen && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.85)', zIndex: 2000,
+                        display: 'flex', justifyContent: 'center', alignItems: 'center'
+                    }}>
+                        <div style={{
+                            background: '#1f1f1f', padding: '25px', borderRadius: '12px',
+                            width: '650px', maxHeight: '85vh', overflowY: 'auto',
+                            border: '1px solid var(--accent-primary)',
+                            boxShadow: '0 0 30px rgba(0, 242, 254, 0.1)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+                                <h3 style={{ margin: 0, color: 'var(--accent-primary)' }}>Screening Matrix Analysis</h3>
+                                <button onClick={() => { setAnalyzeModalOpen(false); setAnalyzeResult(null); }} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                            </div>
+                            
+                            {loadingAnalyze ? (
+                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Decrypting response matrix...</div>
+                            ) : analyzeResult ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem' }}>
+                                        <strong>Engine Status:</strong> {analyzeResult.overallStatus || 'No Hits'} <br/>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Transaction UUID: {analyzeResult.requestId || 'Unknown'}</div>
+                                    </div>
+
+                                    <h4 style={{ margin: '10px 0 0 0' }}>Watchlist Hits & Warnings</h4>
+                                    {(analyzeResult.results || []).filter(r => r.status === 'HIT' || r.alertMessage).length > 0 ? (
+                                        (analyzeResult.results || []).filter(r => r.status === 'HIT' || r.alertMessage).map((match, i) => (
+                                            <div key={i} style={{ padding: '15px', background: 'rgba(255, 77, 79, 0.05)', border: '1px solid rgba(255, 77, 79, 0.2)', borderRadius: '8px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span style={{ fontWeight: 'bold', color: '#ff4d4f' }}>{match.contextType} Watchlist</span>
+                                                    <span style={{ background: 'rgba(255,77,79,0.2)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', color: '#ff4d4f' }}>HIT</span>
+                                                </div>
+                                                <div style={{ marginTop: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '4px' }}>
+                                                    {match.alertMessage}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div style={{ padding: '2rem', textAlign: 'center', background: 'rgba(82, 196, 26, 0.05)', border: '1px solid rgba(82, 196, 26, 0.2)', borderRadius: '8px', color: '#52c41a' }}>
+                                            No active hits were detected across standard risk domains for this request.
+                                        </div>
+                                    )}
+
+                                    <h4 style={{ margin: '15px 0 5px 0' }}>Cleared Domains</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                        {(analyzeResult.results || []).filter(r => r.status === 'NO_HIT' || r.status === 'CLEAR').map((match, i) => (
+                                            <div key={i} style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', fontSize: '0.85rem' }}>
+                                                ✅ {match.contextType} Screened: Clear
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : <p style={{ color: 'var(--text-secondary)' }}>Failed to parse analysis blob.</p>}
                         </div>
                     </div>
                 )

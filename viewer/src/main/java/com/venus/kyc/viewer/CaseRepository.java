@@ -10,9 +10,11 @@ import java.util.Optional;
 public class CaseRepository {
 
     private final JdbcClient jdbcClient;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
-    public CaseRepository(JdbcClient jdbcClient) {
+    public CaseRepository(JdbcClient jdbcClient, org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
         this.jdbcClient = jdbcClient;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public List<Case> findAll() {
@@ -61,12 +63,13 @@ public class CaseRepository {
     }
 
     public void updateStatus(Long id, String status, String assignedTo) {
-        jdbcClient
-                .sql("UPDATE Cases SET Status = COALESCE(:status, Status), AssignedTo = :assignedTo WHERE CaseID = :id")
-                .param("status", status)
-                .param("assignedTo", assignedTo)
-                .param("id", id)
-                .update();
+        if (status != null && assignedTo != null) {
+            jdbcTemplate.update("UPDATE Cases SET Status = ?, AssignedTo = ? WHERE CaseID = ?", status, assignedTo, id);
+        } else if (status != null) {
+            jdbcTemplate.update("UPDATE Cases SET Status = ? WHERE CaseID = ?", status, id);
+        } else if (assignedTo != null) {
+            jdbcTemplate.update("UPDATE Cases SET AssignedTo = ? WHERE CaseID = ?", assignedTo, id);
+        }
     }
 
     public void addComment(Long caseId, String userId, String text, String role) {

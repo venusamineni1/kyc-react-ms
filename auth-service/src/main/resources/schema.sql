@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS UserAudits (
 MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('admin', '{noop}admin', 'ADMIN', TRUE);
 MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('user', '{noop}user', 'USER', TRUE);
 MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('analyst', '{noop}password', 'KYC_ANALYST', TRUE);
+MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('analyst2', '{noop}password', 'KYC_ANALYST', TRUE);
 MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('reviewer', '{noop}password', 'KYC_REVIEWER', TRUE);
 MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('afc_user', '{noop}password', 'AFC_REVIEWER', TRUE);
 MERGE INTO AppUsers (Username, Password, Role, Enabled) KEY (Username) VALUES ('aco_user', '{noop}password', 'ACO_REVIEWER', TRUE);

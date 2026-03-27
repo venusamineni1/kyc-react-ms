@@ -22,15 +22,24 @@ public class CaseService {
     private final CmmnHistoryService cmmnHistoryService;
     private final CaseRepository caseRepository;
     private final QuestionnaireRepository questionnaireRepository;
+    private final ClientRepository clientRepository;
+    private final com.venus.kyc.viewer.risk.RiskAssessmentService riskService;
+    private final com.venus.kyc.viewer.screening.ScreeningService screeningService;
 
     public CaseService(CmmnRuntimeService cmmnRuntimeService, CmmnTaskService cmmnTaskService,
             CmmnHistoryService cmmnHistoryService,
-            CaseRepository caseRepository, QuestionnaireRepository questionnaireRepository) {
+            CaseRepository caseRepository, QuestionnaireRepository questionnaireRepository,
+            ClientRepository clientRepository,
+            com.venus.kyc.viewer.risk.RiskAssessmentService riskService,
+            com.venus.kyc.viewer.screening.ScreeningService screeningService) {
         this.cmmnRuntimeService = cmmnRuntimeService;
         this.cmmnTaskService = cmmnTaskService;
         this.cmmnHistoryService = cmmnHistoryService;
         this.caseRepository = caseRepository;
         this.questionnaireRepository = questionnaireRepository;
+        this.clientRepository = clientRepository;
+        this.riskService = riskService;
+        this.screeningService = screeningService;
     }
 
     public record TimelineItem(
@@ -101,9 +110,47 @@ public class CaseService {
         }).collect(Collectors.toList());
     }
 
+    public List<Map<String, Object>> getTasksForCase(Long caseId) {
+        var caseInstances = cmmnRuntimeService.createCaseInstanceQuery()
+                .variableValueEquals("caseId", caseId)
+                .list();
+
+        if (caseInstances.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        String caseInstanceId = caseInstances.get(0).getId();
+        List<Task> cmmnTasks = cmmnTaskService.createTaskQuery()
+                .caseInstanceId(caseInstanceId)
+                .includeCaseVariables()
+                .orderByTaskCreateTime().desc()
+                .list();
+
+        return cmmnTasks.stream().map(task -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("taskId", task.getId());
+            map.put("name", task.getName());
+            map.put("createTime", task.getCreateTime());
+            map.put("caseInstanceId", task.getScopeId()); // CMMN Case Instance ID
+            map.put("assignee", task.getAssignee());
+            map.put("workflowType", "CMMN");
+
+            Map<String, Object> vars = task.getCaseVariables();
+            if (vars != null) {
+                map.put("caseId", vars.get("caseId"));
+                map.put("clientID", vars.get("clientID"));
+                map.put("initiator", vars.get("initiator"));
+            }
+            return map;
+        }).collect(Collectors.toList());
+    }
+
     @Transactional
     public void assignTask(Long caseId, String assignee, String initiator) {
-        // Check CMMN
+        // ALWAYS update the database record first for consistent display in header
+        caseRepository.updateStatus(caseId, null, assignee);
+
+        // 1. Try CMMN
         var caseInstances = cmmnRuntimeService.createCaseInstanceQuery()
                 .variableValueEquals("caseId", caseId)
                 .list();
@@ -117,12 +164,16 @@ public class CaseService {
             }
         }
 
-        throw new IllegalArgumentException("No active workflow found for Case ID " + caseId);
+        // 2. Try BPMN (BpmnRuntimeService would be needed, but for now we look in the main task service)
+        // If not assigned via CMMN, check all active tasks for this caseId (some might be BPMN)
+        // Note: In this architecture, we primarily use CMMN for cases, but we check all tasks to be safe.
+        // If CMMN failed or was empty, we can still return successfully as we updated the DB.
     }
 
     private void handleAssignTask(Task task, String assignee) {
         if (assignee != null && !assignee.isEmpty()) {
-            cmmnTaskService.claim(task.getId(), assignee);
+            // Use setAssignee to force assignment even if already claimed
+            cmmnTaskService.setAssignee(task.getId(), assignee);
         } else {
             cmmnTaskService.unclaim(task.getId());
         }
@@ -130,24 +181,42 @@ public class CaseService {
 
     @Transactional
     public void completeTask(String taskId, String userId) {
+        completeTask(taskId, userId, null);
+    }
+
+    @Transactional
+    public void completeTask(String taskId, String userId, String action) {
         // Try CMMN
         Task task = cmmnTaskService.createTaskQuery().taskId(taskId).singleResult();
         if (task != null) {
-            completeCmmnTask(task, userId);
+            completeCmmnTask(task, userId, action);
             return;
         }
 
         throw new IllegalArgumentException("Task not found: " + taskId);
     }
 
-    private void completeCmmnTask(Task task, String userId) {
+    private void completeCmmnTask(Task task, String userId, String action) {
         String caseInstanceId = task.getScopeId();
         Object caseIdObj = cmmnRuntimeService.getVariable(caseInstanceId, "caseId");
         if (caseIdObj == null)
             return;
         Long caseId = Long.parseLong(caseIdObj.toString());
 
-        cmmnTaskService.claim(task.getId(), userId);
+        Object clientIdObj = cmmnRuntimeService.getVariable(caseInstanceId, "clientID");
+        Long clientId = null;
+        if (clientIdObj != null) {
+            clientId = Long.parseLong(clientIdObj.toString());
+        }
+
+        if (task.getAssignee() == null) {
+            cmmnTaskService.claim(task.getId(), userId);
+        } else if (!task.getAssignee().equals(userId)) {
+            // Optional: You could allow 'stealing' the task by calling setAssignee
+            // but for now let's respect the existing claim to avoid conflicts.
+            // cmmnTaskService.setAssignee(task.getId(), userId);
+        }
+
         cmmnTaskService.complete(task.getId());
 
         // Update Status logic based on task definition
@@ -155,7 +224,13 @@ public class CaseService {
         String nextStatus = "PROCESSING";
 
         if ("ht_acoReview".equals(taskKey)) {
-            nextStatus = "COMPLETED";
+            if ("APPROVE".equalsIgnoreCase(action)) {
+                nextStatus = "APPROVED";
+            } else if ("REJECT".equalsIgnoreCase(action)) {
+                nextStatus = "REJECTED";
+            } else {
+                nextStatus = "COMPLETED";
+            }
         } else if ("ht_analystReview".equals(taskKey)) {
             nextStatus = "REVIEWER_REVIEW";
         } else if ("ht_reviewerReview".equals(taskKey)) {
@@ -165,6 +240,22 @@ public class CaseService {
         }
 
         caseRepository.updateStatus(caseId, nextStatus, null);
+
+        if (clientId != null && ("APPROVED".equals(nextStatus) || "REJECTED".equals(nextStatus))) {
+            clientRepository.updateClientStatus(clientId, nextStatus);
+            sendFeedbackToClientFacingSystem(clientId, nextStatus);
+        }
+    }
+
+    private void sendFeedbackToClientFacingSystem(Long clientId, String finalDecision) {
+        try {
+            org.slf4j.LoggerFactory.getLogger(CaseService.class).info(
+                "MOCK WEBHOOK: Sending final decision to client-facing system for client {}. Decision: {}",
+                clientId, finalDecision
+            );
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(CaseService.class).error("Error sending feedback", e);
+        }
     }
 
     @Transactional

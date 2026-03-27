@@ -65,6 +65,7 @@ const ClientDetails = () => {
     const [cases, setCases] = useState([]);
     const [riskHistory, setRiskHistory] = useState([]);
     const [materialChanges, setMaterialChanges] = useState([]);
+    const [audits, setAudits] = useState([]);
 
     // Modals
     const [isCaseModalOpen, setIsCaseModalOpen] = useState(false);
@@ -81,6 +82,7 @@ const ClientDetails = () => {
     const [selectedAssessment, setSelectedAssessment] = useState(null);
     const [assessmentDetails, setAssessmentDetails] = useState([]);
     const [activePartyTab, setActivePartyTab] = useState('identity');
+    const [activeActivityTab, setActiveActivityTab] = useState('cases');
     const [viewParty, setViewParty] = useState(null);
 
     const handleViewParty = (party) => {
@@ -95,15 +97,17 @@ const ClientDetails = () => {
             setClient(clientData);
 
             // Parallel fetches
-            const [casesData, riskData, changesData] = await Promise.all([
+            const [casesData, riskData, changesData, auditData] = await Promise.all([
                 caseService.getCasesByClient(id).catch(() => []),
                 riskService.getRiskHistory(id).catch(() => []),
-                clientService.getClientChanges(id).catch(() => [])
+                clientService.getClientChanges(id).catch(() => []),
+                import('../services/apiClient').then(m => m.default.get('/admin/audits')).catch(() => [])
             ]);
 
             setCases(casesData);
             setRiskHistory(riskData);
             setMaterialChanges(changesData);
+            setAudits(auditData ? auditData.filter(a => a.details && a.details.includes(String(id))) : []);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -151,6 +155,49 @@ const ClientDetails = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Onboarding Resolution Banner */}
+            {['NEW', 'SCREENING_IN_PROGRESS', 'RISK_EVALUATION_IN_PROGRESS', 'IN_REVIEW', 'APPROVED', 'REJECTED'].includes(client.status) && (
+                <div style={{
+                    padding: '1.2rem',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    ...(client.status === 'APPROVED' ? {
+                        background: 'rgba(82, 196, 26, 0.1)',
+                        border: '1px solid var(--success-color)'
+                    } : client.status === 'REJECTED' ? {
+                        background: 'rgba(255, 77, 79, 0.1)',
+                        border: '1px solid var(--error-color)'
+                    } : client.status === 'IN_REVIEW' ? {
+                        background: 'rgba(250, 173, 20, 0.1)',
+                        border: '1px solid var(--warning-color)'
+                    } : {
+                        background: 'rgba(0, 242, 254, 0.1)',
+                        border: '1px solid var(--accent-primary)'
+                    })
+                }}>
+                    <div style={{ fontSize: '1.5rem' }}>
+                        {client.status === 'APPROVED' ? '✅' : client.status === 'REJECTED' ? '❌' : client.status === 'IN_REVIEW' ? '⚠️' : '⏳'}
+                    </div>
+                    <div>
+                        <h4 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>
+                            {client.status === 'APPROVED' ? 'Onboarding Auto-Approved' : 
+                             client.status === 'REJECTED' ? 'Onboarding Rejected' : 
+                             client.status === 'IN_REVIEW' ? 'Onboarding On Hold: Manual Review Required' : 
+                             'Onboarding In Progress...'}
+                        </h4>
+                        <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                            {client.status === 'APPROVED' ? 'The system has cleared all checks and this prospect is approved.' : 
+                             client.status === 'REJECTED' ? 'This prospect has critically failed risk or screening checks.' : 
+                             client.status === 'IN_REVIEW' ? 'A case has been generated. Please resolve it to conclude the onboarding pipeline.' : 
+                             'The engine is currently calculating risk classifications and screening matrices.'}
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Professional Hero Header */}
             <div className="glass-section" style={{ padding: '2rem', borderLeft: '4px solid var(--accent-primary)', background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -179,23 +226,28 @@ const ClientDetails = () => {
                         {hasPermission('MANAGE_CASES') && (
                             <Button onClick={() => setIsCaseModalOpen(true)}>Initiate Review</Button>
                         )}
-                        <Link to="/clients" className="btn btn-secondary" style={{ textDecoration: 'none' }}>Directory</Link>
+                        <Link to={['NEW', 'SCREENING_IN_PROGRESS', 'RISK_EVALUATION_IN_PROGRESS', 'IN_REVIEW'].includes(client.status) ? "/prospects" : "/clients"} className="btn btn-secondary" style={{ textDecoration: 'none' }}>Directory</Link>
                     </div>
                 </div>
             </div>
 
             {/* Main Content Area with Tabs */}
             <div className="glass-section" style={{ padding: '0', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap',
+                    borderBottom: '1px solid rgba(255,255,255,0.1)', 
+                    background: 'rgba(255,255,255,0.02)'
+                }}>
                     <TabButton active={activeTab === 'overview'} label="Overview" icon="👤" onClick={() => setActiveTab('overview')} />
                     <TabButton active={activeTab === 'financials'} label="Financials" icon="💳" onClick={() => setActiveTab('financials')} />
                     <TabButton active={activeTab === 'compliance'} label="Compliance & Risk" icon="🛡️" onClick={() => setActiveTab('compliance')} />
-                    <TabButton active={activeTab === 'parties'} label="Related Parties" icon="👥" onClick={() => setActiveTab('parties')} />
-                    <TabButton active={activeTab === 'activity'} label="Activity & Audit" icon="📊" onClick={() => setActiveTab('activity')} />
+                    <TabButton active={activeTab === 'parties'} label="Parties" icon="👥" onClick={() => setActiveTab('parties')} />
+                    <TabButton active={activeTab === 'activity'} label="Activity & Audit" icon="📜" onClick={() => setActiveTab('activity')} />
                 </div>
 
-                <div style={{ padding: '2rem' }}>
-                    {activeTab === 'overview' && (
+            <div style={{ padding: '2rem' }}>
+                {activeTab === 'overview' && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem' }}>
                             <div>
                                 <h4 style={{ color: 'var(--accent-primary)', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>Identity</h4>
@@ -409,67 +461,141 @@ const ClientDetails = () => {
 
                     {activeTab === 'activity' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                            <Section title="KYC Case History" actions={
-                                cases.length > 0 && (
-                                    <Button variant="secondary" onClick={() => setViewQuestionnaireCaseId(cases[0].caseID)} style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem' }}>
-                                        Latest Questionnaire
-                                    </Button>
-                                )
-                            }>
-                                {cases.length > 0 ? (
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>Case ID</th>
-                                                <th>Reason</th>
-                                                <th>Status</th>
-                                                <th>Date</th>
-                                                <th style={{ textAlign: 'right' }}>Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {cases.map((c) => (
-                                                <tr key={c.caseID}>
-                                                    <td>#{c.caseID}</td>
-                                                    <td>{c.reason}</td>
-                                                    <td><span className={`status-badge ${c.status === 'APPROVED' ? 'active' : c.status === 'REJECTED' ? 'rejected' : 'pending'}`}>{c.status}</span></td>
-                                                    <td style={{ fontSize: '0.8rem' }}>{c.createdDate}</td>
-                                                    <td style={{ textAlign: 'right' }}>
-                                                        <Link to={`/cases/${c.caseID}`} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', textDecoration: 'none' }}>Open</Link>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                ) : <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>No case history found.</p>}
-                            </Section>
+                            <div style={{ 
+                                display: 'flex', 
+                                flexWrap: 'wrap',
+                                borderBottom: '1px solid rgba(255,255,255,0.1)', 
+                                background: 'rgba(255,255,255,0.02)'
+                            }}>
+                                <TabButton active={activeActivityTab === 'cases'} icon="📂" label="Cases" onClick={() => setActiveActivityTab('cases')} />
+                                <TabButton active={activeActivityTab === 'changes'} icon="🔄" label="Changes" onClick={() => setActiveActivityTab('changes')} />
+                                <TabButton active={activeActivityTab === 'onboarding'} icon="🚀" label="Milestones" onClick={() => setActiveActivityTab('onboarding')} />
+                                <TabButton active={activeActivityTab === 'audit'} icon="📋" label="Audit" onClick={() => setActiveActivityTab('audit')} />
+                            </div>
 
-                            <Section title="Material Changes Audit">
-                                {materialChanges.length > 0 ? (
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Category</th>
-                                                <th>Field</th>
-                                                <th>New Value</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {materialChanges.map((mc) => (
-                                                <tr key={mc.changeID}>
-                                                    <td style={{ fontSize: '0.8rem' }}>{new Date(mc.changeDate).toLocaleDateString()}</td>
-                                                    <td><span className={`status-badge ${mc.category === 'RISK' ? 'suspended' : mc.category === 'SCREENING' ? 'pending' : 'active'}`}>{mc.category}</span></td>
-                                                    <td><strong>{mc.columnName}</strong></td>
-                                                    <td style={{ color: '#51cf66', fontWeight: '500' }}>{mc.newValue}</td>
-                                                    <td><span className={`status-badge ${mc.status === 'PENDING' ? 'rejected' : 'active'}`}>{mc.status}</span></td>
+                            {activeActivityTab === 'cases' && (
+                                <Section title="KYC Case History" actions={
+                                    cases.length > 0 && (
+                                        <Button variant="secondary" onClick={() => setViewQuestionnaireCaseId(cases[0].caseID)} style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem' }}>
+                                            Latest Questionnaire
+                                        </Button>
+                                    )
+                                }>
+                                    {cases.length > 0 ? (
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Case ID</th>
+                                                    <th>Reason</th>
+                                                    <th>Status</th>
+                                                    <th>Date</th>
+                                                    <th style={{ textAlign: 'right' }}>Action</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                ) : <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>No material changes recorded.</p>}
-                            </Section>
+                                            </thead>
+                                            <tbody>
+                                                {cases.map((c) => (
+                                                    <tr key={c.caseID}>
+                                                        <td>#{c.caseID}</td>
+                                                        <td>{c.reason}</td>
+                                                        <td><span className={`status-badge ${c.status === 'APPROVED' ? 'active' : c.status === 'REJECTED' ? 'rejected' : 'pending'}`}>{c.status}</span></td>
+                                                        <td style={{ fontSize: '0.8rem' }}>{c.createdDate}</td>
+                                                        <td style={{ textAlign: 'right' }}>
+                                                            <Link to={`/cases/${c.caseID}`} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', textDecoration: 'none' }}>Open</Link>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    ) : <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>No case history found.</p>}
+                                </Section>
+                            )}
+
+                            {activeActivityTab === 'changes' && (
+                                <Section title="Material Changes Audit">
+                                    {materialChanges.length > 0 ? (
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Category</th>
+                                                    <th>Field</th>
+                                                    <th>New Value</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {materialChanges.map((mc) => (
+                                                    <tr key={mc.changeID}>
+                                                        <td style={{ fontSize: '0.8rem' }}>{new Date(mc.changeDate).toLocaleDateString()}</td>
+                                                        <td><span className={`status-badge ${mc.category === 'RISK' ? 'suspended' : mc.category === 'SCREENING' ? 'pending' : 'active'}`}>{mc.category}</span></td>
+                                                        <td><strong>{mc.columnName}</strong></td>
+                                                        <td style={{ color: '#51cf66', fontWeight: '500' }}>{mc.newValue}</td>
+                                                        <td><span className={`status-badge ${mc.status === 'PENDING' ? 'rejected' : 'active'}`}>{mc.status}</span></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    ) : <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>No material changes recorded.</p>}
+                                </Section>
+                            )}
+
+                            {activeActivityTab === 'onboarding' && (
+                                <Section title="Onboarding Journey">
+                                    {audits.filter(a => a.action && a.action.startsWith('ONBOARDING')).length > 0 ? (
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Timestamp</th>
+                                                    <th>User</th>
+                                                    <th>Milestone</th>
+                                                    <th>Details</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {audits.filter(a => a.action && a.action.startsWith('ONBOARDING')).map((a, i) => (
+                                                    <tr key={i}>
+                                                        <td style={{ fontSize: '0.8rem' }}>{new Date(a.timestamp).toLocaleString()}</td>
+                                                        <td>{a.username}</td>
+                                                        <td><span className={`status-badge ${a.action.includes('REJECTED') ? 'rejected' : a.action.includes('APPROVED') ? 'active' : 'suspended'}`}>{a.action.replace('ONBOARDING_', '')}</span></td>
+                                                        <td style={{ color: 'var(--text-secondary)' }}>{a.details}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    ) : (
+                                        <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>No onboarding journey milestones recorded.</p>
+                                    )}
+                                </Section>
+                            )}
+
+                            {activeActivityTab === 'audit' && (
+                                <Section title="System Audit Log">
+                                    {audits.filter(a => !(a.action && a.action.startsWith('ONBOARDING'))).length > 0 ? (
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Timestamp</th>
+                                                    <th>User</th>
+                                                    <th>Event</th>
+                                                    <th>Details</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {audits.filter(a => !(a.action && a.action.startsWith('ONBOARDING'))).map((a, i) => (
+                                                    <tr key={i}>
+                                                        <td style={{ fontSize: '0.8rem' }}>{new Date(a.timestamp).toLocaleString()}</td>
+                                                        <td>{a.username}</td>
+                                                        <td><span className="status-badge" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none' }}>{a.action}</span></td>
+                                                        <td style={{ color: 'var(--text-secondary)' }}>{a.details}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    ) : (
+                                        <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>No system events recorded.</p>
+                                    )}
+                                </Section>
+                            )}
                         </div>
                     )}
                 </div>

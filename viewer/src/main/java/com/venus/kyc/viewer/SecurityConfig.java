@@ -40,6 +40,7 @@ public class SecurityConfig {
                                                 // APIs that moved to auth-service will be routed by Gateway, but if
                                                 // someone calls viewer directly:
                                                 .requestMatchers("/api/users/me").authenticated()
+                                                .requestMatchers("/api/users/role/**").authenticated()
                                                 .requestMatchers("/api/users/**").hasAuthority("MANAGE_USERS")
                                                 .requestMatchers("/api/permissions/**")
                                                 .hasAuthority("MANAGE_PERMISSIONS")
@@ -49,7 +50,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/clients/**").hasAuthority("VIEW_CLIENTS")
                                                 .requestMatchers("/api/clients/changes").hasAuthority("VIEW_CHANGES")
                                                 .requestMatchers("/api/cases/**").hasAuthority("MANAGE_CASES")
-                                                .requestMatchers("/api/admin/audits").hasAuthority("MANAGE_AUDITS")
+                                                .requestMatchers("/api/admin/audits").hasAnyAuthority("MANAGE_AUDITS", "VIEW_CLIENTS")
                                                 .requestMatchers("/api/admin/config").hasAuthority("MANAGE_CONFIG")
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

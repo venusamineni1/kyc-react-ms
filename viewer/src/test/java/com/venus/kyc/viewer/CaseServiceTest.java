@@ -33,12 +33,20 @@ public class CaseServiceTest {
     @Mock
     private QuestionnaireRepository questionnaireRepository;
 
+    @Mock
+    private ClientRepository clientRepository;
+    @Mock
+    private com.venus.kyc.viewer.risk.RiskAssessmentService riskService;
+    @Mock
+    private com.venus.kyc.viewer.screening.ScreeningService screeningService;
+
     private CaseService caseService;
 
     @BeforeEach
     void setUp() {
         caseService = new CaseService(cmmnRuntimeService, cmmnTaskService,
-                cmmnHistoryService, caseRepository, questionnaireRepository);
+                cmmnHistoryService, caseRepository, questionnaireRepository,
+                clientRepository, riskService, screeningService);
     }
 
     @Test

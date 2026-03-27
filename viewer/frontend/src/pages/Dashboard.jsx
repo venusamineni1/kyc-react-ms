@@ -60,6 +60,14 @@ const Dashboard = () => {
                     permission="VIEW_CLIENTS"
                 />
                 <DashboardCard
+                    to="/prospects"
+                    id="prospectsCard"
+                    title="Prospects Directory"
+                    description="Create new clients and track their onboarding screening and risk progress."
+                    color="#f6d365"
+                    permission="VIEW_CLIENTS"
+                />
+                <DashboardCard
                     to="/changes"
                     id="changesCard"
                     title="Material Changes"

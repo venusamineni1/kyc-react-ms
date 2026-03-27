@@ -13,6 +13,8 @@ const CaseActions = ({ id, onActionTriggered }) => {
     const [activeAction, setActiveAction] = useState(null);
     const [formData, setFormData] = useState({});
     const [submitting, setSubmitting] = useState(false);
+    const [assignableUsers, setAssignableUsers] = useState([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
 
     const loadActions = async () => {
         try {
@@ -23,19 +25,37 @@ const CaseActions = ({ id, onActionTriggered }) => {
         }
     };
 
+    const loadAssignableUsers = async (actionDefId) => {
+        setLoadingUsers(true);
+        try {
+            let role = 'KYC_ANALYST';
+            if (actionDefId === 'evtChallengeScreening') role = 'AFC_REVIEWER';
+            if (actionDefId === 'evtOverrideRisk') role = 'KYC_ANALYST'; // Changed from KYC_REVIEWER to allow peer analyst assignment
+            if (actionDefId === 'evtInitiateCommunication') role = 'KYC_ANALYST';
+
+            const users = await caseService.getUsersByRole(role);
+            setAssignableUsers(users || []);
+        } catch (err) {
+            notify('Failed to load assignable users', 'error');
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
+
     useEffect(() => {
         loadActions();
     }, [id]);
 
     const handleOpenModal = (action) => {
         setActiveAction(action);
-        setFormData({});
+        setFormData({ taskAssignee: '' });
+        loadAssignableUsers(action.definitionId);
     };
 
     const handleTrigger = async () => {
         setSubmitting(true);
         try {
-            await caseService.triggerCaseAction(id, activeAction.id, formData);
+            await caseService.triggerAction(id, activeAction.id, formData);
             notify(`Action "${activeAction.name}" triggered successfully`, 'success');
             setActiveAction(null);
             loadActions();
@@ -121,6 +141,33 @@ const CaseActions = ({ id, onActionTriggered }) => {
                         ) : (
                             <p style={{ color: 'var(--text-secondary)' }}>Are you sure you want to trigger <strong>{activeAction.name}</strong>?</p>
                         )}
+
+                        {/* Assignee Selection (Common for all discretionary actions) */}
+                        <div style={{ marginTop: '0.5rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Assign To (Optional)</label>
+                            <select
+                                value={formData.taskAssignee || ''}
+                                onChange={(e) => setFormData({ ...formData, taskAssignee: e.target.value })}
+                                className="form-control"
+                                disabled={loadingUsers}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '0.6rem', 
+                                    background: 'var(--glass-bg)', 
+                                    color: 'var(--text-color)', 
+                                    border: '1px solid var(--glass-border)', 
+                                    borderRadius: '4px' 
+                                }}
+                            >
+                                <option value="">Select an assignee...</option>
+                                {assignableUsers.map(user => (
+                                    <option key={user.username} value={user.username}>
+                                        {user.firstName} {user.lastName} ({user.username})
+                                    </option>
+                                ))}
+                            </select>
+                            {loadingUsers && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Loading users...</span>}
+                        </div>
 
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                             <Button variant="secondary" onClick={() => setActiveAction(null)}>Cancel</Button>

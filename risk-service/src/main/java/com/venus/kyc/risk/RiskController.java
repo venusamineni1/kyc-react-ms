@@ -150,6 +150,10 @@ public class RiskController {
   @PostMapping("/dummy-external-api")
   public org.springframework.http.ResponseEntity<String> mockExternalApi(@RequestBody String request) {
     String recordId = "00001497165";
+    boolean isCuba = request != null && (request.contains("\"CU\"") || request.toLowerCase().contains("\"cuba\""));
+    String riskLevel = isCuba ? "HIGH" : "LOW";
+    int riskScore = isCuba ? 9 : 1;
+
     try {
       com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
       com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(request);
@@ -189,11 +193,11 @@ public class RiskController {
                   "error": null,
                   "overallRiskAssessment": {
                     "riskScoreDetails": null,
-                    "overallRiskScore": 1,
-                    "initialRiskLevel": "LOW",
-                    "riskRatingPreSMEAssessment": "HIGH",
-                    "overallRiskLevel": "HIGH",
-                    "typeOfLogicApplied": "Adverse Media",
+                    "overallRiskScore": %d,
+                    "initialRiskLevel": "%s",
+                    "riskRatingPreSMEAssessment": "%s",
+                    "overallRiskLevel": "%s",
+                    "typeOfLogicApplied": "Standard",
                     "smeRiskAssessment": ""
                   },
                   "entityRiskType": {
@@ -290,7 +294,7 @@ public class RiskController {
                 }
               ]
             }
-        """.formatted(recordId);
+        """.formatted(recordId, riskScore, riskLevel, riskLevel, riskLevel);
     return org.springframework.http.ResponseEntity.ok()
         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
         .body(jsonResponse);

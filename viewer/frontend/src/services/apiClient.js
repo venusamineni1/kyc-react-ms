@@ -25,6 +25,10 @@ const apiClient = {
             },
         };
 
+        if (config.body instanceof FormData) {
+            delete config.headers['Content-Type'];
+        }
+
         try {
             const response = await fetch(url, config);
             const text = await response.text();
@@ -64,17 +68,21 @@ const apiClient = {
         return this.request(endpoint, { method: 'GET' });
     },
 
-    post(endpoint, body) {
+    post(endpoint, body, options = {}) {
+        const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
         return this.request(endpoint, {
             method: 'POST',
-            body: JSON.stringify(body),
+            body: isFormData ? body : JSON.stringify(body),
+            ...options
         });
     },
 
-    put(endpoint, body) {
+    put(endpoint, body, options = {}) {
+        const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
         return this.request(endpoint, {
             method: 'PUT',
-            body: JSON.stringify(body),
+            body: isFormData ? body : JSON.stringify(body),
+            ...options
         });
     },
 

@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ClientDirectory from './pages/ClientDirectory';
+import ProspectDirectory from './pages/ProspectDirectory';
 import ClientDetails from './pages/ClientDetails';
 import CaseList from './pages/CaseList';
 import CaseDetails from './pages/CaseDetails';
@@ -69,6 +70,7 @@ function App() {
                         <Routes>
                           <Route path="/" element={<Dashboard />} />
                           <Route path="/clients" element={<ClientDirectory />} />
+                          <Route path="/prospects" element={<ProspectDirectory />} />
                           <Route path="/clients/:id" element={<ClientDetails />} />
                           <Route path="/changes" element={<MaterialChanges />} />
                           <Route path="/users" element={<AdminUserManagement />} />

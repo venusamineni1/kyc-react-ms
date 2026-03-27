@@ -77,6 +77,65 @@ public class ClientRepository {
                 return new PaginatedResponse<>(clients, page, size, totalElements, totalPages);
         }
 
+        public PaginatedResponse<Client> findProspectsPaginated(int page, int size) {
+                int limit = size;
+                int offset = page * size;
+                List<String> prospectStatuses = List.of("NEW", "SCREENING_IN_PROGRESS", "RISK_EVALUATION_IN_PROGRESS",
+                                "IN_REVIEW", "APPROVED", "REJECTED");
+
+                List<Client> content = jdbcClient
+                                .sql("SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients WHERE Status IN (:statuses) ORDER BY ClientID DESC LIMIT :limit OFFSET :offset")
+                                .param("limit", limit)
+                                .param("offset", offset)
+                                .param("statuses", prospectStatuses)
+                                .query((rs, rowNum) -> new Client(
+                                                rs.getLong("ClientID"),
+                                                rs.getString("TitlePrefix"),
+                                                rs.getString("FirstName"),
+                                                rs.getString("MiddleName"),
+                                                rs.getString("LastName"),
+                                                rs.getString("TitleSuffix"),
+                                                rs.getString("Citizenship1"),
+                                                rs.getString("Citizenship2"),
+                                                rs.getDate("OnboardingDate").toLocalDate(),
+                                                rs.getString("Status"),
+                                                rs.getString("NameAtBirth"),
+                                                rs.getString("NickName"),
+                                                rs.getString("Gender"),
+                                                rs.getDate("DateOfBirth") != null
+                                                                ? rs.getDate("DateOfBirth").toLocalDate()
+                                                                : null,
+                                                rs.getString("Language"),
+                                                rs.getString("Occupation"),
+                                                rs.getString("CountryOfTax"),
+                                                rs.getString("SourceOfFundsCountry"),
+                                                rs.getString("FATCAStatus"),
+                                                rs.getString("CRSStatus"),
+                                                rs.getString("PlaceOfBirth"),
+                                                rs.getString("CityOfBirth"),
+                                                rs.getString("CountryOfBirth"),
+                                                new java.util.ArrayList<>(),
+                                                new java.util.ArrayList<>(),
+                                                new java.util.ArrayList<>(),
+                                                new java.util.ArrayList<>(),
+                                                new java.util.ArrayList<>()))
+                                .list();
+
+                for (Client client : content) {
+                        client.addresses().addAll(fetchAddresses(client.clientID()));
+                        client.accounts().addAll(fetchAccounts(client.clientID()));
+                        client.identifiers().addAll(fetchIdentifiers(client.clientID()));
+                }
+
+                Long totalElements = jdbcClient.sql("SELECT COUNT(*) FROM Clients WHERE Status IN (:statuses)")
+                                .param("statuses", prospectStatuses)
+                                .query(Long.class)
+                                .single();
+
+                return new PaginatedResponse<>(content, page, size, totalElements,
+                                (int) Math.ceil((double) totalElements / size));
+        }
+
         public Optional<Client> findById(Long id) {
                 Optional<Client> clientOpt = jdbcClient.sql(
                                 "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients WHERE ClientID = :id")
@@ -124,6 +183,59 @@ public class ClientRepository {
                 }
 
                 return clientOpt;
+        }
+
+        public Long insertClient(Client client) {
+                org.springframework.jdbc.support.KeyHolder keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
+                jdbcClient.sql(
+                                "INSERT INTO Clients (TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth) VALUES (:titlePrefix, :firstName, :middleName, :lastName, :titleSuffix, :citizenship1, :citizenship2, :onboardingDate, :status, :nameAtBirth, :nickName, :gender, :dateOfBirth, :language, :occupation, :countryOfTax, :sourceOfFundsCountry, :fatcaStatus, :crsStatus, :placeOfBirth, :cityOfBirth, :countryOfBirth)")
+                                .param("titlePrefix", client.titlePrefix())
+                                .param("firstName", client.firstName())
+                                .param("middleName", client.middleName())
+                                .param("lastName", client.lastName())
+                                .param("titleSuffix", client.titleSuffix())
+                                .param("citizenship1", client.citizenship1())
+                                .param("citizenship2", client.citizenship2())
+                                .param("onboardingDate", client.onboardingDate() != null ? client.onboardingDate() : java.time.LocalDate.now())
+                                .param("status", client.status() != null ? client.status() : "NEW")
+                                .param("nameAtBirth", client.nameAtBirth())
+                                .param("nickName", client.nickName())
+                                .param("gender", client.gender())
+                                .param("dateOfBirth", client.dateOfBirth())
+                                .param("language", client.language())
+                                .param("occupation", client.occupation())
+                                .param("countryOfTax", client.countryOfTax())
+                                .param("sourceOfFundsCountry", client.sourceOfFundsCountry())
+                                .param("fatcaStatus", client.fatcaStatus())
+                                .param("crsStatus", client.crsStatus())
+                                .param("placeOfBirth", client.placeOfBirth())
+                                .param("cityOfBirth", client.cityOfBirth())
+                                .param("countryOfBirth", client.countryOfBirth())
+                                .update(keyHolder, new String[] { "ClientID" });
+
+                return keyHolder.getKey().longValue();
+        }
+
+        public void updateClientStatus(Long id, String status) {
+                jdbcClient.sql("UPDATE Clients SET Status = :status WHERE ClientID = :id")
+                                .param("status", status)
+                                .param("id", id)
+                                .update();
+        }
+
+        public void addAddress(Long clientId, Address addr) {
+                jdbcClient.sql(
+                                "INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement) VALUES (:clientID, :addressType, :addressLine1, :addressLine2, :city, :zip, :country, :addressNumber, :addressSupplement)")
+                                .param("clientID", clientId)
+                                .param("addressType", addr.addressType())
+                                .param("addressLine1", addr.addressLine1())
+                                .param("addressLine2", addr.addressLine2())
+                                .param("city", addr.city())
+                                .param("zip", addr.zip())
+                                .param("country", addr.country())
+                                .param("addressNumber", addr.addressNumber())
+                                .param("addressSupplement", addr.addressSupplement())
+                                .update();
         }
 
         private List<Address> fetchAddresses(Long id) {
