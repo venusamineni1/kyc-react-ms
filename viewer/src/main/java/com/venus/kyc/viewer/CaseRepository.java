@@ -63,11 +63,11 @@ public class CaseRepository {
     }
 
     public void updateStatus(Long id, String status, String assignedTo) {
-        if (status != null && assignedTo != null) {
+        if (status != null) {
+            // Update status and assignee together (assignee could be null to clear it)
             jdbcTemplate.update("UPDATE Cases SET Status = ?, AssignedTo = ? WHERE CaseID = ?", status, assignedTo, id);
-        } else if (status != null) {
-            jdbcTemplate.update("UPDATE Cases SET Status = ? WHERE CaseID = ?", status, id);
-        } else if (assignedTo != null) {
+        } else {
+            // Update only assignee (could be null to clear it)
             jdbcTemplate.update("UPDATE Cases SET AssignedTo = ? WHERE CaseID = ?", assignedTo, id);
         }
     }
