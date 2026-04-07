@@ -1,0 +1,9 @@
+rootProject.name = 'kyc-react-ms'
+
+include 'service-registry'
+include 'api-gateway'
+include 'auth-service'
+include 'risk-service'
+include 'screening-service'
+include 'document-service'
+include 'viewer'

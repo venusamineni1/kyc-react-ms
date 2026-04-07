@@ -5,10 +5,10 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}Building all services via Root POM...${NC}"
+echo -e "${GREEN}Building all services via Gradle...${NC}"
 
-# Use the root maven wrapper to build everything defined in pom.xml
-if ./mvnw clean package -DskipTests; then
+# Use the root gradle wrapper to build everything
+if ./gradlew clean build -x test; then
     echo -e "${GREEN}All backend services built successfully!${NC}"
 else
     echo -e "${RED}Backend build failed${NC}"

@@ -8,6 +8,8 @@ const History = () => {
     const { notify } = useNotification();
     const [history, setHistory] = useState([]);
     const [filteredHistory, setFilteredHistory] = useState([]);
+    const [snapshotModal, setSnapshotModal] = useState(null); // { snapshot, batchName }
+    const [loadingSnapshot, setLoadingSnapshot] = useState(false);
     const [filters, setFilters] = useState({
         service: { risk: true, screening: true },
         status: 'ALL',
@@ -99,6 +101,23 @@ const History = () => {
             ...filters,
             service: { ...filters.service, [e.target.name]: e.target.checked }
         });
+    };
+
+    const viewConfig = async (run) => {
+        if (!run.batchID || run.service !== 'Screening') return;
+        setLoadingSnapshot(true);
+        try {
+            const snapshot = await batchService.getMappingSnapshot(run.batchID);
+            if (snapshot && snapshot.configJson) {
+                setSnapshotModal({ snapshot, batchName: run.batchName });
+            } else {
+                notify('No mapping snapshot linked to this batch', 'info');
+            }
+        } catch (e) {
+            notify('Failed to load mapping config', 'error');
+        } finally {
+            setLoadingSnapshot(false);
+        }
     };
 
     return (
@@ -216,9 +235,13 @@ const History = () => {
                             <th onClick={() => handleSort('feedbackCount')} className="cursor-pointer hover:text-white transition-colors">
                                 Feedback {getSortIndicator('feedbackCount')}
                             </th>
+                            <th onClick={() => handleSort('clientCount')} className="cursor-pointer hover:text-white transition-colors">
+                                Clients {getSortIndicator('clientCount')}
+                            </th>
                             <th onClick={() => handleSort('createdAt')} className="cursor-pointer hover:text-white transition-colors">
                                 Created At {getSortIndicator('createdAt')}
                             </th>
+                            <th>Config</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -239,8 +262,28 @@ const History = () => {
                                 </td>
                                 <td className="text-muted">{run.notificationStatus || '-'}</td>
                                 <td className="text-muted">{run.feedbackCount || 0}</td>
+                                <td className="text-muted">{run.clientCount || '-'}</td>
                                 <td className="text-muted">
                                     {new Date(run.createdAt).toLocaleString()}
+                                </td>
+                                <td>
+                                    {run.service === 'Screening' && run.mappingSnapshotID ? (
+                                        <button
+                                            onClick={() => viewConfig(run)}
+                                            disabled={loadingSnapshot}
+                                            title="View mapping configuration used for this batch"
+                                            style={{
+                                                background: 'rgba(168,85,247,0.12)', color: '#c084fc',
+                                                border: '1px solid rgba(168,85,247,0.3)', borderRadius: '6px',
+                                                padding: '3px 10px', fontSize: '0.75rem', fontWeight: 600,
+                                                cursor: 'pointer', whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            ⚙ v{run.mappingSnapshotID}
+                                        </button>
+                                    ) : (
+                                        <span className="text-muted">-</span>
+                                    )}
                                 </td>
                             </tr>
                         ))}
@@ -253,6 +296,73 @@ const History = () => {
                     </div>
                 )}
             </div>
+
+            {/* Mapping Config Snapshot Modal */}
+            {snapshotModal && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 1000,
+                    background: 'rgba(0,0,0,0.65)', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', padding: '2rem',
+                }} onClick={() => setSnapshotModal(null)}>
+                    <div className="glass-section" style={{
+                        maxWidth: '720px', width: '100%', maxHeight: '80vh',
+                        overflow: 'auto', padding: '1.5rem',
+                    }} onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <div>
+                                <h2 style={{ margin: 0, fontSize: '1.1rem' }}>
+                                    Mapping Configuration {snapshotModal.snapshot.versionLabel}
+                                </h2>
+                                <p style={{ margin: '0.25rem 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                    Batch: {snapshotModal.batchName} &nbsp;·&nbsp;
+                                    Created: {new Date(snapshotModal.snapshot.createdAt).toLocaleString()} &nbsp;·&nbsp;
+                                    By: {snapshotModal.snapshot.createdBy} ({snapshotModal.snapshot.source})
+                                </p>
+                            </div>
+                            <button onClick={() => setSnapshotModal(null)} style={{
+                                background: 'none', border: 'none', color: 'var(--text-secondary)',
+                                fontSize: '1.2rem', cursor: 'pointer', padding: '0.25rem',
+                            }}>✕</button>
+                        </div>
+
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                <thead>
+                                    <tr style={{ background: 'var(--hover-bg)' }}>
+                                        <th style={{ padding: '0.6rem 1rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Target Path</th>
+                                        <th style={{ padding: '0.6rem 1rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Source Field</th>
+                                        <th style={{ padding: '0.6rem 1rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Default</th>
+                                        <th style={{ padding: '0.6rem 1rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Transform</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(() => {
+                                        try {
+                                            const configs = JSON.parse(snapshotModal.snapshot.configJson);
+                                            return configs.map((cfg, i) => (
+                                                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <td style={{ padding: '0.5rem 1rem', fontFamily: 'monospace', color: '#c084fc' }}>{cfg.targetPath}</td>
+                                                    <td style={{ padding: '0.5rem 1rem', color: 'var(--text-color)' }}>{cfg.sourceField || '-'}</td>
+                                                    <td style={{ padding: '0.5rem 1rem', color: 'var(--text-muted)' }}>{cfg.defaultValue || '-'}</td>
+                                                    <td style={{ padding: '0.5rem 1rem', color: 'var(--text-muted)' }}>{cfg.transformation || '-'}</td>
+                                                </tr>
+                                            ));
+                                        } catch {
+                                            return (
+                                                <tr>
+                                                    <td colSpan={4} style={{ padding: '1rem', color: 'var(--text-muted)' }}>
+                                                        <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.8rem' }}>{snapshotModal.snapshot.configJson}</pre>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+                                    })()}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

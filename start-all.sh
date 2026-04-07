@@ -4,107 +4,76 @@
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 echo -e "${GREEN}Starting KYC Microservices Stack...${NC}"
 
-# Function to check if a port is in use
 check_port() {
     lsof -i :$1 > /dev/null
     return $?
 }
 
-# Function to wait for a service to be ready
 wait_for_port() {
     port=$1
     service=$2
     echo "Waiting for $service to start on port $port..."
-    while ! nc -z localhost $port; do   
+    while ! nc -z localhost $port; do
       sleep 1
     done
     echo -e "${GREEN}$service is UP!${NC}"
 }
 
-# 1. Service Registry (Eureka)
-if check_port 8761; then
-    echo "Service Registry is already running on port 8761."
-else
-    echo "Starting Service Registry..."
-    cd service-registry
-    nohup ../mvnw spring-boot:run > ../registry.log 2>&1 &
-    cd ..
-    wait_for_port 8761 "Service Registry"
-fi
+start_service() {
+    local port=$1
+    local name=$2
+    local module=$3
+    local log=$4
 
-# 2. Auth Service
-if check_port 8084; then
-    echo "Auth Service is already running on port 8084."
-else
-    echo "Starting Auth Service..."
-    cd auth-service
-    nohup ../mvnw spring-boot:run > ../auth.log 2>&1 &
-    cd ..
-    wait_for_port 8084 "Auth Service"
-fi
+    if check_port $port; then
+        echo "$name is already running on port $port."
+    else
+        echo "Starting $name..."
+        nohup "$ROOT_DIR/gradlew" -p "$ROOT_DIR" :${module}:bootRun > "$ROOT_DIR/$log" 2>&1 &
+        wait_for_port $port "$name"
+    fi
+}
 
-# 3. Risk Service
-if check_port 8081; then
-    echo "Risk Service is already running on port 8081."
-else
-    echo "Starting Risk Service..."
-    cd risk-service
-    nohup ../mvnw spring-boot:run > ../risk.log 2>&1 &
-    cd ..
-    wait_for_port 8081 "Risk Service"
-fi
+# Start in dependency order
+start_service 8761 "Service Registry" service-registry  registry.log
+start_service 8084 "Auth Service"     auth-service      auth.log
+start_service 8081 "Risk Service"     risk-service      risk.log
+start_service 8082 "Screening Service" screening-service screening.log
+start_service 8085 "Document Service" document-service  document.log
+start_service 8083 "Viewer Service"   viewer            viewer.log
+start_service 8080 "API Gateway"      api-gateway       gateway.log
 
-# 4. Screening Service
-if check_port 8082; then
-    echo "Screening Service is already running on port 8082."
+# Frontend
+if check_port 5173; then
+    echo "Frontend is already running on port 5173."
 else
-    echo "Starting Screening Service..."
-    cd screening-service
-    nohup ../mvnw spring-boot:run > ../screening.log 2>&1 &
-    cd ..
-    wait_for_port 8082 "Screening Service"
-fi
+    echo "Starting Frontend..."
 
-# 5. Document Service
-if check_port 8085; then
-    echo "Document Service is already running on port 8085."
-else
-    echo "Starting Document Service..."
-    cd document-service
-    nohup ../mvnw spring-boot:run > ../document.log 2>&1 &
-    cd ..
-    wait_for_port 8085 "Document Service"
-fi
+    # Resolve npm — works whether node is in PATH directly or via NVM
+    if ! command -v npm &>/dev/null; then
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    fi
 
-# 5. Viewer Service (Core)
-if check_port 8083; then
-    echo "Viewer Service is already running on port 8083."
-else
-    echo "Starting Viewer Service..."
-    cd viewer
-    nohup ../mvnw spring-boot:run > ../viewer.log 2>&1 &
-    cd ..
-    wait_for_port 8083 "Viewer Service"
-fi
+    if ! command -v npm &>/dev/null; then
+        echo "WARNING: npm not found — skipping frontend. Install Node.js or NVM first."
+    else
+        # Install dependencies if node_modules is missing
+        if [ ! -d "$ROOT_DIR/viewer/frontend/node_modules" ]; then
+            echo "Installing frontend dependencies..."
+            npm --prefix "$ROOT_DIR/viewer/frontend" install
+        fi
 
-# 6. API Gateway
-if check_port 8080; then
-    echo "API Gateway is already running on port 8080."
-else
-    echo "Starting API Gateway..."
-    cd api-gateway
-    nohup ../mvnw spring-boot:run > ../gateway.log 2>&1 &
-    cd ..
-    wait_for_port 8080 "API Gateway"
-fi
+        nohup npm --prefix "$ROOT_DIR/viewer/frontend" run dev \
+            > "$ROOT_DIR/frontend.log" 2>&1 &
 
-# 7. Frontend
-echo "Starting Frontend..."
-cd viewer/frontend
-nohup npm run dev > ../../frontend.log 2>&1 &
-cd ../..
+        wait_for_port 5173 "Frontend"
+    fi
+fi
 
 echo -e "${GREEN}All systems operational! Logs are in the root directory.${NC}"
 echo "Frontend: http://localhost:5173"

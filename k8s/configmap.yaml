@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kyc-config
+  namespace: kyc
+data:
+  # Eureka points to the K8s service DNS name
+  EUREKA_SERVER_URL: "http://service-registry:8761"
+  EUREKA_PREFER_IP: "true"
+  H2_CONSOLE: "false"
+
+  # Inter-service URLs via K8s DNS
+  RISK_SERVICE_URL:      "http://risk-service:8081"
+  SCREENING_SERVICE_URL: "http://screening-service:8082"
+  DOCUMENT_SERVICE_URL:  "http://document-service:8085"
+
+  # SFTP defaults (override via secrets if needed)
+  SFTP_HOST:    "sftp-server"
+  SFTP_PORT:    "22"
+  SFTP_ENABLED: "false"
+
+  # Database driver for Cloud SQL PostgreSQL
+  DB_DRIVER: "org.postgresql.Driver"

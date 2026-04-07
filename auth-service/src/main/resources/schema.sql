@@ -39,6 +39,11 @@ MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VAL
 MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ADMIN', 'EDIT_CLIENTS');
 MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ADMIN', 'VIEW_SENSITIVE_DATA');
 MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ADMIN', 'MANAGE_CASES');
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ADMIN', 'MANAGE_CONFIG');
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ADMIN', 'MANAGE_AUDITS');
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ADMIN', 'VIEW_CHANGES');
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ADMIN', 'MANAGE_RISK');
+MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('ADMIN', 'MANAGE_SCREENING');
 
 -- Seed Permissions for Analyst
 MERGE INTO RolePermissions (RoleName, Permission) KEY (RoleName, Permission) VALUES ('KYC_ANALYST', 'VIEW_CLIENTS');

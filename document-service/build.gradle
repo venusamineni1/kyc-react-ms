@@ -1,0 +1,16 @@
+plugins {
+    id 'org.springframework.boot'
+}
+
+bootJar { archiveFileName = 'app.jar' }
+jar     { enabled = false }
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    runtimeOnly 'com.h2database:h2'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

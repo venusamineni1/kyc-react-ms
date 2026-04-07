@@ -1,0 +1,177 @@
+version: "3.9"
+
+# Local Docker Compose — mirrors the GCP GKE layout for testing.
+# Usage:
+#   docker compose up --build          # start everything
+#   docker compose up service-registry auth-service  # start specific services
+#   docker compose down -v             # stop and remove volumes
+
+x-common-env: &common-env
+  EUREKA_SERVER_URL: http://service-registry:8761
+  EUREKA_PREFER_IP: "true"
+  H2_CONSOLE: "true"
+  JWT_SECRET: local-dev-secret-replace-in-production-must-be-64-bytes-long!
+  JWT_EXPIRY_MS: "3600000"
+
+networks:
+  kyc-net:
+    driver: bridge
+
+services:
+
+  # ── Eureka Service Registry ────────────────────────────────────────────────
+  service-registry:
+    build:
+      context: .
+      dockerfile: service-registry/Dockerfile
+    ports:
+      - "8761:8761"
+    networks: [kyc-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Auth Service ───────────────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      <<: *common-env
+    networks: [kyc-net]
+    depends_on:
+      service-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # ── Risk Service ───────────────────────────────────────────────────────────
+  risk-service:
+    build:
+      context: .
+      dockerfile: risk-service/Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      <<: *common-env
+      SFTP_ENABLED: "false"
+    networks: [kyc-net]
+    depends_on:
+      service-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # ── Screening Service ──────────────────────────────────────────────────────
+  screening-service:
+    build:
+      context: .
+      dockerfile: screening-service/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      <<: *common-env
+    networks: [kyc-net]
+    depends_on:
+      service-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # ── Document Service ───────────────────────────────────────────────────────
+  document-service:
+    build:
+      context: .
+      dockerfile: document-service/Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      <<: *common-env
+    networks: [kyc-net]
+    depends_on:
+      service-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # ── Viewer (Backend) ───────────────────────────────────────────────────────
+  viewer:
+    build:
+      context: .
+      dockerfile: viewer/Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      <<: *common-env
+      RISK_SERVICE_URL:      http://risk-service:8081
+      SCREENING_SERVICE_URL: http://screening-service:8082
+      DOCUMENT_SERVICE_URL:  http://document-service:8085
+    networks: [kyc-net]
+    depends_on:
+      service-registry:
+        condition: service_healthy
+      risk-service:
+        condition: service_healthy
+      screening-service:
+        condition: service_healthy
+      document-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # ── API Gateway ────────────────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *common-env
+    networks: [kyc-net]
+    depends_on:
+      service-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # ── React Frontend (nginx) ─────────────────────────────────────────────────
+  frontend:
+    build:
+      context: viewer/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"    # Access at http://localhost:3000
+    networks: [kyc-net]
+    depends_on:
+      api-gateway:
+        condition: service_healthy

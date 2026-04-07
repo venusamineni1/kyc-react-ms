@@ -35,6 +35,15 @@ const apiClient = {
 
             // Handle non-2xx responses
             if (!response.ok) {
+                if (response.status === 401) {
+                    const hadToken = !!localStorage.getItem('token');
+                    localStorage.removeItem('token');
+                    if (hadToken && !window.location.pathname.includes('/login')) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                }
+
                 let errorMessage = `API Error ${response.status}`;
                 try {
                     const errorData = JSON.parse(text);

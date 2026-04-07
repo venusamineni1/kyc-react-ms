@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: kyc
+  labels:
+    app: auth-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: REGION-docker.pkg.dev/PROJECT_ID/kyc-ms/auth-service:IMAGE_TAG
+          ports:
+            - containerPort: 8084
+          envFrom:
+            - configMapRef:
+                name: kyc-config
+            - secretRef:
+                name: kyc-secrets
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: kyc
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - port: 8084
+      targetPort: 8084
+  type: ClusterIP

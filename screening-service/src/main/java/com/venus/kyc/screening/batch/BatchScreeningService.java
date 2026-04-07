@@ -31,6 +31,9 @@ public class BatchScreeningService {
     @Value("${batch.sftp.upload.dir:upload}")
     private String sftpUploadDir;
 
+    @Value("${batch.sftp.mock:true}")
+    private boolean sftpMock;
+
     @Value("${batch.publicKeyPath}")
     private String publicKeyPath; // Public key for encrypting requests
 
@@ -47,6 +50,10 @@ public class BatchScreeningService {
     }
 
     public Long createBatch(List<Client> clients) {
+        return createBatch(clients, "MANUAL", null);
+    }
+
+    public Long createBatch(List<Client> clients, String source, String createdBy) {
         String batchIdStr = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         String batchName = "2475_RC_DELTA_" + batchIdStr + "_1";
         File batchDir = new File(workDir, batchName);
@@ -54,7 +61,12 @@ public class BatchScreeningService {
             batchDir.mkdirs();
         }
 
-        BatchRun run = new BatchRun(null, batchName, "CREATED", null, null, LocalDateTime.now(), LocalDateTime.now());
+        // Snapshot current mapping configuration
+        Long snapshotId = snapshotCurrentMappings(source != null ? source : "MANUAL",
+                createdBy != null ? createdBy : "SYSTEM");
+
+        BatchRun run = new BatchRun(null, batchName, "CREATED", null, null,
+                LocalDateTime.now(), LocalDateTime.now(), snapshotId, clients.size());
         Long dbBatchId = batchRepository.saveBatchRun(run);
 
         // Persist clients temporarily for the next step?
@@ -150,7 +162,11 @@ public class BatchScreeningService {
         File batchDir = new File(workDir, run.batchName());
         File encryptedFile = new File(batchDir, run.batchName() + ".zip.gpg");
 
-        sftpService.uploadFile(encryptedFile, sftpUploadDir);
+        if (sftpMock) {
+            System.out.println("WARN: SFTP mock mode enabled. Skipping upload for batch " + run.batchName() + ". File ready at: " + encryptedFile.getAbsolutePath());
+        } else {
+            sftpService.uploadFile(encryptedFile, sftpUploadDir);
+        }
         batchRepository.updateBatchStatus(batchId, "UPLOADED", null, null);
     }
 
@@ -734,5 +750,49 @@ public class BatchScreeningService {
 
     public List<BatchRun> getBatchHistory() {
         return batchRepository.findAll();
+    }
+
+    // ── Mapping Config Snapshot Logic ──────────────────────────────
+
+    /**
+     * Snapshots the current mapping configuration, reusing the latest snapshot
+     * if the configuration hasn't changed (de-duplication).
+     */
+    private Long snapshotCurrentMappings(String source, String createdBy) {
+        List<MappingConfig> currentMappings = mappingConfigRepository.findAll();
+        if (currentMappings.isEmpty()) {
+            currentMappings = getDefaultMappings();
+        }
+
+        String configJson;
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            configJson = mapper.writeValueAsString(currentMappings);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize mapping config: " + e.getMessage());
+        }
+
+        // De-duplicate: reuse latest snapshot if config hasn't changed
+        MappingConfigSnapshot latest = batchRepository.findLatestSnapshot();
+        if (latest != null && latest.configJson().equals(configJson)) {
+            return latest.snapshotID();
+        }
+
+        // Create new version
+        long count = batchRepository.countSnapshots();
+        String versionLabel = "v" + (count + 1);
+        MappingConfigSnapshot snapshot = new MappingConfigSnapshot(
+                null, versionLabel, LocalDateTime.now(), createdBy, source, configJson);
+        return batchRepository.saveSnapshot(snapshot);
+    }
+
+    public MappingConfigSnapshot getMappingSnapshotForBatch(Long batchId) {
+        BatchRun run = batchRepository.findById(batchId);
+        if (run == null || run.mappingSnapshotID() == null) return null;
+        return batchRepository.findSnapshotById(run.mappingSnapshotID());
+    }
+
+    public List<MappingConfigSnapshot> getAllMappingSnapshots() {
+        return batchRepository.findAllSnapshots();
     }
 }

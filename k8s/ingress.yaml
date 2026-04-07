@@ -1,0 +1,42 @@
+# Replace kyc.example.com with your actual domain.
+# Requires cert-manager for TLS (https://cert-manager.io) or GCP-managed certs.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kyc-ingress
+  namespace: kyc
+  annotations:
+    kubernetes.io/ingress.class: "gce"                         # GKE native LB
+    kubernetes.io/ingress.global-static-ip-name: "kyc-ip"     # Reserve in GCP Console first
+    networking.gke.io/managed-certificates: "kyc-tls-cert"    # GCP-managed TLS
+spec:
+  rules:
+    - host: kyc.example.com
+      http:
+        paths:
+          # Backend API traffic → API Gateway
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8080
+          # Everything else → React frontend (nginx)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+---
+# GCP-managed TLS certificate (auto-provisioned)
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: kyc-tls-cert
+  namespace: kyc
+spec:
+  domains:
+    - kyc.example.com

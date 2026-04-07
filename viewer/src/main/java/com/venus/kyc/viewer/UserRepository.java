@@ -120,4 +120,10 @@ public class UserRepository {
                 .query(User.class)
                 .list();
     }
+
+    public void updateLastLogin(String username) {
+        jdbcClient.sql("UPDATE Users SET LastLogin = CURRENT_TIMESTAMP WHERE Username = :username")
+                .param("username", username)
+                .update();
+    }
 }

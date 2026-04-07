@@ -43,9 +43,12 @@ public class BatchScreeningController {
 
     @Operation(summary = "Create a new batch", description = "Creates a new batch run record for the given clients without processing")
     @PostMapping("/create")
-    public ResponseEntity<String> createBatch(@RequestBody List<com.venus.kyc.screening.batch.model.Client> clients) {
+    public ResponseEntity<String> createBatch(
+            @RequestBody List<com.venus.kyc.screening.batch.model.Client> clients,
+            @RequestParam(required = false, defaultValue = "MANUAL") String source,
+            @RequestParam(required = false, defaultValue = "SYSTEM") String createdBy) {
         try {
-            Long batchId = batchScreeningService.createBatch(clients);
+            Long batchId = batchScreeningService.createBatch(clients, source, createdBy);
             return ResponseEntity.ok(String.valueOf(batchId));
         } catch (Exception e) {
             e.printStackTrace();
@@ -154,6 +157,22 @@ public class BatchScreeningController {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Failed: " + e.getMessage());
         }
+    }
+
+    @Operation(summary = "Get mapping snapshot for batch", description = "Returns the mapping configuration that was used when a specific batch was created")
+    @GetMapping("/{batchId}/mapping-snapshot")
+    public ResponseEntity<?> getMappingSnapshot(@Parameter(description = "Batch run ID") @PathVariable Long batchId) {
+        MappingConfigSnapshot snapshot = batchScreeningService.getMappingSnapshotForBatch(batchId);
+        if (snapshot == null) {
+            return ResponseEntity.ok(java.util.Map.of("message", "No mapping snapshot linked to this batch"));
+        }
+        return ResponseEntity.ok(snapshot);
+    }
+
+    @Operation(summary = "Get all mapping snapshots", description = "Returns all versioned mapping configuration snapshots for audit purposes")
+    @GetMapping("/mapping-snapshots")
+    public ResponseEntity<List<MappingConfigSnapshot>> getMappingSnapshots() {
+        return ResponseEntity.ok(batchScreeningService.getAllMappingSnapshots());
     }
 
     @Operation(summary = "Generate test XML", description = "Generates a sample XML payload for a single client using current mapping configuration, for testing purposes")

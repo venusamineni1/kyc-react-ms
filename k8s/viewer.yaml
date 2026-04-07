@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: viewer
+  namespace: kyc
+  labels:
+    app: viewer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: viewer
+  template:
+    metadata:
+      labels:
+        app: viewer
+    spec:
+      containers:
+        - name: viewer
+          image: REGION-docker.pkg.dev/PROJECT_ID/kyc-ms/viewer:IMAGE_TAG
+          ports:
+            - containerPort: 8083
+          envFrom:
+            - configMapRef:
+                name: kyc-config
+            - secretRef:
+                name: kyc-secrets
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 45
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 90
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 1500m
+              memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: viewer
+  namespace: kyc
+spec:
+  selector:
+    app: viewer
+  ports:
+    - port: 8083
+      targetPort: 8083
+  type: ClusterIP

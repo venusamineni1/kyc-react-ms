@@ -272,7 +272,7 @@ const CaseDetails = () => {
                         <div>
                             <h1 style={{ margin: 0, fontSize: '2.5rem', color: '#fff' }}>{kycCase.clientName}</h1>
                             <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem', color: 'rgba(255,255,255,0.6)' }}>
-                                <span><strong>Type:</strong> Onboarding</span>
+                                <span><strong>Type:</strong> {kycCase.reason || 'Onboarding'}</span>
                                 <span><strong>Created:</strong> {new Date(kycCase.createdDate).toLocaleDateString()}</span>
                                 <span><strong>Assignee:</strong> {kycCase.assignedTo || 'Unassigned'}</span>
                             </div>
@@ -293,13 +293,13 @@ const CaseDetails = () => {
             {/* Tabbed Navigation */}
             <div className="tabs-container" style={{ marginBottom: '2rem', borderBottom: '1px solid var(--glass-border)' }}>
                 <button className={`tab-btn ${activeTab === 'flow' ? 'active' : ''}`} onClick={() => setActiveTab('flow')}>
-                    Processing & Decisions
+                    Workflow & Documents
                 </button>
                 <button className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
                     Risk & Screening
                 </button>
                 <button className={`tab-btn ${activeTab === 'timeline' ? 'active' : ''}`} onClick={() => setActiveTab('timeline')}>
-                    Timeline & Docs
+                    Timeline & Actions
                 </button>
                 {/* Questionnaire link is special as it's a separate page, but we could list it here if we want to navigate */}
                 <Link to={`/cases/${id}/questionnaire`} className="tab-btn" style={{ textDecoration: 'none' }}>
@@ -365,131 +365,7 @@ const CaseDetails = () => {
                             </div>
                         </section>
 
-                        {/* Recent Comments */}
-                        <section className="glass-section">
-                            <h3>Workflow Audit Trail</h3>
-                            <div className="comments-list">
-                                {comments.map((c, i) => (
-                                    <div key={i} className="comment-bubble">
-                                        <div className="comment-meta">
-                                            <strong>{c.userID || c.userId}</strong>
-                                            <span>{new Date(c.commentDate || c.time).toLocaleString()}</span>
-                                        </div>
-                                        <p className="comment-text">{c.commentText || c.message}</p>
-                                    </div>
-                                ))}
-                                {comments.length === 0 && <p style={{ color: '#666', fontStyle: 'italic' }}>No audit comments recorded.</p>}
-                            </div>
-                        </section>
-                    </div>
-                )}
-
-                {activeTab === 'profile' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                        <section className="glass-section" style={{ padding: '0', overflow: 'hidden' }}>
-                            <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '1.5rem' }}>
-                                    <h3 style={{ margin: 0 }}>Client Risk Pulse</h3>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        {/* history button can be added later if needed, mirroring client details */}
-                                        <button 
-                                            onClick={handleRecalculateRisk} 
-                                            className={`btn-icon ${runningRisk ? 'spinning' : ''}`}
-                                            title="Recalculate Risk"
-                                            disabled={runningRisk}
-                                            style={{
-                                                background: 'rgba(255,255,255,0.1)',
-                                                border: '1px solid rgba(255,255,255,0.2)',
-                                                borderRadius: '4px',
-                                                padding: '4px 8px',
-                                                cursor: 'pointer',
-                                                color: 'white'
-                                            }}
-                                        >
-                                            🔄
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {riskHistory.length > 0 ? (
-                                    <>
-                                        <div style={{
-                                            width: '120px', height: '120px', borderRadius: '50%',
-                                            border: `8px solid ${riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'}`,
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem',
-                                            boxShadow: `inset 0 0 20px ${riskHistory[0].overallRiskLevel === 'HIGH' ? 'rgba(255,77,79,0.2)' : 'rgba(82,196,26,0.2)'}`,
-                                            color: 'white'
-                                        }}>
-                                            {riskHistory[0].overallRiskScore}
-                                        </div>
-                                        <div style={{ 
-                                            fontSize: '1.2rem', 
-                                            fontWeight: 'bold', 
-                                            textTransform: 'uppercase',
-                                            color: riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a' 
-                                        }}>
-                                            {riskHistory[0].overallRiskLevel} RISK
-                                        </div>
-                                        <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-                                            Last assessed on {new Date(riskHistory[0].calculationDate || riskHistory[0].createdAt).toLocaleDateString()}
-                                        </p>
-                                    </>
-                                ) : (
-                                    <div style={{ padding: '3rem', textAlign: 'center', color: '#666' }}>No risk assessments available for this client.</div>
-                                )}
-                            </div>
-                        </section>
-
-                        <section className="glass-section">
-                            <h3 style={{ marginBottom: '1.5rem' }}>Screening Verdicts</h3>
-                            <ScreeningPanel clientId={kycCase.clientID} hasPermission={true} />
-                        </section>
-
-                        <section className="glass-section" style={{ gridColumn: 'span 2' }}>
-                            <CaseActions id={id} onActionTriggered={loadCaseData} />
-                        </section>
-                    </div>
-                )}
-
-                {activeTab === 'timeline' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        {/* Active Tasks Section */}
-                        <section className="glass-section highlight-border">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <div className="pulse-dot"></div>
-                                    <h3 style={{ margin: 0 }}>Active Tasks</h3>
-                                </div>
-                                <span className="task-count-badge">{myTasks.length}</span>
-                            </div>
-
-                            <div className="task-list-simple">
-                                {myTasks.length > 0 ? myTasks.map(task => (
-                                    <div key={task.taskId} className="task-item-compact">
-                                        <div className="task-info">
-                                            <span className="task-type-tag">Workflow Task</span>
-                                            <h4 className="task-name">{task.name}</h4>
-                                            <p className="task-meta">Created on {new Date(task.createTime).toLocaleDateString()}</p>
-                                        </div>
-                                        <div className="task-actions">
-                                            <button
-                                                className="btn-primary-sm"
-                                                onClick={() => handleOpenCompleteModal(task)}
-                                            >
-                                                Complete Task
-                                            </button>
-                                        </div>
-                                    </div>
-                                )) : (
-                                    <div className="empty-state-tasks">
-                                        <p>No active tasks assigned to you for this case.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-
-                        {/* Documents Section */}
+                        {/* Supporting Documents */}
                         <section className="glass-section">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                                 <h3>Supporting Documents</h3>
@@ -534,6 +410,131 @@ const CaseDetails = () => {
                                     )}
                                 </tbody>
                             </table>
+                        </section>
+
+                        {/* Recent Comments */}
+                        <section className="glass-section">
+                            <h3>Workflow Audit Trail</h3>
+                            <div className="comments-list">
+                                {comments.map((c, i) => (
+                                    <div key={i} className="comment-bubble">
+                                        <div className="comment-meta">
+                                            <strong>{c.userID || c.userId}</strong>
+                                            <span>{new Date(c.commentDate || c.time).toLocaleString()}</span>
+                                        </div>
+                                        <p className="comment-text">{c.commentText || c.message}</p>
+                                    </div>
+                                ))}
+                                {comments.length === 0 && <p style={{ color: '#666', fontStyle: 'italic' }}>No audit comments recorded.</p>}
+                            </div>
+                        </section>
+                    </div>
+                )}
+
+                {activeTab === 'profile' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                        <section className="glass-section">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <h3 style={{ margin: 0 }}>Client Risk Pulse</h3>
+                                <button
+                                    onClick={handleRecalculateRisk}
+                                    className={`btn-icon ${runningRisk ? 'spinning' : ''}`}
+                                    title="Recalculate Risk"
+                                    disabled={runningRisk}
+                                    style={{
+                                        background: 'rgba(255,255,255,0.1)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        padding: '4px 8px',
+                                        cursor: 'pointer',
+                                        color: 'white'
+                                    }}
+                                >
+                                    🔄
+                                </button>
+                            </div>
+
+                            {riskHistory.length > 0 ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                                    {/* Compact score circle */}
+                                    <div style={{
+                                        width: '76px', height: '76px', borderRadius: '50%', flexShrink: 0,
+                                        border: `5px solid ${riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'}`,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '1.7rem', fontWeight: 'bold',
+                                        boxShadow: `inset 0 0 14px ${riskHistory[0].overallRiskLevel === 'HIGH' ? 'rgba(255,77,79,0.2)' : 'rgba(82,196,26,0.2)'}`,
+                                        color: 'white'
+                                    }}>
+                                        {riskHistory[0].overallRiskScore}
+                                    </div>
+                                    {/* Level + date beside the circle */}
+                                    <div>
+                                        <div style={{
+                                            fontSize: '1rem', fontWeight: 'bold', textTransform: 'uppercase',
+                                            color: riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'
+                                        }}>
+                                            {riskHistory[0].overallRiskLevel} RISK
+                                        </div>
+                                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '0.2rem' }}>
+                                            Last assessed {new Date(riskHistory[0].calculationDate || riskHistory[0].createdAt).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{ padding: '1rem 0', textAlign: 'center', color: '#666', fontSize: '0.85rem' }}>
+                                    No risk assessments available for this client.
+                                </div>
+                            )}
+                        </section>
+
+                        <section className="glass-section">
+                            <h3 style={{ marginBottom: '0.75rem' }}>Screening Verdicts</h3>
+                            <ScreeningPanel clientId={kycCase.clientID} hasPermission={true} />
+                        </section>
+
+                    </div>
+                )}
+
+                {activeTab === 'timeline' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        {/* Discretionary Actions */}
+                        <section className="glass-section">
+                            <CaseActions id={id} onActionTriggered={loadCaseData} />
+                        </section>
+
+                        {/* Active Tasks Section */}
+                        <section className="glass-section highlight-border">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div className="pulse-dot"></div>
+                                    <h3 style={{ margin: 0 }}>Active Tasks</h3>
+                                </div>
+                                <span className="task-count-badge">{myTasks.length}</span>
+                            </div>
+
+                            <div className="task-list-simple">
+                                {myTasks.length > 0 ? myTasks.map(task => (
+                                    <div key={task.taskId} className="task-item-compact">
+                                        <div className="task-info">
+                                            <span className="task-type-tag">Workflow Task</span>
+                                            <h4 className="task-name">{task.name}</h4>
+                                            <p className="task-meta">Created on {new Date(task.createTime).toLocaleDateString()}</p>
+                                        </div>
+                                        <div className="task-actions">
+                                            <button
+                                                className="btn-primary-sm"
+                                                onClick={() => handleOpenCompleteModal(task)}
+                                            >
+                                                Complete Task
+                                            </button>
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="empty-state-tasks">
+                                        <p>No active tasks assigned to you for this case.</p>
+                                    </div>
+                                )}
+                            </div>
                         </section>
 
                         {/* Timeline */}

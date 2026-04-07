@@ -1,10 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
 
-echo Building all services via Root POM...
+echo Building all services via Gradle...
 
-REM Use the root maven wrapper to build everything defined in pom.xml
-call mvnw.cmd clean package -DskipTests
+REM Use the root gradle wrapper to build everything
+call gradlew.bat clean build -x test
 if %errorlevel% neq 0 (
     echo Backend build failed
     exit /b 1

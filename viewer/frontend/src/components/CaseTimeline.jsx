@@ -1,222 +1,219 @@
 import React, { useState } from 'react';
 
+const STATUS_CONFIG = {
+    completed:  { color: '#52c41a', label: 'Completed' },
+    active:     { color: '#1890ff', label: 'Active',    pulse: true },
+    available:  { color: '#faad14', label: 'Available' },
+    terminated: { color: '#ff4d4f', label: 'Terminated' },
+    enabled:    { color: '#722ed1', label: 'Enabled' },
+};
+
+const getTypeLabel = (type) => {
+    if (type?.includes('Task'))          return 'Task';
+    if (type?.includes('Stage'))         return 'Stage';
+    if (type?.includes('EventListener')) return 'Signal';
+    return 'Event';
+};
+
+const formatTime = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {
+        day: '2-digit', month: 'short',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+};
+
+const getDuration = (start, end) => {
+    if (!start || !end) return null;
+    const mins = Math.round((new Date(end) - new Date(start)) / 60000);
+    if (mins < 1)   return '<1m';
+    if (mins < 60)  return `${mins}m`;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return m ? `${h}h ${m}m` : `${h}h`;
+};
+
+const COLLAPSED_COUNT = 8;
+
 const CaseTimeline = ({ items }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(false);
 
     if (!items || items.length === 0) {
-        return <p style={{ fontStyle: 'italic', color: 'var(--text-secondary)', padding: '1rem' }}>No lifecycle data available for this case.</p>;
+        return (
+            <p style={{ fontStyle: 'italic', color: 'var(--text-secondary)', padding: '0.5rem' }}>
+                No lifecycle data available for this case.
+            </p>
+        );
     }
 
-    // Sort items: oldest first
-    const sortedItems = [...items].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
-    const displayedItems = isExpanded ? sortedItems : sortedItems.slice(-6);
-
-    const getStatusConfig = (status) => {
-        switch (status?.toLowerCase()) {
-            case 'completed': return { color: '#52c41a', bg: 'rgba(82, 196, 26, 0.1)', icon: '✓' };
-            case 'active': return { color: '#1890ff', bg: 'rgba(24, 144, 255, 0.2)', icon: '▶', pulse: true };
-            case 'available': return { color: '#faad14', bg: 'rgba(250, 173, 20, 0.1)', icon: '○' };
-            case 'terminated': return { color: '#ff4d4f', bg: 'rgba(255, 77, 79, 0.1)', icon: '✕' };
-            case 'enabled': return { color: '#722ed1', bg: 'rgba(114, 46, 209, 0.1)', icon: '•' };
-            default: return { color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.05)', icon: '•' };
-        }
-    };
-
-    const getTypeLabel = (type) => {
-        if (type?.includes('Task')) return 'Task';
-        if (type?.includes('Stage')) return 'Stage';
-        if (type?.includes('EventListener')) return 'Signal';
-        return type || 'Event';
-    };
+    const sorted   = [...items].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    const hidden   = sorted.length - COLLAPSED_COUNT;
+    const displayed = expanded ? sorted : sorted.slice(-COLLAPSED_COUNT);
 
     return (
-        <div className="modern-timeline">
-            <div className="timeline-controls">
-                {items.length > 6 && (
-                    <button onClick={() => setIsExpanded(!isExpanded)} className="expand-link">
-                        {isExpanded ? 'Collapse View' : `View Full History (${items.length} events)`}
-                    </button>
-                )}
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.83rem' }}>
+
+            {/* ── Column headers ───────────────────────────────────── */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: '12px 1fr 56px 84px 130px',
+                columnGap: '0.75rem',
+                padding: '0 0.5rem 0.4rem',
+                color: 'var(--text-secondary)',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                borderBottom: '1px solid var(--glass-border)',
+                marginBottom: '0.25rem',
+            }}>
+                <span />
+                <span>Event</span>
+                <span>Type</span>
+                <span>Status</span>
+                <span>Started</span>
             </div>
 
-            <div className="timeline-rail">
-                {displayedItems.map((item, index) => {
-                    const config = getStatusConfig(item.status);
-                    const isLast = index === displayedItems.length - 1;
-                    const isActive = item.status === 'active';
+            {/* ── Rows ─────────────────────────────────────────────── */}
+            {displayed.map((item, idx) => {
+                const cfg      = STATUS_CONFIG[item.status?.toLowerCase()] ?? STATUS_CONFIG.enabled;
+                const typeLabel = getTypeLabel(item.itemType);
+                const isStage  = typeLabel === 'Stage';
+                const isActive = item.status?.toLowerCase() === 'active';
+                const dur      = getDuration(item.startTime, item.endTime);
 
-                    return (
-                        <div key={index} className={`timeline-entry ${isActive ? 'entry-active' : ''}`}>
-                            <div className="entry-time">
-                                <span className="date">{new Date(item.startTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                                <span className="time">{new Date(item.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
+                return (
+                    <div
+                        key={idx}
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: '12px 1fr 56px 84px 130px',
+                            columnGap: '0.75rem',
+                            alignItems: 'center',
+                            padding: '0.42rem 0.5rem',
+                            borderRadius: '6px',
+                            marginBottom: '2px',
+                            borderLeft: `3px solid ${isActive ? cfg.color : 'transparent'}`,
+                            background: isActive
+                                ? 'rgba(24,144,255,0.06)'
+                                : isStage
+                                    ? 'rgba(255,255,255,0.025)'
+                                    : 'transparent',
+                            fontWeight: isStage ? 600 : 400,
+                            transition: 'background 0.15s',
+                        }}
+                    >
+                        {/* Status dot */}
+                        <span style={{
+                            width: 9, height: 9,
+                            borderRadius: '50%',
+                            background: cfg.color,
+                            display: 'inline-block',
+                            flexShrink: 0,
+                            boxShadow: isActive ? `0 0 5px ${cfg.color}` : 'none',
+                            animation: isActive ? 'tl-pulse 2s infinite' : 'none',
+                        }} />
 
-                            <div className="entry-rail-segment">
-                                <div className={`rail-dot ${config.pulse ? 'pulse' : ''}`} style={{ backgroundColor: config.color, boxShadow: `0 0 10px ${config.color}` }}>
-                                    <span className="dot-icon">{config.icon}</span>
-                                </div>
-                                {!isLast && <div className="rail-line"></div>}
-                            </div>
+                        {/* Name + duration */}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0 }}>
+                            <span style={{
+                                color: 'var(--text-color)',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                            }}>
+                                {item.name}
+                            </span>
+                            {dur && (
+                                <span style={{
+                                    color: 'var(--text-secondary)',
+                                    fontSize: '0.7rem',
+                                    flexShrink: 0,
+                                    opacity: 0.75,
+                                }}>
+                                    {dur}
+                                </span>
+                            )}
+                        </span>
 
-                            <div className="entry-card shadow-lg">
-                                <div className="card-header">
-                                    <span className="type-chip">{getTypeLabel(item.itemType)}</span>
-                                    <span className="status-badge" style={{ color: config.color, background: config.bg, borderColor: `${config.color}40` }}>
-                                        {item.status}
-                                    </span>
-                                </div>
-                                <div className="card-body">
-                                    <h4 className="entry-name">{item.name}</h4>
-                                    {item.endTime && (
-                                        <div className="entry-meta">
-                                            Completed at {new Date(item.endTime).toLocaleTimeString()}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        {/* Type chip */}
+                        <span style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            textAlign: 'center',
+                            whiteSpace: 'nowrap',
+                            background: isStage
+                                ? 'rgba(114,46,209,0.15)'
+                                : 'rgba(255,255,255,0.07)',
+                            color: isStage ? '#b37feb' : 'var(--text-secondary)',
+                        }}>
+                            {typeLabel}
+                        </span>
+
+                        {/* Status badge */}
+                        <span style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            padding: '2px 7px',
+                            borderRadius: '10px',
+                            textAlign: 'center',
+                            whiteSpace: 'nowrap',
+                            background: `${cfg.color}22`,
+                            color: cfg.color,
+                        }}>
+                            {cfg.label}
+                        </span>
+
+                        {/* Timestamp (hover shows end time) */}
+                        <span
+                            title={item.endTime ? `Ended: ${formatTime(item.endTime)}` : ''}
+                            style={{
+                                color: 'var(--text-secondary)',
+                                fontSize: '0.75rem',
+                                whiteSpace: 'nowrap',
+                                cursor: item.endTime ? 'help' : 'default',
+                            }}
+                        >
+                            {formatTime(item.startTime)}
+                        </span>
+                    </div>
+                );
+            })}
+
+            {/* ── Expand / collapse ────────────────────────────────── */}
+            {sorted.length > COLLAPSED_COUNT && (
+                <button
+                    onClick={() => setExpanded(e => !e)}
+                    style={{
+                        marginTop: '0.6rem',
+                        width: '100%',
+                        background: 'none',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: '6px',
+                        color: 'var(--primary-color)',
+                        padding: '0.3rem 1rem',
+                        cursor: 'pointer',
+                        fontSize: '0.78rem',
+                        fontFamily: 'inherit',
+                        opacity: 0.85,
+                        transition: 'opacity 0.15s',
+                    }}
+                    onMouseEnter={e => e.target.style.opacity = 1}
+                    onMouseLeave={e => e.target.style.opacity = 0.85}
+                >
+                    {expanded
+                        ? '▲  Show fewer events'
+                        : `▼  Show ${hidden} earlier event${hidden !== 1 ? 's' : ''}`}
+                </button>
+            )}
 
             <style>{`
-                .modern-timeline {
-                    padding: 1rem 0;
-                    font-family: 'Inter', sans-serif;
-                }
-                .timeline-controls {
-                    display: flex;
-                    justify-content: flex-end;
-                    margin-bottom: 2rem;
-                }
-                .expand-link {
-                    background: none;
-                    border: none;
-                    color: var(--primary-color);
-                    cursor: pointer;
-                    font-weight: 600;
-                    font-size: 0.85rem;
-                    opacity: 0.8;
-                    transition: opacity 0.2s;
-                }
-                .expand-link:hover { opacity: 1; }
-
-                .timeline-rail {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.5rem;
-                }
-
-                .timeline-entry {
-                    display: flex;
-                    align-items: flex-start;
-                    position: relative;
-                }
-
-                .entry-time {
-                    width: 90px;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: flex-end;
-                    padding-right: 1.5rem;
-                    margin-top: 0.75rem;
-                    flex-shrink: 0;
-                }
-                .entry-time .date { font-size: 0.75rem; font-weight: 700; color: #fff; }
-                .entry-time .time { font-size: 0.7rem; color: var(--text-secondary); }
-
-                .entry-rail-segment {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    width: 32px;
-                    flex-shrink: 0;
-                    position: relative;
-                }
-                .rail-dot {
-                    width: 24px;
-                    height: 24px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 2;
-                    margin-top: 0.75rem;
-                }
-                .dot-icon { color: white; font-size: 0.75rem; font-weight: bold; }
-                .rail-line {
-                    width: 2px;
-                    background: linear-gradient(to bottom, var(--glass-border), transparent);
-                    flex: 1;
-                    height: 100%;
-                    min-height: 40px;
-                    position: absolute;
-                    top: 2rem;
-                    z-index: 1;
-                }
-
-                .entry-card {
-                    flex: 1;
-                    background: rgba(255, 255, 255, 0.03);
-                    border: 1px solid var(--glass-border);
-                    border-radius: 12px;
-                    padding: 1rem;
-                    margin-left: 1rem;
-                    margin-bottom: 1.5rem;
-                    transition: transform 0.2s, background 0.2s;
-                }
-                .entry-active .entry-card {
-                    background: rgba(255, 255, 255, 0.07);
-                    border-color: var(--primary-color);
-                    box-shadow: 0 0 20px rgba(24, 144, 255, 0.1);
-                    transform: scale(1.01);
-                }
-
-                .card-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 0.5rem;
-                }
-                .type-chip {
-                    font-size: 0.65rem;
-                    font-weight: 800;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    color: var(--primary-color);
-                    background: rgba(24, 144, 255, 0.1);
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                }
-                .status-badge {
-                    font-size: 0.65rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    padding: 2px 8px;
-                    border-radius: 20px;
-                    border: 1px solid transparent;
-                }
-
-                .entry-name {
-                    margin: 0;
-                    font-size: 0.95rem;
-                    color: #fff;
-                    font-weight: 600;
-                }
-                .entry-meta {
-                    font-size: 0.75rem;
-                    color: var(--text-secondary);
-                    margin-top: 0.25rem;
-                }
-
-                .pulse {
-                    animation: pulse-ring 2s infinite;
-                }
-                @keyframes pulse-ring {
-                    0% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4); }
-                    70% { box-shadow: 0 0 0 10px rgba(24, 144, 255, 0); }
-                    100% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0); }
+                @keyframes tl-pulse {
+                    0%   { box-shadow: 0 0 0 0   rgba(24,144,255,0.5); }
+                    70%  { box-shadow: 0 0 0 6px rgba(24,144,255,0);   }
+                    100% { box-shadow: 0 0 0 0   rgba(24,144,255,0);   }
                 }
             `}</style>
         </div>

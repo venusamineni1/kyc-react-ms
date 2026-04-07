@@ -42,5 +42,13 @@ export const batchService = {
 
     getScreeningHistory: async () => {
         return apiClient.get('/screening/batch/history');
+    },
+
+    getMappingSnapshot: async (batchId) => {
+        return apiClient.get(`${API_BASE_URL}/${batchId}/mapping-snapshot`);
+    },
+
+    getAllMappingSnapshots: async () => {
+        return apiClient.get(`${API_BASE_URL}/mapping-snapshots`);
     }
 };

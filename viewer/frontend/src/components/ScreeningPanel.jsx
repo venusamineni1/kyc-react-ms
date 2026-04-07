@@ -34,70 +34,65 @@ const ScreeningCard = ({ title, context, result, onRun }) => {
 
     return (
         <div style={{
-            background: 'rgba(255, 255, 255, 0.03)',
-            border: `1px solid ${isHit ? 'rgba(255, 77, 79, 0.3)' : 'var(--glass-border, rgba(255, 255, 255, 0.1))'}`,
-            borderRadius: '12px',
-            padding: '1.2rem',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            transition: 'all 0.3s ease',
-            position: 'relative',
-            overflow: 'hidden',
-            boxShadow: isHit ? '0 0 15px rgba(255, 77, 79, 0.1)' : 'none'
+            alignItems: 'center',
+            gap: '10px',
+            padding: '0.45rem 0.75rem',
+            borderRadius: '8px',
+            border: `1px solid ${isHit ? 'rgba(255, 77, 79, 0.3)' : 'var(--glass-border, rgba(255, 255, 255, 0.1))'}`,
+            background: isHit ? 'rgba(255, 77, 79, 0.04)' : 'rgba(255, 255, 255, 0.02)',
+            boxShadow: isHit ? '0 0 10px rgba(255, 77, 79, 0.08)' : 'none',
+            transition: 'all 0.2s ease',
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.1rem',
-                    color: getStatusColor()
-                }}>
-                    {getIcon()}
-                </div>
-                <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: '500' }}>{context}</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{title}</div>
-                </div>
+            {/* Icon */}
+            <div style={{ color: getStatusColor(), fontSize: '1rem', flexShrink: 0, opacity: 0.9 }}>
+                {getIcon()}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                <div style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 'bold',
-                    padding: '4px 10px',
-                    borderRadius: '20px',
-                    background: `${getStatusColor()}20`,
-                    color: getStatusColor(),
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+            {/* Context tag + title */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0 }}>
+                <span style={{
+                    fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-secondary)',
+                    background: 'rgba(255,255,255,0.07)', padding: '1px 5px', borderRadius: '4px',
+                    flexShrink: 0,
                 }}>
-                    {getStatusLabel()}
-                </div>
-                {isInProgress && (
-                    <div className="spinning" style={{ color: getStatusColor(), fontSize: '0.9rem' }}>
-                        <FiSearch />
-                    </div>
-                )}
+                    {context}
+                </span>
+                <span style={{
+                    fontSize: '0.83rem', color: 'var(--text-primary)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                    {title}
+                </span>
             </div>
 
+            {/* Spinner when in progress */}
+            {isInProgress && (
+                <div className="spinning" style={{ color: getStatusColor(), fontSize: '0.85rem', flexShrink: 0 }}>
+                    <FiSearch />
+                </div>
+            )}
+
+            {/* Status badge */}
+            <span style={{
+                fontSize: '0.65rem', fontWeight: 700,
+                padding: '2px 8px', borderRadius: '10px',
+                background: `${getStatusColor()}20`, color: getStatusColor(),
+                textTransform: 'uppercase', letterSpacing: '0.4px',
+                flexShrink: 0, whiteSpace: 'nowrap',
+            }}>
+                {getStatusLabel()}
+            </span>
+
+            {/* Alert message inline if hit */}
             {isHit && result.alertMessage && (
-                <div style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--error-color, #ff4d4f)',
-                    background: 'rgba(255, 77, 79, 0.05)',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    marginTop: '8px',
-                    border: '1px solid rgba(255, 77, 79, 0.1)'
+                <span title={result.alertMessage} style={{
+                    fontSize: '0.7rem', color: 'var(--error-color, #ff4d4f)',
+                    maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap', flexShrink: 0, cursor: 'help',
                 }}>
-                    {result.alertMessage}
-                </div>
+                    ⚠ {result.alertMessage}
+                </span>
             )}
         </div>
     );
@@ -246,17 +241,15 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
     return (
         <div style={{
             flex: 1,
-            background: 'rgba(255,255,255,0.03)',
+            background: 'rgba(255,255,255,0.02)',
             border: '1px solid var(--glass-border)',
             borderRadius: '8px',
-            padding: '1.5rem',
+            padding: '0.85rem',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
             position: 'relative'
         }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '0.75rem' }}>
                 <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Screening Intelligence</h4>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     {hasPermission && (
@@ -309,7 +302,7 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
                 <ScreeningCard
                     title="Politically Exposed Person"
                     context="PEP"

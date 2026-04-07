@@ -149,6 +149,40 @@ public class MaterialChangeRepository {
                 .update();
     }
 
+    /**
+     * Finds all pending material changes categorized for screening (SCREENING or BOTH).
+     */
+    public List<MaterialChange> findPendingScreeningChanges() {
+        String sql = "SELECT mc.*, COALESCE(c.NameAtBirth, c.FirstName || ' ' || c.LastName) as ClientName "
+                + "FROM MaterialChanges mc LEFT JOIN Clients c ON mc.ClientID = c.ClientID "
+                + "WHERE mc.Status = 'PENDING' AND mc.Category IN ('SCREENING', 'BOTH') "
+                + "ORDER BY mc.ChangeDate ASC";
+        return jdbcClient.sql(sql)
+                .query((rs, rowNum) -> new MaterialChange(
+                        rs.getLong("ChangeID"),
+                        rs.getTimestamp("ChangeDate").toLocalDateTime(),
+                        rs.getLong("ClientID"),
+                        rs.getString("ClientName"),
+                        rs.getLong("EntityID"),
+                        rs.getString("EntityName"),
+                        rs.getString("ColumnName"),
+                        rs.getString("OperationType"),
+                        rs.getString("OldValue"),
+                        rs.getString("NewValue"),
+                        rs.getString("Status"),
+                        rs.getString("Category")))
+                .list();
+    }
+
+    /**
+     * Bulk-updates status for a list of change IDs.
+     */
+    public void updateStatusBatch(List<Long> changeIds, String status) {
+        for (Long id : changeIds) {
+            updateStatus(id, status);
+        }
+    }
+
     public List<MaterialChange> findByClientId(Long clientId) {
         return jdbcClient.sql(
                 "SELECT mc.*, COALESCE(c.NameAtBirth, c.FirstName || ' ' || c.LastName) as ClientName FROM MaterialChanges mc LEFT JOIN Clients c ON mc.ClientID = c.ClientID WHERE mc.ClientID = :clientId ORDER BY mc.ChangeDate DESC")

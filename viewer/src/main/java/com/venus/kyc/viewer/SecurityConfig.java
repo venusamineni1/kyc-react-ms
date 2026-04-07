@@ -52,6 +52,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/cases/**").hasAuthority("MANAGE_CASES")
                                                 .requestMatchers("/api/admin/audits").hasAnyAuthority("MANAGE_AUDITS", "VIEW_CLIENTS")
                                                 .requestMatchers("/api/admin/config").hasAuthority("MANAGE_CONFIG")
+                                                .requestMatchers("/api/internal/scheduler/**").hasAuthority("MANAGE_CONFIG")
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                                 .exceptionHandling(e -> e

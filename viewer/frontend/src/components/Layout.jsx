@@ -36,6 +36,32 @@ const Layout = ({ children }) => {
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', position: 'relative', zIndex: 100 }}>
                 <h1><Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>KYC Dashboard</Link></h1>
 
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {/* Logged-in user info */}
+                    {user && (
+                        <div style={{ textAlign: 'right', lineHeight: 1.3 }}>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                                <span style={{
+                                    width: '24px', height: '24px', borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, var(--primary-color), #60a5fa)',
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '0.7rem', fontWeight: 700, color: '#fff', flexShrink: 0,
+                                }}>
+                                    {user.username?.charAt(0).toUpperCase()}
+                                </span>
+                                {user.username}
+                            </div>
+                            {user.lastLogin && (
+                                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '1px' }}>
+                                    Last login: {new Date(user.lastLogin).toLocaleString(undefined, {
+                                        day: '2-digit', month: 'short', year: 'numeric',
+                                        hour: '2-digit', minute: '2-digit', hour12: true,
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                 <div style={{ position: 'relative' }} ref={menuRef}>
                     <Button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{
                         minWidth: 'auto',
@@ -130,6 +156,12 @@ const Layout = ({ children }) => {
                                     Admin Settings
                                 </Link>
                             )}
+                            {hasPermission('MANAGE_CONFIG') && (
+                                <Link to="/admin/jobs" className="btn btn-secondary" style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} onClick={() => setIsMenuOpen(false)}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    Job Scheduler
+                                </Link>
+                            )}
                             {hasPermission('MANAGE_PERMISSIONS') && (
                                 <Link to="/permissions" className="btn btn-secondary" style={{ textAlign: 'center' }} onClick={() => setIsMenuOpen(false)}>
                                     Permissions
@@ -155,6 +187,7 @@ const Layout = ({ children }) => {
                             </Button>
                         </div>
                     )}
+                </div>
                 </div>
             </header>
 

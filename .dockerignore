@@ -1,0 +1,13 @@
+**/.git
+**/.gradle
+**/build
+**/node_modules
+**/dist
+**/*.log
+**/target
+.env
+.env.*
+!.env.example
+*.bat
+*.sh
+k8s/

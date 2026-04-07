@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: screening-service
+  namespace: kyc
+  labels:
+    app: screening-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: screening-service
+  template:
+    metadata:
+      labels:
+        app: screening-service
+    spec:
+      containers:
+        - name: screening-service
+          image: REGION-docker.pkg.dev/PROJECT_ID/kyc-ms/screening-service:IMAGE_TAG
+          ports:
+            - containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: kyc-config
+            - secretRef:
+                name: kyc-secrets
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: screening-service
+  namespace: kyc
+spec:
+  selector:
+    app: screening-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+  type: ClusterIP

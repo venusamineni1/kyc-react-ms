@@ -1,0 +1,11 @@
+plugins {
+    id 'org.springframework.boot'
+}
+
+bootJar { archiveFileName = 'app.jar' }
+jar     { enabled = false }
+
+dependencies {
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-server'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

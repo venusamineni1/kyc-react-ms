@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   application:
@@ -21,13 +21,6 @@ spring:
           uri: lb://screening-service
           predicates:
             - Path=/api/internal/screening/**
-          # Direct pass-through for batch controller
-        # - id: screening-service-legacy
-        #   uri: lb://screening-service
-        #   predicates:
-        #     - Path=/api/screening/**
-        #   filters:
-        #     - RewritePath=/api/screening/(?<remaining>.*), /api/internal/screening/${remaining}
         - id: auth-service-login
           uri: lb://auth-service
           predicates:
@@ -38,19 +31,10 @@ spring:
           uri: lb://auth-service
           predicates:
             - Path=/api/users/**, /api/permissions/**
-          # No StripPrefix for these, as controllers are mapped to /api/...
-#        - id: document-service
-#          uri: lb://document-service
-#          predicates:
-#            - Path=/api/documents/**
         - id: core-viewer
           uri: lb://viewer-core
           predicates:
             - Path=/api/**, /login, /logout, /
-            # Fallback for UI assets ??
-            # Actually, the Frontend is currently bundled in Viewer. 
-            # If Viewer moves to 8083, Gateway at 8080 must proxy EVERYTHING deeper.
-            # So Path=/** might be needed as a catch-all route to Viewer.
         - id: core-viewer-catchall
           uri: lb://viewer-core
           predicates:
@@ -59,7 +43,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761}/eureka/
   instance:
-    prefer-ip-address: false
-    hostname: localhost
+    prefer-ip-address: ${EUREKA_PREFER_IP:false}
+    hostname: ${HOSTNAME:localhost}

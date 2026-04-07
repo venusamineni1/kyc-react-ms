@@ -1,0 +1,21 @@
+plugins {
+    id 'org.springframework.boot'
+}
+
+bootJar { archiveFileName = 'app.jar' }
+jar     { enabled = false }
+
+dependencies {
+    implementation('org.springframework.boot:spring-boot-starter-web') {
+        exclude group: 'org.hibernate.validator', module: 'hibernate-validator'
+    }
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.boot:spring-boot-starter-integration'
+    implementation 'org.springframework.integration:spring-integration-sftp'
+    implementation 'commons-io:commons-io:2.11.0'
+    runtimeOnly 'com.h2database:h2'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

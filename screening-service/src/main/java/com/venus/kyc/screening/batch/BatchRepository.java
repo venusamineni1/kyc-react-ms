@@ -19,7 +19,7 @@ public class BatchRepository {
     }
 
     public Long saveBatchRun(BatchRun run) {
-        String sql = "INSERT INTO BatchRuns (BatchName, RunStatus, NotificationStatus, FeedbackCount, CreatedAt, UpdatedAt) VALUES (:batchName, :runStatus, :notificationStatus, :feedbackCount, :createdAt, :updatedAt)";
+        String sql = "INSERT INTO BatchRuns (BatchName, RunStatus, NotificationStatus, FeedbackCount, CreatedAt, UpdatedAt, MappingSnapshotID, ClientCount) VALUES (:batchName, :runStatus, :notificationStatus, :feedbackCount, :createdAt, :updatedAt, :mappingSnapshotID, :clientCount)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcClient.sql(sql)
@@ -29,6 +29,8 @@ public class BatchRepository {
                 .param("feedbackCount", run.feedbackCount())
                 .param("createdAt", run.createdAt() != null ? run.createdAt() : LocalDateTime.now())
                 .param("updatedAt", run.updatedAt() != null ? run.updatedAt() : LocalDateTime.now())
+                .param("mappingSnapshotID", run.mappingSnapshotID())
+                .param("clientCount", run.clientCount())
                 .update(keyHolder);
 
         return extractKey(keyHolder, "BatchID");
@@ -85,6 +87,45 @@ public class BatchRepository {
                 .param("matchScore", result.matchScore())
                 .param("status", result.status())
                 .update();
+    }
+
+    // ── Mapping Config Snapshots ─────────────────────────────────
+
+    public Long saveSnapshot(MappingConfigSnapshot snapshot) {
+        String sql = "INSERT INTO MappingConfigSnapshots (VersionLabel, CreatedAt, CreatedBy, Source, ConfigJson) VALUES (:versionLabel, :createdAt, :createdBy, :source, :configJson)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql(sql)
+                .param("versionLabel", snapshot.versionLabel())
+                .param("createdAt", snapshot.createdAt() != null ? snapshot.createdAt() : LocalDateTime.now())
+                .param("createdBy", snapshot.createdBy())
+                .param("source", snapshot.source())
+                .param("configJson", snapshot.configJson())
+                .update(keyHolder);
+        return extractKey(keyHolder, "SnapshotID");
+    }
+
+    public MappingConfigSnapshot findSnapshotById(Long snapshotId) {
+        return jdbcClient.sql("SELECT * FROM MappingConfigSnapshots WHERE SnapshotID = :id")
+                .param("id", snapshotId)
+                .query(MappingConfigSnapshot.class)
+                .optional().orElse(null);
+    }
+
+    public MappingConfigSnapshot findLatestSnapshot() {
+        return jdbcClient.sql("SELECT * FROM MappingConfigSnapshots ORDER BY CreatedAt DESC LIMIT 1")
+                .query(MappingConfigSnapshot.class)
+                .optional().orElse(null);
+    }
+
+    public List<MappingConfigSnapshot> findAllSnapshots() {
+        return jdbcClient.sql("SELECT * FROM MappingConfigSnapshots ORDER BY CreatedAt DESC")
+                .query(MappingConfigSnapshot.class)
+                .list();
+    }
+
+    public long countSnapshots() {
+        return jdbcClient.sql("SELECT COUNT(*) FROM MappingConfigSnapshots")
+                .query(Long.class).single();
     }
 
     private Long extractKey(KeyHolder keyHolder, String keyName) {

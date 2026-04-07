@@ -58,6 +58,15 @@ public class UserController {
 
         userInfo.put("role", role);
 
+        // Include lastLogin from the database, then update it to now
+        userRepository.findByUsername(authentication.getName())
+                .ifPresent(u -> {
+                    if (u.lastLogin() != null) {
+                        userInfo.put("lastLogin", u.lastLogin().toString());
+                    }
+                    userRepository.updateLastLogin(authentication.getName());
+                });
+
         return ResponseEntity.ok(userInfo);
     }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { adHocTaskService } from '../services/adHocTaskService';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
@@ -10,6 +11,7 @@ import { clientService } from '../services/clientService';
 const AdHocTaskList = () => {
     const { user } = useAuth();
     const { notify } = useNotification();
+    const [searchParams] = useSearchParams();
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -56,6 +58,23 @@ const AdHocTaskList = () => {
         loadTasks();
         loadData();
     }, []);
+
+    // Deep-link: if ?taskId= is in the URL, open that task's detail modal once tasks load
+    useEffect(() => {
+        const deepLinkId = searchParams.get('taskId');
+        if (!deepLinkId || loading || tasks.length === 0) return;
+
+        const match = tasks.find(t => String(t.id) === String(deepLinkId) || String(t.taskId) === String(deepLinkId));
+        if (match) {
+            // Switch to the right tab so the task is visible in the background
+            if (match.assignee === user?.username) {
+                setActiveTab('inbox');
+            } else {
+                setActiveTab('sent');
+            }
+            setSelectedTask(match);
+        }
+    }, [tasks, loading, searchParams]);
 
     const handleCreate = async () => {
         if (!newTask.assignee || !newTask.requestText) return notify("Assignee and Request Text are required", 'warning');
