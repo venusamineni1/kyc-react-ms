@@ -14,9 +14,12 @@ const Questionnaire = ({ caseId: propCaseId, readOnly: propReadOnly }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
+    const [hasDraft, setHasDraft] = useState(false);
 
     const [searchParams] = useSearchParams();
     const isReadOnly = propReadOnly !== undefined ? propReadOnly : (searchParams.get('readonly') === 'true');
+
+    const draftKey = `questionnaire-draft-${caseId}`;
 
     useEffect(() => {
         const loadData = async () => {
@@ -32,7 +35,20 @@ const Questionnaire = ({ caseId: propCaseId, readOnly: propReadOnly }) => {
                 resp.forEach(r => {
                     respMap[r.questionID] = r.answerText;
                 });
-                setResponses(respMap);
+
+                // Restore local draft if one exists (draft takes precedence over saved)
+                const draft = localStorage.getItem(draftKey);
+                if (draft) {
+                    try {
+                        const draftMap = JSON.parse(draft);
+                        setResponses({ ...respMap, ...draftMap });
+                        setHasDraft(true);
+                    } catch {
+                        setResponses(respMap);
+                    }
+                } else {
+                    setResponses(respMap);
+                }
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -41,6 +57,13 @@ const Questionnaire = ({ caseId: propCaseId, readOnly: propReadOnly }) => {
         };
         loadData();
     }, [caseId]);
+
+    // Auto-save draft to localStorage on every change
+    useEffect(() => {
+        if (loading || isReadOnly || Object.keys(responses).length === 0) return;
+        localStorage.setItem(draftKey, JSON.stringify(responses));
+        setHasDraft(true);
+    }, [responses]);
 
     const handleSave = async () => {
         setSaving(true);
@@ -51,6 +74,8 @@ const Questionnaire = ({ caseId: propCaseId, readOnly: propReadOnly }) => {
             }));
 
             await questionnaireService.saveResponses(caseId, payload);
+            localStorage.removeItem(draftKey);
+            setHasDraft(false);
             notify('Questionnaire saved successfully', 'success');
         } catch (err) {
             notify('Save failed: ' + err.message, 'error');
@@ -78,7 +103,14 @@ const Questionnaire = ({ caseId: propCaseId, readOnly: propReadOnly }) => {
         <div>
             {!isModal && (
                 <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                    <h1 style={{ margin: 0 }}>KYC Questionnaire</h1>
+                    <div>
+                        <h1 style={{ margin: 0 }}>KYC Questionnaire</h1>
+                        {hasDraft && !isReadOnly && (
+                            <span style={{ fontSize: '0.8rem', color: '#faad14', marginTop: '0.25rem', display: 'block' }}>
+                                Draft saved locally — not yet submitted
+                            </span>
+                        )}
+                    </div>
                     <div style={{ display: 'flex', gap: '1rem' }}>
                         {!isReadOnly && (
                             <Button onClick={handleSave} disabled={saving}>

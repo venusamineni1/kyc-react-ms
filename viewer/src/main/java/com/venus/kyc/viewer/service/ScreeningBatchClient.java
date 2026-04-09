@@ -24,10 +24,13 @@ public class ScreeningBatchClient {
 
     public ScreeningBatchClient(
             @Value("${screening.service.url}") String screeningServiceUrl,
+            @Value("${internal.api.key}") String internalApiKey,
             RestClient.Builder restClientBuilder) {
         // screening.service.url = http://localhost:8082/api/internal/screening
         this.batchBaseUrl = screeningServiceUrl + "/batch";
-        this.restClient = restClientBuilder.build();
+        this.restClient = restClientBuilder
+                .defaultHeader("X-Internal-Api-Key", internalApiKey)
+                .build();
     }
 
     /**

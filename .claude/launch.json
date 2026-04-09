@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "doc-placement-preview",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["/tmp/serve_preview.sh"],
+      "port": 4444
+    },
+    {
+      "name": "kyc-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--host", "0.0.0.0"],
+      "port": 5173,
+      "cwd": "/Users/venusamineni/Documents/Claude/Projects/kyc-react-ms/viewer/frontend"
+    }
+  ],
+  "autoVerify": false
+}

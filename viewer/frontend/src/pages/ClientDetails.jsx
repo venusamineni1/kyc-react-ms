@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { clientService } from '../services/clientService';
 import { caseService } from '../services/caseService';
 import { riskService } from '../services/riskService';
@@ -81,6 +82,7 @@ const ClientDetails = () => {
     const [viewQuestionnaireCaseId, setViewQuestionnaireCaseId] = useState(null);
     const [selectedAssessment, setSelectedAssessment] = useState(null);
     const [assessmentDetails, setAssessmentDetails] = useState([]);
+    const [latestRiskDetails, setLatestRiskDetails] = useState([]);
     const [activePartyTab, setActivePartyTab] = useState('identity');
     const [activeActivityTab, setActiveActivityTab] = useState('cases');
     const [viewParty, setViewParty] = useState(null);
@@ -106,6 +108,11 @@ const ClientDetails = () => {
 
             setCases(casesData);
             setRiskHistory(riskData);
+            if (riskData && riskData.length > 0 && riskData[0].assessmentID) {
+                riskService.getAssessmentDetails(riskData[0].assessmentID)
+                    .then(d => setLatestRiskDetails(d || []))
+                    .catch(() => setLatestRiskDetails([]));
+            }
             setMaterialChanges(changesData);
             setAudits(auditData ? auditData.filter(a => a.details && a.details.includes(String(id))) : []);
         } catch (err) {
@@ -364,11 +371,11 @@ const ClientDetails = () => {
 
                     {activeTab === 'compliance' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '2rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                                 {/* Risk Pulse Widget */}
-                                <div className="glass-section" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '1.5rem' }}>
-                                        <h4 style={{ margin: 0 }}>Risk Pulse</h4>
+                                <section className="glass-section" style={{ boxSizing: 'border-box', height: '100%' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                        <h3 style={{ margin: 0 }}>Client Risk Pulse</h3>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <button onClick={() => setIsRiskHistoryOpen(true)} className="btn-icon" title="History">🕒</button>
                                             {hasPermission('MANAGE_RISK') && (
@@ -380,6 +387,11 @@ const ClientDetails = () => {
                                                             await riskService.calculateRisk(id);
                                                             const history = await riskService.getRiskHistory(id);
                                                             setRiskHistory(history);
+                                                            if (history && history.length > 0 && history[0].assessmentID) {
+                                                                riskService.getAssessmentDetails(history[0].assessmentID)
+                                                                    .then(d => setLatestRiskDetails(d || []))
+                                                                    .catch(() => setLatestRiskDetails([]));
+                                                            }
                                                             notify('Assessment successful', 'success');
                                                         } catch (e) { notify(e.message, 'error'); }
                                                         finally { setRunningAssessment(false); }
@@ -393,26 +405,48 @@ const ClientDetails = () => {
                                         </div>
                                     </div>
 
-                                    {latestRisk ? (
-                                        <>
-                                            <div style={{
-                                                width: '120px', height: '120px', borderRadius: '50%',
-                                                border: `8px solid ${latestRisk.overallRiskLevel === 'HIGH' ? '#ff4d4f' : latestRisk.overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'}`,
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem',
-                                                boxShadow: `inset 0 0 20px ${latestRisk.overallRiskLevel === 'HIGH' ? 'rgba(255,77,79,0.2)' : 'rgba(82,196,26,0.2)'}`
-                                            }}>
-                                                {latestRisk.overallRiskScore}
+                                    {latestRisk ? (() => {
+                                        const levelColor = latestRisk.overallRiskLevel === 'HIGH' ? '#ff4d4f'
+                                            : latestRisk.overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a';
+                                        const PILLARS = ['ENTITY', 'INDUSTRY', 'GEOGRAPHIC', 'PRODUCT', 'CHANNEL'];
+                                        const pillarScores = PILLARS.map(pillar => {
+                                            const matches = latestRiskDetails.filter(d => (d.riskType || '').toUpperCase() === pillar);
+                                            const avg = matches.length > 0
+                                                ? Math.round(matches.reduce((s, d) => s + (d.riskScore || 0), 0) / matches.length)
+                                                : 0;
+                                            return { pillar: pillar.charAt(0) + pillar.slice(1).toLowerCase(), score: avg };
+                                        });
+                                        return (
+                                            <div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1rem' }}>
+                                                    <div style={{ width: '76px', height: '76px', borderRadius: '50%', flexShrink: 0, border: `5px solid ${levelColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.7rem', fontWeight: 'bold', boxShadow: `inset 0 0 14px ${levelColor}33`, color: 'white' }}>
+                                                        {latestRisk.overallRiskScore}
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', textTransform: 'uppercase', color: levelColor }}>{latestRisk.overallRiskLevel} RISK</div>
+                                                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '0.2rem' }}>
+                                                            Last assessed {new Date(latestRisk.createdAt).toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {latestRiskDetails.length > 0 && (
+                                                    <div style={{ marginTop: '0.5rem' }}>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Risk Pillar Breakdown</div>
+                                                        <ResponsiveContainer width="100%" height={180}>
+                                                            <RadarChart data={pillarScores} margin={{ top: 0, right: 20, bottom: 0, left: 20 }}>
+                                                                <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                                                                <PolarAngleAxis dataKey="pillar" tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }} />
+                                                                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                                                                <Radar name="Score" dataKey="score" stroke={levelColor} fill={levelColor} fillOpacity={0.25} />
+                                                                <Tooltip contentStyle={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '0.8rem' }} formatter={(v) => [v, 'Score']} />
+                                                            </RadarChart>
+                                                        </ResponsiveContainer>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: latestRisk.overallRiskLevel === 'HIGH' ? '#ff4d4f' : latestRisk.overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a' }}>
-                                                {latestRisk.overallRiskLevel} RISK
-                                            </div>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-                                                Last assessed: {new Date(latestRisk.createdAt).toLocaleDateString()}
-                                            </div>
-                                        </>
-                                    ) : <p>No assessments run.</p>}
-                                </div>
+                                        );
+                                    })() : <p style={{ padding: '1rem 0', textAlign: 'center', color: '#666', fontSize: '0.85rem' }}>No risk assessments available for this client.</p>}
+                                </section>
 
                                 <ScreeningPanel clientId={id} hasPermission={hasPermission('MANAGE_SCREENING')} />
                             </div>

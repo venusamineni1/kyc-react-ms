@@ -32,13 +32,16 @@ public class RiskAssessmentService {
             CaseRepository caseRepository, EventService eventService, ClientRepository clientRepository,
             UserAuditService userAuditService,
             @org.springframework.beans.factory.annotation.Value("${risk.service.url}") String riskServiceUrl,
+            @org.springframework.beans.factory.annotation.Value("${internal.api.key}") String internalApiKey,
             RestClient.Builder restClientBuilder) {
         this.caseRepository = caseRepository;
         this.eventService = eventService;
         this.clientRepository = clientRepository;
         this.userAuditService = userAuditService;
         this.riskServiceUrl = riskServiceUrl;
-        this.restClient = restClientBuilder.build();
+        this.restClient = restClientBuilder
+                .defaultHeader("X-Internal-Api-Key", internalApiKey)
+                .build();
     }
 
     public RiskDTOs.CalculateRiskResponse evaluateRiskForClient(Long clientId) {

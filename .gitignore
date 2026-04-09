@@ -28,5 +28,9 @@ download/
 
 # Extras
 *.db
+
+# Tesseract language models — downloaded automatically by Gradle task downloadTessdata
+# Run: ./gradlew :document-service:downloadTessdata
+document-service/src/main/resources/tessdata/*.traineddata
 *.txt
 viewer_tail.txt

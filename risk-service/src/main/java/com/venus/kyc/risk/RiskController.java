@@ -21,9 +21,14 @@ public class RiskController {
   @Value("${risk.external-api.url:http://localhost:8081/api/internal/risk/dummy-external-api}")
   private String externalApiUrl;
 
-  public RiskController(RiskAssessmentRepository repository) {
+  public RiskController(
+          RiskAssessmentRepository repository,
+          RestClient.Builder restClientBuilder,
+          @Value("${internal.api.key}") String internalApiKey) {
     this.repository = repository;
-    this.restClient = RestClient.create();
+    this.restClient = restClientBuilder
+            .defaultHeader("X-Internal-Api-Key", internalApiKey)
+            .build();
   }
 
   @Operation(summary = "Calculate client risk rating", description = "Submits a risk rating request to the external CRRE engine and stores the assessment results including entity, industry, geo, product, and channel risk scores")
@@ -83,10 +88,10 @@ public class RiskController {
               details.add(createDetail(assessmentId, "Industry", rc));
             }
           }
-          // Geo Risk
+          // Geographic Risk
           if (item.geoRiskType() != null && item.geoRiskType().riskClassification() != null) {
             for (RiskDTOs.RiskClassification rc : item.geoRiskType().riskClassification()) {
-              details.add(createDetail(assessmentId, "Geo", rc));
+              details.add(createDetail(assessmentId, "Geographic", rc));
             }
           }
           // Product Risk
@@ -153,6 +158,12 @@ public class RiskController {
     boolean isCuba = request != null && (request.contains("\"CU\"") || request.toLowerCase().contains("\"cuba\""));
     String riskLevel = isCuba ? "HIGH" : "LOW";
     int riskScore = isCuba ? 9 : 1;
+    // Pillar scores — proportional to overall risk so the radar chart is meaningful
+    int pEntity   = isCuba ? 82 : 14;
+    int pIndustry = isCuba ? 75 : 18;
+    int pGeo      = isCuba ? 91 : 12;
+    int pProduct  = isCuba ? 70 : 10;
+    int pChannel  = isCuba ? 85 : 8;
 
     try {
       com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
@@ -201,14 +212,14 @@ public class RiskController {
                     "smeRiskAssessment": ""
                   },
                   "entityRiskType": {
-                    "pillarScore": 0,
-                    "pillarRiskCategory": "LOW",
+                    "pillarScore": %d,
+                    "pillarRiskCategory": "%s",
                     "typeOfLogicApplied": "",
                     "riskClassification": [
                       {
                         "elementName": "typeKYCLegalEntityCode",
                         "elementValue": "NP4",
-                        "riskScore": 0,
+                        "riskScore": %d,
                         "flag": null,
                         "regulatoryCRROverride": null,
                         "localRuleApplied": "N"
@@ -216,14 +227,14 @@ public class RiskController {
                     ]
                   },
                   "industryRiskType": {
-                    "pillarScore": 0,
-                    "pillarRiskCategory": "LOW",
+                    "pillarScore": %d,
+                    "pillarRiskCategory": "%s",
                     "typeOfLogicApplied": null,
                     "riskClassification": [
                       {
                         "elementName": "occupationCode",
                         "elementValue": "00101",
-                        "riskScore": 0,
+                        "riskScore": %d,
                         "flag": null,
                         "regulatoryCRROverride": null,
                         "localRuleApplied": "N"
@@ -231,14 +242,14 @@ public class RiskController {
                     ]
                   },
                   "geoRiskType": {
-                    "pillarScore": 0,
-                    "pillarRiskCategory": "LOW",
+                    "pillarScore": %d,
+                    "pillarRiskCategory": "%s",
                     "typeOfLogicApplied": null,
                     "riskClassification": [
                       {
                         "elementName": "countryOfNationality",
                         "elementValue": "DE",
-                        "riskScore": 0,
+                        "riskScore": %d,
                         "flag": null,
                         "regulatoryCRROverride": null,
                         "localRuleApplied": "N"
@@ -246,7 +257,7 @@ public class RiskController {
                       {
                         "elementName": "originOfFunds",
                         "elementValue": "DE",
-                        "riskScore": 0,
+                        "riskScore": %d,
                         "flag": null,
                         "regulatoryCRROverride": null,
                         "localRuleApplied": "N"
@@ -254,7 +265,7 @@ public class RiskController {
                       {
                         "elementName": "clientDomicile",
                         "elementValue": "DE",
-                        "riskScore": 0,
+                        "riskScore": %d,
                         "flag": null,
                         "regulatoryCRROverride": null,
                         "localRuleApplied": "N"
@@ -262,14 +273,14 @@ public class RiskController {
                     ]
                   },
                   "productRiskType": {
-                    "pillarScore": 0,
-                    "pillarRiskCategory": "LOW",
+                    "pillarScore": %d,
+                    "pillarRiskCategory": "%s",
                     "typeOfLogicApplied": null,
                     "riskClassification": [
                       {
                         "elementName": "productCode",
                         "elementValue": "OAP1",
-                        "riskScore": 0,
+                        "riskScore": %d,
                         "flag": null,
                         "regulatoryCRROverride": null,
                         "localRuleApplied": "N"
@@ -277,14 +288,14 @@ public class RiskController {
                     ]
                   },
                   "channelRiskType": {
-                    "pillarScore": 1,
-                    "pillarRiskCategory": "MEDIUM",
+                    "pillarScore": %d,
+                    "pillarRiskCategory": "%s",
                     "typeOfLogicApplied": null,
                     "riskClassification": [
                       {
                         "elementName": "channelCode",
                         "elementValue": "CHN05",
-                        "riskScore": 1,
+                        "riskScore": %d,
                         "flag": null,
                         "regulatoryCRROverride": null,
                         "localRuleApplied": "N"
@@ -294,7 +305,19 @@ public class RiskController {
                 }
               ]
             }
-        """.formatted(recordId, riskScore, riskLevel, riskLevel, riskLevel);
+        """.formatted(
+            recordId, riskScore, riskLevel, riskLevel, riskLevel,
+            // entity
+            pEntity, riskLevel, pEntity,
+            // industry
+            pIndustry, riskLevel, pIndustry,
+            // geo (pillarScore + riskCategory + 3 classification entries)
+            pGeo, riskLevel, pGeo, pGeo, pGeo,
+            // product
+            pProduct, riskLevel, pProduct,
+            // channel
+            pChannel, riskLevel, pChannel
+        );
     return org.springframework.http.ResponseEntity.ok()
         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
         .body(jsonResponse);

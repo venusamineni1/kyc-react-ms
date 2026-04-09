@@ -9,15 +9,27 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 echo -e "${GREEN}Starting KYC Microservices Stack...${NC}"
 
 check_port() {
-    lsof -i :$1 > /dev/null
-    return $?
+    local port=$1
+    # 1. Try lsof (macOS/Linux)
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -i :$port >/dev/null 2>&1
+        return $?
+    # 2. Try nc (netcat)
+    elif command -v nc >/dev/null 2>&1; then
+        nc -z localhost $port >/dev/null 2>&1
+        return $?
+    # 3. Fallback to bash built-in (Windows Git Bash)
+    else
+        (echo > /dev/tcp/localhost/$port) >/dev/null 2>&1
+        return $?
+    fi
 }
 
 wait_for_port() {
     port=$1
     service=$2
     echo "Waiting for $service to start on port $port..."
-    while ! nc -z localhost $port; do
+    while ! check_port $port; do
       sleep 1
     done
     echo -e "${GREEN}$service is UP!${NC}"

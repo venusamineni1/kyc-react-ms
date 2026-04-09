@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useInbox } from '../contexts/InboxContext';
 import { clientService } from '../services/clientService';
+import { caseService } from '../services/caseService';
 
 const DashboardCard = ({ to, id, title, description, color, permission, badgeCount }) => {
     const { hasPermission } = useAuth();
@@ -37,19 +38,64 @@ const Dashboard = () => {
     const { inboxCount } = useInbox();
     const [recentChanges, setRecentChanges] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
+    const [kpi, setKpi] = React.useState({ open: 0, inReview: 0, approvedMonth: 0, pendingChanges: 0 });
 
     React.useEffect(() => {
         if (hasPermission('VIEW_CHANGES')) {
             setLoading(true);
             clientService.getMaterialChanges(0, 5)
-                .then(data => setRecentChanges(data.content || []))
+                .then(data => {
+                    const content = data.content || [];
+                    setRecentChanges(content);
+                    setKpi(k => ({ ...k, pendingChanges: data.totalElements || content.length }));
+                })
                 .catch(err => console.error('Dashboard changes fetch failed', err))
                 .finally(() => setLoading(false));
         }
     }, [hasPermission]);
 
+    React.useEffect(() => {
+        if (hasPermission('MANAGE_CASES')) {
+            caseService.getCases(0)
+                .then(result => {
+                    const cases = result.content || [];
+                    const now = new Date();
+                    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const open = cases.filter(c => c.status !== 'APPROVED' && c.status !== 'REJECTED').length;
+                    const inReview = cases.filter(c => (c.status || '').includes('REVIEW')).length;
+                    const approvedMonth = cases.filter(c => c.status === 'APPROVED' && new Date(c.createdDate) >= startOfMonth).length;
+                    setKpi(k => ({ ...k, open, inReview, approvedMonth }));
+                })
+                .catch(() => {});
+        }
+    }, [hasPermission]);
+
+    const kpiCards = [
+        { label: 'Open Cases', value: kpi.open, color: '#4facfe', icon: '📂' },
+        { label: 'In Review', value: kpi.inReview, color: '#faad14', icon: '🔍' },
+        { label: 'Approved This Month', value: kpi.approvedMonth, color: '#52c41a', icon: '✅' },
+        { label: 'Pending Changes', value: kpi.pendingChanges, color: '#ff4d4f', icon: '⚡' },
+    ];
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* KPI summary row */}
+            {hasPermission('MANAGE_CASES') && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    {kpiCards.map((card, i) => (
+                        <div key={i} className="glass-section" style={{ padding: '1.25rem 1.5rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: `4px solid ${card.color}` }}>
+                            <div style={{ fontSize: '1.75rem', background: 'rgba(255,255,255,0.05)', width: '46px', height: '46px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                {card.icon}
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.label}</div>
+                                <div style={{ fontSize: '1.75rem', fontWeight: 700, color: card.color }}>{card.value}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
                 <DashboardCard
                     to="/clients"

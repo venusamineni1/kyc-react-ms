@@ -26,6 +26,12 @@ const TaskInbox = () => {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
+    // Reassign modal state
+    const [reassignModal, setReassignModal] = useState({ open: false, taskId: null });
+    const [reassignUser, setReassignUser] = useState('');
+    const [allUsers, setAllUsers] = useState([]);
+    const [reassigning, setReassigning] = useState(false);
+
     useEffect(() => { loadTasks(); }, []);
 
     const loadTasks = async () => {
@@ -43,6 +49,32 @@ const TaskInbox = () => {
 
     const workflowTasks = tasks.filter(t => t.caseId);
     const adHocTasks    = tasks.filter(t => !t.caseId);
+
+    const openReassign = async (taskId) => {
+        try {
+            const users = await caseService.getAllUsers();
+            setAllUsers(users);
+        } catch {
+            setAllUsers([]);
+        }
+        setReassignUser('');
+        setReassignModal({ open: true, taskId });
+    };
+
+    const handleReassign = async () => {
+        if (!reassignUser) return;
+        setReassigning(true);
+        try {
+            await caseService.reassignTask(reassignModal.taskId, reassignUser);
+            setReassignModal({ open: false, taskId: null });
+            setReassignUser('');
+            loadTasks();
+        } catch (err) {
+            console.error('Reassign failed:', err);
+        } finally {
+            setReassigning(false);
+        }
+    };
 
     return (
         <div className="task-inbox-page">
@@ -211,23 +243,33 @@ const TaskInbox = () => {
 
                                             {/* ── Action ── */}
                                             <td style={{ padding: '1rem 1.25rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                                {isWorkflow ? (
-                                                    <Button
-                                                        variant="primary"
-                                                        onClick={() => navigate(`/cases/${task.caseId}`)}
-                                                        style={{ fontSize: '0.82rem', padding: '0.4rem 0.9rem' }}
-                                                    >
-                                                        Open Case
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        variant="secondary"
-                                                        onClick={() => navigate(`/adhoc-tasks?taskId=${task.taskId}`)}
-                                                        style={{ fontSize: '0.82rem', padding: '0.4rem 0.9rem' }}
-                                                    >
-                                                        View Task
-                                                    </Button>
-                                                )}
+                                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    {isWorkflow ? (
+                                                        <>
+                                                            <Button
+                                                                variant="primary"
+                                                                onClick={() => navigate(`/cases/${task.caseId}`)}
+                                                                style={{ fontSize: '0.82rem', padding: '0.4rem 0.9rem' }}
+                                                            >
+                                                                Open Case
+                                                            </Button>
+                                                            <button
+                                                                onClick={() => openReassign(task.taskId)}
+                                                                style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem', background: 'rgba(255,255,255,0.07)', border: '1px solid var(--glass-border)', borderRadius: '6px', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                                                            >
+                                                                Reassign
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <Button
+                                                            variant="secondary"
+                                                            onClick={() => navigate(`/adhoc-tasks?taskId=${task.taskId}`)}
+                                                            style={{ fontSize: '0.82rem', padding: '0.4rem 0.9rem' }}
+                                                        >
+                                                            View Task
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -237,7 +279,34 @@ const TaskInbox = () => {
                     </div>
                 )}
             </div>
-        </div>
+
+        {/* Reassign modal */}
+        {reassignModal.open && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                <div className="glass-section" style={{ width: '360px', padding: '2rem' }}>
+                    <h3 style={{ marginTop: 0 }}>Reassign Task</h3>
+                    <select
+                        value={reassignUser}
+                        onChange={e => setReassignUser(e.target.value)}
+                        style={{ width: '100%', padding: '0.6rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.07)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: '#fff' }}
+                    >
+                        <option value="">Select user...</option>
+                        {allUsers.map(u => <option key={u.username} value={u.username}>{u.username}</option>)}
+                    </select>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                        <button onClick={() => setReassignModal({ open: false, taskId: null })}
+                            style={{ padding: '0.5rem 1rem', background: 'none', border: '1px solid var(--glass-border)', borderRadius: '8px', color: '#fff', cursor: 'pointer' }}>
+                            Cancel
+                        </button>
+                        <button onClick={handleReassign} disabled={!reassignUser || reassigning}
+                            style={{ padding: '0.5rem 1rem', background: '#4facfe', border: 'none', borderRadius: '8px', color: '#000', fontWeight: 600, cursor: 'pointer' }}>
+                            {reassigning ? 'Reassigning...' : 'Reassign'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+    </div>
     );
 };
 

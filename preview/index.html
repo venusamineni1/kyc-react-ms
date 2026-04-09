@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KYC Document Library Placement — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --border: #2a3248;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+    --cyan: #06b6d4;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --badge-pdf: #1e3a5f;
+    --badge-ocr: #1a3a2a;
+    --badge-crop: #3a2a1a;
+    --badge-anno: #2a1a3a;
+    --badge-live: #1a2a3a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; line-height: 1.5; }
+
+  /* ── TOP NAV ── */
+  .top-nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-weight: 700; font-size: 16px; color: var(--accent); letter-spacing: .5px; }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab { padding: 6px 14px; border-radius: 6px; cursor: pointer; color: var(--text2); font-size: 13px; border: none; background: none; transition: all .15s; }
+  .nav-tab:hover { background: var(--bg3); color: var(--text); }
+  .nav-tab.active { background: var(--accent); color: #fff; }
+  .nav-badge { background: var(--accent2); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 99px; margin-left: 6px; }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 4px; margin-bottom: 8px;
+  }
+  .label-pdf    { background: var(--badge-pdf);  color: #60a5fa; border: 1px solid #1d4ed8; }
+  .label-ocr    { background: var(--badge-ocr);  color: #34d399; border: 1px solid #059669; }
+  .label-crop   { background: var(--badge-crop); color: #fb923c; border: 1px solid #d97706; }
+  .label-anno   { background: var(--badge-anno); color: #c084fc; border: 1px solid #7c3aed; }
+  .label-live   { background: var(--badge-live); color: #22d3ee; border: 1px solid #0891b2; }
+  .label-mrz    { background: #3a1a1a;           color: #f87171; border: 1px solid #b91c1c; }
+  .label-zxing  { background: #1a3a3a;           color: #2dd4bf; border: 1px solid #0d9488; }
+  .label-tika   { background: #2a2a1a;           color: #fbbf24; border: 1px solid #d97706; }
+
+  .tooltip-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; padding: 3px 10px; border-radius: 99px;
+    font-weight: 600; white-space: nowrap;
+  }
+  .tb-pdf  { background: #1e3a5f; color: #93c5fd; }
+  .tb-ocr  { background: #1a3a2a; color: #6ee7b7; }
+  .tb-crop { background: #3a2a1a; color: #fcd34d; }
+  .tb-anno { background: #2a1a3a; color: #d8b4fe; }
+  .tb-live { background: #1a2a3a; color: #67e8f9; }
+  .tb-mrz  { background: #3a1a1a; color: #fca5a5; }
+  .tb-zx   { background: #1a3a3a; color: #5eead4; }
+  .tb-tika { background: #2a2a1a; color: #fde68a; }
+
+  /* ── VIEW 1: OVERVIEW MAP ── */
+  .overview { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+  .overview-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .overview-sub { color: var(--text2); margin-bottom: 28px; font-size: 14px; }
+
+  .lib-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .lib-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px; cursor: pointer; transition: all .2s; }
+  .lib-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,130,246,.15); }
+  .lib-card-icon { font-size: 28px; margin-bottom: 10px; }
+  .lib-card-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .lib-card-pkg  { font-family: monospace; font-size: 11px; color: var(--accent); background: rgba(59,130,246,.1); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+  .lib-card-desc { color: var(--text2); font-size: 12px; line-height: 1.5; }
+  .lib-card-where { margin-top: 10px; font-size: 11px; color: var(--text3); }
+  .lib-card-where span { color: var(--green); font-weight: 600; }
+
+  .flow-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .flow-row { display: flex; align-items: stretch; gap: 0; margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; }
+  .flow-step { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; min-width: 160px; flex: 1; }
+  .flow-step-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+  .flow-step-libs { display: flex; flex-wrap: wrap; gap: 4px; }
+  .flow-arrow { display: flex; align-items: center; padding: 0 8px; color: var(--text3); font-size: 20px; }
+
+  /* ── VIEW 2: CASE DETAILS WIREFRAME ── */
+  .wireframe { padding: 20px 24px; }
+  .wf-header { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .wf-header-left h2 { font-size: 18px; font-weight: 700; }
+  .wf-header-left p  { color: var(--text2); font-size: 13px; }
+  .wf-tabs { display: flex; gap: 2px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .wf-tab { padding: 10px 18px; font-size: 13px; font-weight: 500; border-bottom: 2px solid transparent; cursor: pointer; color: var(--text2); margin-bottom: -1px; }
+  .wf-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .wf-body { display: grid; grid-template-columns: 1fr 400px; gap: 16px; }
+  .wf-main { display: flex; flex-direction: column; gap: 14px; }
+  .wf-side { display: flex; flex-direction: column; gap: 14px; }
+
+  .wf-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .wf-card-title { font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 14px; }
+
+  /* Document viewer card */
+  .doc-viewer-shell { background: var(--bg); border: 2px dashed var(--accent); border-radius: 10px; height: 320px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+  .doc-viewer-toolbar { background: var(--bg3); border-bottom: 1px solid var(--border); padding: 8px 12px; display: flex; gap: 8px; align-items: center; }
+  .dv-btn { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; }
+  .dv-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .doc-viewer-body { flex: 1; display: flex; }
+  .doc-page-list { width: 72px; background: var(--bg3); border-right: 1px solid var(--border); padding: 8px 6px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+  .doc-thumb { background: #fff; border-radius: 3px; height: 52px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; font-size: 10px; color: #333; }
+  .doc-thumb.active { border-color: var(--accent); }
+  .doc-page-view { flex: 1; background: #2a2a2a; display: flex; align-items: center; justify-content: center; position: relative; }
+  .doc-page-mock { background: #fff; width: 200px; height: 260px; border-radius: 3px; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 12px 10px; gap: 6px; }
+  .mock-line { background: #ccc; height: 8px; border-radius: 3px; width: 100%; }
+  .mock-line.short { width: 60%; }
+  .mock-line.med   { width: 80%; }
+  .mock-photo-zone { width: 60px; height: 70px; background: #bbb; border-radius: 3px; margin: 4px 0; }
+  .mock-mrz { background: #e8e8e8; width: 100%; padding: 4px; border-radius: 2px; }
+  .mock-mrz-line { background: #aaa; height: 6px; border-radius: 2px; width: 100%; margin-bottom: 3px; font-family: monospace; font-size: 5px; color: #555; display: flex; align-items: center; }
+  .annotation-box { position: absolute; border: 2px solid var(--purple); background: rgba(139,92,246,.15); border-radius: 2px; }
+  .ann-label { position: absolute; top: -18px; left: 0; font-size: 9px; background: var(--purple); color: #fff; padding: 1px 5px; border-radius: 3px; white-space: nowrap; }
+  .ocr-highlight { position: absolute; border: 1px solid var(--green); background: rgba(16,185,129,.2); border-radius: 2px; }
+
+  /* OCR Results panel */
+  .ocr-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ocr-field { background: var(--bg3); border-radius: 6px; padding: 8px 10px; }
+  .ocr-field-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 3px; }
+  .ocr-field-value { font-size: 13px; font-weight: 600; color: var(--text); }
+  .ocr-field-conf { font-size: 10px; margin-top: 2px; }
+  .conf-high { color: var(--green); }
+  .conf-med  { color: var(--yellow); }
+  .conf-low  { color: var(--red); }
+
+  /* Fraud signals */
+  .fraud-list { display: flex; flex-direction: column; gap: 6px; }
+  .fraud-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: var(--bg3); font-size: 12px; }
+  .fraud-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+  .fraud-pass { background: rgba(16,185,129,.2); color: var(--green); }
+  .fraud-warn { background: rgba(245,158,11,.2); color: var(--yellow); }
+  .fraud-fail { background: rgba(239,68,68,.2);  color: var(--red); }
+
+  /* ── VIEW 3: UPLOAD MODAL WIREFRAME ── */
+  .modal-view { padding: 24px; display: flex; gap: 24px; }
+  .modal-shell { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; width: 680px; flex-shrink: 0; overflow: hidden; }
+  .modal-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .modal-header h3 { font-size: 16px; font-weight: 700; }
+  .modal-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+  .modal-steps { display: flex; gap: 0; margin-bottom: 4px; }
+  .modal-step { flex: 1; display: flex; align-items: center; gap: 8px; }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--bg3); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .step-num.done   { background: var(--green); border-color: var(--green); color: #fff; }
+  .step-num.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .step-label { font-size: 12px; color: var(--text2); }
+  .step-line  { flex: 1; height: 2px; background: var(--border); margin: 0 4px; }
+  .step-line.done { background: var(--green); }
+
+  .crop-zone { border: 2px dashed #f59e0b; border-radius: 8px; height: 200px; display: flex; align-items: center; justify-content: center; position: relative; background: var(--bg3); overflow: hidden; }
+  .crop-image-mock { width: 260px; height: 160px; background: #fff; border-radius: 3px; position: relative; }
+  .crop-handle { position: absolute; width: 12px; height: 12px; background: #f59e0b; border-radius: 50%; cursor: nw-resize; }
+  .crop-overlay { position: absolute; border: 2px solid #f59e0b; background: rgba(245,158,11,.05); }
+  .crop-label-tag { position: absolute; top: -22px; left: 0; background: #f59e0b; color: #000; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
+
+  .ocr-preview-row { display: flex; gap: 12px; }
+  .ocr-prev-box { flex: 1; background: var(--bg3); border-radius: 8px; padding: 12px; }
+  .ocr-prev-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 8px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── VIEW 4: LIVENESS ── */
+  .liveness-view { padding: 24px; display: flex; gap: 24px; flex-wrap: wrap; }
+  .liveness-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .liveness-cam { width: 360px; height: 280px; background: #1a1a2e; display: flex; align-items: center; justify-content: center; position: relative; }
+  .cam-face-ring { width: 160px; height: 200px; border: 3px solid var(--green); border-radius: 50%; position: absolute; display: flex; align-items: center; justify-content: center; }
+  .cam-face-inner { width: 140px; height: 180px; border-radius: 50%; background: rgba(16,185,129,.05); display: flex; align-items: center; justify-content: center; font-size: 72px; }
+  .cam-dots { position: absolute; inset: 0; }
+  .cam-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--green); opacity: .7; }
+  .cam-instructions { background: rgba(0,0,0,.7); position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); padding: 6px 14px; border-radius: 99px; font-size: 12px; color: #fff; white-space: nowrap; }
+  .liveness-panel { padding: 18px; }
+  .challenge-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .challenge-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg3); border-radius: 8px; }
+  .ch-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .ch-done { background: rgba(16,185,129,.2); }
+  .ch-active { background: rgba(59,130,246,.2); animation: pulse 1.5s ease-in-out infinite; }
+  .ch-pending { background: var(--bg2); opacity: .5; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+  .ch-text { font-size: 13px; }
+  .ch-status { margin-left: auto; font-size: 11px; font-weight: 600; }
+  .ch-s-done { color: var(--green); }
+  .ch-s-active { color: var(--accent); }
+  .ch-s-pend { color: var(--text3); }
+
+  .liveness-score { margin-top: 14px; background: var(--bg3); border-radius: 8px; padding: 14px; }
+  .score-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 8px; }
+  .score-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 4px; }
+  .score-fill { height: 100%; background: linear-gradient(90deg, var(--green), #34d399); border-radius: 99px; transition: width .5s; }
+  .score-val { font-size: 20px; font-weight: 800; color: var(--green); }
+
+  /* ── VIEW 5: COMPONENT MAP ── */
+  .compmap { padding: 28px 32px; max-width: 1100px; margin: 0 auto; }
+  .compmap-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .compmap-sub { color: var(--text2); margin-bottom: 28px; }
+
+  .arch-row { display: flex; align-items: stretch; gap: 16px; margin-bottom: 20px; }
+  .arch-lane { flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .arch-lane-header { background: var(--bg3); padding: 10px 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--text2); border-bottom: 1px solid var(--border); }
+  .arch-lane-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .arch-item { background: var(--bg3); border-radius: 6px; padding: 8px 12px; }
+  .arch-item-name { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+  .arch-item-sub  { font-size: 11px; color: var(--text3); }
+  .arch-arrow { display: flex; align-items: center; font-size: 22px; color: var(--text3); padding: 0 4px; }
+  .new-badge { background: rgba(16,185,129,.15); color: var(--green); font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-left: 6px; text-transform: uppercase; }
+  .existing-badge { background: rgba(59,130,246,.12); color: #60a5fa; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-left: 6px; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* General helpers */
+  .flex { display: flex; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .flex-wrap { flex-wrap: wrap; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .small { font-size: 12px; color: var(--text2); }
+  .tag { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-size: 11px; padding: 2px 8px; border-radius: 99px; }
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .chip-green  { background: rgba(16,185,129,.15); color: var(--green); }
+  .chip-blue   { background: rgba(59,130,246,.15);  color: #60a5fa; }
+  .chip-yellow { background: rgba(245,158,11,.15);  color: var(--yellow); }
+  .chip-purple { background: rgba(139,92,246,.15);  color: #c084fc; }
+  .chip-red    { background: rgba(239,68,68,.15);   color: var(--red); }
+  .chip-cyan   { background: rgba(6,182,212,.15);   color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="top-nav">
+  <div class="nav-logo">⬡ KYC Document Library Placement</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchView('overview')">1 · Overview</button>
+    <button class="nav-tab" onclick="switchView('casedetails')">2 · Case Details</button>
+    <button class="nav-tab" onclick="switchView('upload')">3 · Upload &amp; OCR</button>
+    <button class="nav-tab" onclick="switchView('liveness')">4 · Liveness</button>
+    <button class="nav-tab" onclick="switchView('compmap')">5 · Component Map</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     VIEW 1 · OVERVIEW
+══════════════════════════════════════ -->
+<div id="view-overview" class="view active">
+  <div class="overview">
+    <div class="overview-title">Frontend Document Libraries — Placement Overview</div>
+    <div class="overview-sub">8 libraries · 5 integration points · all slots into existing React + Spring Boot architecture</div>
+
+    <div class="lib-grid">
+      <!-- react-pdf -->
+      <div class="lib-card">
+        <div class="lib-card-icon">📄</div>
+        <div class="lib-card-name">react-pdf / PDF.js</div>
+        <div class="lib-card-pkg">react-pdf · pdfjs-dist</div>
+        <div class="lib-card-desc">Renders PDF documents in-browser on a canvas. Text layer enables selection, search &amp; copy. Web Worker keeps UI responsive.</div>
+        <div class="lib-card-where">Placed in: <span>CaseDetails → Supporting Documents</span></div>
+      </div>
+      <!-- react-pdf-viewer -->
+      <div class="lib-card">
+        <div class="lib-card-icon">🔍</div>
+        <div class="lib-card-name">@react-pdf-viewer/core</div>
+        <div class="lib-card-pkg">@react-pdf-viewer/core</div>
+        <div class="lib-card-desc">Higher-level wrapper with built-in toolbar, zoom, rotate, thumbnails &amp; text search. Analyst-ready document review experience.</div>
+        <div class="lib-card-where">Placed in: <span>CaseDetails → Document Viewer Panel</span></div>
+      </div>
+      <!-- react-image-crop -->
+      <div class="lib-card">
+        <div class="lib-card-icon">✂️</div>
+        <div class="lib-card-name">react-image-crop</div>
+        <div class="lib-card-pkg">react-image-crop</div>
+        <div class="lib-card-desc">Interactive crop/zoom on image uploads. Analyst can select the MRZ zone, face zone or signature zone before OCR to improve accuracy.</div>
+        <div class="lib-card-where">Placed in: <span>Upload Modal → Step 2 (Image Zone)</span></div>
+      </div>
+      <!-- Annotorious -->
+      <div class="lib-card">
+        <div class="lib-card-icon">🖊️</div>
+        <div class="lib-card-name">Annotorious</div>
+        <div class="lib-card-pkg">@annotorious/react</div>
+        <div class="lib-card-desc">Polygon &amp; rectangle annotations on document images. Analysts mark suspected tamper zones, photo-swaps or inconsistent fonts. Stored as W3C JSON.</div>
+        <div class="lib-card-where">Placed in: <span>CaseDetails → Document Viewer (Fraud Review)</span></div>
+      </div>
+      <!-- MediaPipe -->
+      <div class="lib-card">
+        <div class="lib-card-icon">👁️</div>
+        <div class="lib-card-name">MediaPipe Tasks</div>
+        <div class="lib-card-pkg">@mediapipe/tasks-vision</div>
+        <div class="lib-card-desc">468-point face landmark detection at 60fps via WASM. Blink + head-pose liveness. Runs entirely in browser — no video leaves device.</div>
+        <div class="lib-card-where">Placed in: <span>Onboarding / Case Create → Selfie Capture</span></div>
+      </div>
+      <!-- OpenSeadragon -->
+      <div class="lib-card">
+        <div class="lib-card-icon">🔬</div>
+        <div class="lib-card-name">OpenSeadragon</div>
+        <div class="lib-card-pkg">openseadragon</div>
+        <div class="lib-card-desc">Deep-zoom on 600 DPI passport scans. Smooth pan &amp; zoom on ultra-high-res images without loading the full image at once.</div>
+        <div class="lib-card-where">Placed in: <span>CaseDetails → Viewer (High-res ID scans)</span></div>
+      </div>
+      <!-- Tesseract.js (optional frontend) -->
+      <div class="lib-card">
+        <div class="lib-card-icon">🔤</div>
+        <div class="lib-card-name">OCR Result Overlay</div>
+        <div class="lib-card-pkg">tess4j (backend)</div>
+        <div class="lib-card-desc">OCR runs on the Java backend (Tess4J). Extracted fields surface as an overlay panel next to the document viewer showing confidence scores.</div>
+        <div class="lib-card-where">Placed in: <span>CaseDetails → OCR Data Panel (sidebar)</span></div>
+      </div>
+      <!-- ZXing result -->
+      <div class="lib-card">
+        <div class="lib-card-icon">📊</div>
+        <div class="lib-card-name">Fraud &amp; Extraction Signals</div>
+        <div class="lib-card-pkg">ZXing · mrz-parser · Tika</div>
+        <div class="lib-card-desc">Backend signals (MRZ check digit pass/fail, EXIF tampering, barcode vs OCR mismatch) surfaced as colour-coded badges in the viewer sidebar.</div>
+        <div class="lib-card-where">Placed in: <span>CaseDetails → Verification Signals Panel</span></div>
+      </div>
+    </div>
+
+    <!-- User journey flow -->
+    <div class="flow-title">User Journey → Library Touchpoints</div>
+    <div class="flow-row">
+      <div class="flow-step">
+        <div class="flow-step-title">📤 Upload</div>
+        <div class="flow-step-libs">
+          <span class="tooltip-badge tb-crop">react-image-crop</span>
+          <span class="tooltip-badge tb-tika">Tika MIME</span>
+        </div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-step-title">🔤 OCR Extract</div>
+        <div class="flow-step-libs">
+          <span class="tooltip-badge tb-ocr">Tess4J</span>
+          <span class="tooltip-badge tb-mrz">MRZ Parser</span>
+          <span class="tooltip-badge tb-zx">ZXing</span>
+        </div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-step-title">📄 Review</div>
+        <div class="flow-step-libs">
+          <span class="tooltip-badge tb-pdf">react-pdf</span>
+          <span class="tooltip-badge tb-anno">Annotorious</span>
+        </div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-step-title">🛡️ Verify</div>
+        <div class="flow-step-libs">
+          <span class="tooltip-badge tb-live">MediaPipe</span>
+          <span class="tooltip-badge tb-ocr">DeepFace</span>
+        </div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-step-title">✅ Decision</div>
+        <div class="flow-step-libs">
+          <span class="tooltip-badge tb-mrz">Fraud Signals</span>
+          <span class="tooltip-badge tb-ocr">Risk Score</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;">
+      <div class="flow-title" style="margin-bottom:10px;">Click any tab above to see detailed wireframes for each integration point</div>
+      <div class="flex gap-8 flex-wrap">
+        <span class="chip chip-blue">Tab 2 → Case Details viewer</span>
+        <span class="chip chip-yellow">Tab 3 → Upload &amp; crop modal</span>
+        <span class="chip chip-cyan">Tab 4 → Liveness detection UI</span>
+        <span class="chip chip-purple">Tab 5 → Component architecture map</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     VIEW 2 · CASE DETAILS
+══════════════════════════════════════ -->
+<div id="view-casedetails" class="view">
+  <div class="wireframe">
+    <!-- Header -->
+    <div class="wf-header">
+      <div class="wf-header-left">
+        <h2>Case #KYC-2025-4821 — James Holloway <span class="chip chip-blue" style="font-size:11px;margin-left:8px;">KYC_ANALYST</span></h2>
+        <p>Onboarding · Individual · High Risk · Assigned: sarah.chen · Updated 2m ago</p>
+      </div>
+      <div class="flex gap-8">
+        <span class="chip chip-yellow">⚠ 2 Fraud Signals</span>
+        <span class="chip chip-green">MRZ ✓</span>
+        <button style="background:var(--accent);border:none;color:#fff;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;">+ Action</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="wf-tabs">
+      <div class="wf-tab">Overview</div>
+      <div class="wf-tab">Risk &amp; Screening</div>
+      <div class="wf-tab active">Workflow &amp; Documents</div>
+      <div class="wf-tab">Timeline &amp; Actions</div>
+    </div>
+
+    <!-- Tab body -->
+    <div class="wf-body">
+      <!-- LEFT: Document Viewer -->
+      <div class="wf-main">
+        <div class="wf-card" style="padding:14px;">
+          <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div>
+              <div class="section-label label-pdf">📄 react-pdf / @react-pdf-viewer</div>
+              <div class="wf-card-title" style="margin:0;">Supporting Documents — Inline Viewer</div>
+            </div>
+            <div class="flex gap-8">
+              <span class="tooltip-badge tb-anno">Annotorious</span>
+              <span class="tooltip-badge tb-pdf">PDF.js</span>
+            </div>
+          </div>
+
+          <!-- Document selector row -->
+          <div class="flex gap-8 mt-8" style="margin-bottom:12px;flex-wrap:wrap;">
+            <div style="background:var(--accent);color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">📋 passport_scan.pdf</div>
+            <div style="background:var(--bg3);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--border);">🏠 utility_bill.pdf</div>
+            <div style="background:var(--bg3);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--border);">🏦 bank_statement.pdf</div>
+            <div style="margin-left:auto;"><button style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;">+ Upload New</button></div>
+          </div>
+
+          <!-- PDF Viewer shell -->
+          <div class="doc-viewer-shell">
+            <!-- Toolbar (react-pdf-viewer built-in) -->
+            <div class="doc-viewer-toolbar">
+              <button class="dv-btn">◀</button>
+              <button class="dv-btn">▶</button>
+              <span style="font-size:11px;color:var(--text2);margin:0 6px;">1 / 2</span>
+              <div style="width:1px;height:16px;background:var(--border);margin:0 4px;"></div>
+              <button class="dv-btn">−</button>
+              <button class="dv-btn">100%</button>
+              <button class="dv-btn">+</button>
+              <div style="width:1px;height:16px;background:var(--border);margin:0 4px;"></div>
+              <button class="dv-btn">⟳ Rotate</button>
+              <button class="dv-btn">⤢ Full</button>
+              <div style="width:1px;height:16px;background:var(--border);margin:0 4px;"></div>
+              <button class="dv-btn primary">🖊 Annotate</button>
+              <button class="dv-btn" style="color:var(--green);">✂ Crop Zone</button>
+              <span style="margin-left:auto;font-size:11px;color:var(--text3);">@react-pdf-viewer/core · Annotorious</span>
+            </div>
+            <div class="doc-viewer-body">
+              <!-- Page thumbnails (pdf-viewer built-in) -->
+              <div class="doc-page-list">
+                <div style="font-size:9px;color:var(--text3);text-align:center;margin-bottom:4px;">PAGES</div>
+                <div class="doc-thumb active">
+                  <div style="width:44px;height:34px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:8px;color:#666;border-radius:2px;">P1</div>
+                </div>
+                <div class="doc-thumb">
+                  <div style="width:44px;height:34px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:8px;color:#666;border-radius:2px;">P2</div>
+                </div>
+              </div>
+              <!-- Main page view -->
+              <div class="doc-page-view">
+                <div class="doc-page-mock">
+                  <!-- Header lines -->
+                  <div style="font-size:6px;color:#333;font-weight:700;text-align:center;">PASSPORT</div>
+                  <div class="mock-line short" style="align-self:center;width:50%;"></div>
+                  <!-- Photo + info grid -->
+                  <div style="display:flex;gap:6px;width:100%;margin-top:4px;">
+                    <div class="mock-photo-zone" style="position:relative;">
+                      <!-- Face detect annotation -->
+                      <div style="position:absolute;inset:4px;border:2px solid #10b981;border-radius:2px;background:rgba(16,185,129,.1);">
+                        <div style="position:absolute;top:-14px;left:0;font-size:7px;background:#10b981;color:#fff;padding:1px 3px;border-radius:2px;">FACE ✓</div>
+                      </div>
+                    </div>
+                    <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
+                      <div class="mock-line short"></div>
+                      <div class="mock-line"></div>
+                      <div class="mock-line med"></div>
+                      <div class="mock-line short"></div>
+                      <div class="mock-line med"></div>
+                    </div>
+                  </div>
+                  <!-- Annotation box (Annotorious) -->
+                  <div style="position:absolute;top:22px;right:8px;width:40px;height:18px;border:2px solid #8b5cf6;background:rgba(139,92,246,.1);border-radius:2px;">
+                    <div style="position:absolute;top:-12px;left:0;font-size:6px;background:#8b5cf6;color:#fff;padding:1px 3px;border-radius:2px;white-space:nowrap;">⚠ Tamper?</div>
+                  </div>
+                  <!-- MRZ zone -->
+                  <div style="position:absolute;bottom:0;left:0;right:0;background:#e8e8e8;padding:4px;">
+                    <div style="font-size:6px;color:#555;letter-spacing:1px;font-family:monospace;">P&lt;GBRHOLLOWAY&lt;&lt;JAMES&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
+                    <div style="font-size:6px;color:#555;letter-spacing:1px;font-family:monospace;">A12345671GBR9001019M3001016&lt;&lt;&lt;&lt;&lt;&lt;4</div>
+                    <!-- OCR highlight on MRZ -->
+                    <div style="position:absolute;inset:2px;border:1px solid #10b981;background:rgba(16,185,129,.1);border-radius:1px;">
+                      <div style="position:absolute;top:-13px;right:0;font-size:7px;background:#10b981;color:#fff;padding:1px 4px;border-radius:2px;">MRZ OCR ✓</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="small mt-8">
+            ↑ <strong>react-pdf</strong> renders PDF to canvas · <strong>@react-pdf-viewer</strong> provides toolbar, thumbnails, rotation · <strong>Annotorious</strong> adds analyst fraud annotations (purple box above) · OCR highlights in green from backend Tess4J
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <div class="wf-side">
+        <!-- OCR Extracted Data -->
+        <div class="wf-card">
+          <div class="section-label label-ocr">🔤 Tess4J + MRZ Parser (backend)</div>
+          <div class="wf-card-title">Extracted Document Data</div>
+          <div class="ocr-field-grid">
+            <div class="ocr-field">
+              <div class="ocr-field-label">Surname</div>
+              <div class="ocr-field-value">HOLLOWAY</div>
+              <div class="ocr-field-conf conf-high">99.2% confidence</div>
+            </div>
+            <div class="ocr-field">
+              <div class="ocr-field-label">Given Names</div>
+              <div class="ocr-field-value">JAMES</div>
+              <div class="ocr-field-conf conf-high">98.7% confidence</div>
+            </div>
+            <div class="ocr-field">
+              <div class="ocr-field-label">Nationality</div>
+              <div class="ocr-field-value">GBR 🇬🇧</div>
+              <div class="ocr-field-conf conf-high">MRZ source</div>
+            </div>
+            <div class="ocr-field">
+              <div class="ocr-field-label">Date of Birth</div>
+              <div class="ocr-field-value">01 Jan 1990</div>
+              <div class="ocr-field-conf conf-high">Check digit ✓</div>
+            </div>
+            <div class="ocr-field">
+              <div class="ocr-field-label">Expiry Date</div>
+              <div class="ocr-field-value">16 Jan 2030</div>
+              <div class="ocr-field-conf conf-high">Valid · 3.7y left</div>
+            </div>
+            <div class="ocr-field">
+              <div class="ocr-field-label">Doc Number</div>
+              <div class="ocr-field-value">A1234567</div>
+              <div class="ocr-field-conf conf-high">Check digit ✓</div>
+            </div>
+          </div>
+          <div class="small mt-8">Source: MRZ zone OCR (PSM 6) → mrz-parser check digit validation</div>
+        </div>
+
+        <!-- Fraud Signals -->
+        <div class="wf-card">
+          <div class="section-label label-tika">🛡️ Tika · PDFBox · ZXing · OpenCV</div>
+          <div class="wf-card-title">Verification &amp; Fraud Signals</div>
+          <div class="fraud-list">
+            <div class="fraud-item">
+              <div class="fraud-icon fraud-pass">✓</div>
+              <div>
+                <div style="font-size:12px;font-weight:600;">MRZ Check Digits</div>
+                <div class="small">All 3 check digits valid (ICAO 9303)</div>
+              </div>
+            </div>
+            <div class="fraud-item">
+              <div class="fraud-icon fraud-pass">✓</div>
+              <div>
+                <div style="font-size:12px;font-weight:600;">PDF Digital Signature</div>
+                <div class="small">Signature intact · Issuer: HMPO CA</div>
+              </div>
+            </div>
+            <div class="fraud-item">
+              <div class="fraud-icon fraud-warn">!</div>
+              <div>
+                <div style="font-size:12px;font-weight:600;">EXIF Metadata</div>
+                <div class="small">Modified date newer than creation</div>
+              </div>
+            </div>
+            <div class="fraud-item">
+              <div class="fraud-icon fraud-warn">!</div>
+              <div>
+                <div style="font-size:12px;font-weight:600;">Photo Zone ELA</div>
+                <div class="small">Inconsistent compression in face region</div>
+              </div>
+            </div>
+            <div class="fraud-item">
+              <div class="fraud-icon fraud-pass">✓</div>
+              <div>
+                <div style="font-size:12px;font-weight:600;">Face Detected</div>
+                <div class="small">OpenCV: 1 face, frontal, confidence 94%</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px;padding:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:6px;font-size:12px;color:var(--yellow);">
+            ⚠ 2 signals require analyst review before approval
+          </div>
+        </div>
+
+        <!-- Annotations list -->
+        <div class="wf-card">
+          <div class="section-label label-anno">🖊️ Annotorious</div>
+          <div class="wf-card-title">Analyst Annotations</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="background:var(--bg3);border-radius:6px;padding:8px 10px;border-left:3px solid var(--purple);">
+              <div style="font-size:12px;font-weight:600;margin-bottom:2px;">Photo zone — top right</div>
+              <div class="small">Possible photo substitution. Compression artifact boundary visible. — sarah.chen · 14:32</div>
+            </div>
+            <button style="background:var(--bg3);border:1px dashed var(--border);color:var(--text3);padding:7px;border-radius:6px;cursor:pointer;font-size:12px;width:100%;">+ Add annotation on document</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     VIEW 3 · UPLOAD & OCR
+══════════════════════════════════════ -->
+<div id="view-upload" class="view">
+  <div class="modal-view">
+    <!-- Modal -->
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h3>📤 Upload Document</h3>
+        <span style="color:var(--text3);cursor:pointer;font-size:18px;">✕</span>
+      </div>
+      <div class="modal-body">
+        <!-- Steps -->
+        <div class="modal-steps">
+          <div class="modal-step">
+            <div class="step-num done">✓</div>
+            <div class="step-label">Select File</div>
+          </div>
+          <div class="step-line done"></div>
+          <div class="modal-step">
+            <div class="step-num active">2</div>
+            <div class="step-label">Crop Zone</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="modal-step">
+            <div class="step-num">3</div>
+            <div class="step-label">Review OCR</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="modal-step">
+            <div class="step-num">4</div>
+            <div class="step-label">Submit</div>
+          </div>
+        </div>
+
+        <!-- Category + Label row -->
+        <div class="flex gap-12">
+          <div style="flex:1;">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:5px;">Document Category</div>
+            <select style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;">
+              <option>IDENTIFICATION</option>
+              <option>PROOF_OF_ADDRESS</option>
+              <option>BANK_STATEMENT</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:5px;">Document Name</div>
+            <input value="passport_scan.pdf" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;" />
+          </div>
+        </div>
+
+        <!-- CROP ZONE (react-image-crop) -->
+        <div>
+          <div class="section-label label-crop">✂️ react-image-crop</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Select Zone to Send to OCR <span style="color:var(--text3);font-size:11px;font-weight:400;">(optional — improves accuracy)</span></div>
+          <div class="crop-zone">
+            <div class="crop-image-mock">
+              <!-- Full page mock -->
+              <div style="background:#ddd;width:100%;height:100%;display:flex;flex-direction:column;padding:10px;gap:5px;">
+                <div style="background:#bbb;height:10px;border-radius:2px;width:60%;align-self:center;"></div>
+                <div style="display:flex;gap:8px;flex:1;">
+                  <div style="width:55px;background:#aaa;border-radius:2px;flex-shrink:0;"></div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:5px;padding-top:5px;">
+                    <div style="background:#ccc;height:7px;border-radius:2px;"></div>
+                    <div style="background:#ccc;height:7px;border-radius:2px;width:80%;"></div>
+                    <div style="background:#ccc;height:7px;border-radius:2px;width:60%;"></div>
+                  </div>
+                </div>
+                <div style="background:#bbb;height:18px;border-radius:2px;width:100%;"></div>
+              </div>
+              <!-- Crop overlay — MRZ zone selected -->
+              <div class="crop-overlay" style="left:0;right:0;bottom:0;height:25px;">
+                <div class="crop-label-tag">MRZ Zone selected</div>
+              </div>
+              <!-- Crop handles -->
+              <div class="crop-handle" style="left:-4px;bottom:21px;"></div>
+              <div class="crop-handle" style="right:-4px;bottom:21px;"></div>
+              <div class="crop-handle" style="left:-4px;bottom:-4px;"></div>
+              <div class="crop-handle" style="right:-4px;bottom:-4px;"></div>
+            </div>
+          </div>
+          <div class="flex gap-8 mt-8">
+            <button style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Full Page</button>
+            <button style="background:rgba(245,158,11,.15);border:1px solid #d97706;color:var(--yellow);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">✂ MRZ Zone</button>
+            <button style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Face Zone</button>
+            <button style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Signature Zone</button>
+          </div>
+        </div>
+
+        <!-- OCR Preview (Step 3 teaser) -->
+        <div>
+          <div class="section-label label-ocr">🔤 Tess4J OCR + mrz-parser (backend preview)</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">OCR will extract from selected zone</div>
+          <div class="ocr-preview-row">
+            <div class="ocr-prev-box">
+              <div class="ocr-prev-title">Raw OCR Output</div>
+              <div style="font-family:monospace;font-size:11px;color:#34d399;background:var(--bg2);padding:8px;border-radius:5px;line-height:1.6;">
+                P&lt;GBRHOLLOWAY&lt;&lt;JAMES&lt;&lt;&lt;<br/>
+                A12345671GBR9001019M30010164
+              </div>
+            </div>
+            <div class="ocr-prev-box">
+              <div class="ocr-prev-title">Parsed Fields</div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">Name</span> <span>HOLLOWAY, JAMES</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">DOB</span> <span>01 Jan 1990</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">Nationality</span> <span>🇬🇧 GBR</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">Check Digits</span> <span style="color:var(--green);">All ✓</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-8" style="justify-content:flex-end;padding-top:6px;border-top:1px solid var(--border);">
+          <button style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:8px 18px;border-radius:7px;cursor:pointer;font-size:13px;">Back</button>
+          <button style="background:var(--accent);border:none;color:#fff;padding:8px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;">Run OCR &amp; Continue →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Side annotations -->
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:320px;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <div class="section-label label-crop" style="margin-bottom:10px;">Why Crop Zones?</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text2);">
+          <div>📊 <strong>MRZ Zone</strong> — Use PSM 6 (uniform block), whitelist alphanumeric only. 99%+ accuracy.</div>
+          <div>👤 <strong>Face Zone</strong> — Send just the photo region to DeepFace for faster comparison.</div>
+          <div>✍️ <strong>Signature Zone</strong> — Extract signature contour for cross-doc comparison.</div>
+          <div>📮 <strong>Address Zone</strong> — Send address block to OpenNLP NER.</div>
+        </div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <div class="section-label label-ocr" style="margin-bottom:10px;">Backend OCR Pipeline</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8;">
+          1. Apache Tika — detect MIME, extract EXIF<br/>
+          2. PDFBox — extract embedded text (digital PDFs)<br/>
+          3. OpenCV — deskew, binarize, upscale to 300 DPI<br/>
+          4. Tess4J (Tesseract 5) — OCR at PSM mode<br/>
+          5. MRZ parser — parse + validate check digits<br/>
+          6. ZXing — detect &amp; decode PDF417 barcodes
+        </div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <div class="section-label label-tika" style="margin-bottom:10px;">EXIF Fraud Signals (Tika)</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8;">
+          • GPS coordinates vs declared address<br/>
+          • Modified date newer than creation date<br/>
+          • Editing software tag (Photoshop, GIMP)<br/>
+          • Device model cross-reference
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     VIEW 4 · LIVENESS
+══════════════════════════════════════ -->
+<div id="view-liveness" class="view">
+  <div class="liveness-view">
+    <div style="flex:1;min-width:320px;">
+      <div style="margin-bottom:18px;">
+        <div class="section-label label-live">👁️ MediaPipe Tasks + @mediapipe/face_mesh</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:4px;">Selfie Liveness Verification</div>
+        <div style="color:var(--text2);font-size:13px;">Placed in: Onboarding flow · Case creation · Periodic review re-verification</div>
+      </div>
+
+      <div class="liveness-card" style="width:100%;">
+        <!-- Camera feed mock -->
+        <div class="liveness-cam">
+          <!-- Face mesh dots (MediaPipe 468-point landmarks) -->
+          <div class="cam-dots">
+            <!-- Simulated landmark dots around face outline -->
+            <div class="cam-dot" style="left:144px;top:60px;"></div>
+            <div class="cam-dot" style="left:160px;top:52px;"></div>
+            <div class="cam-dot" style="left:178px;top:50px;"></div>
+            <div class="cam-dot" style="left:196px;top:52px;"></div>
+            <div class="cam-dot" style="left:212px;top:60px;"></div>
+            <div class="cam-dot" style="left:148px;top:110px;"></div>
+            <div class="cam-dot" style="left:210px;top:110px;"></div>
+            <div class="cam-dot" style="left:162px;top:135px;"></div>
+            <div class="cam-dot" style="left:180px;top:140px;"></div>
+            <div class="cam-dot" style="left:196px;top:135px;"></div>
+            <div class="cam-dot" style="left:180px;top:100px;"></div>
+            <!-- Eyes -->
+            <div class="cam-dot" style="left:157px;top:88px;background:#34d399;width:8px;height:8px;"></div>
+            <div class="cam-dot" style="left:200px;top:88px;background:#34d399;width:8px;height:8px;"></div>
+          </div>
+          <div class="cam-face-ring">
+            <div class="cam-face-inner">🙂</div>
+          </div>
+          <div class="cam-instructions">✓ Face detected — Now: look left</div>
+        </div>
+
+        <!-- Challenge panel -->
+        <div class="liveness-panel">
+          <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Liveness Challenges <span style="color:var(--text3);font-size:11px;font-weight:400;">(MediaPipe head-pose + blink detection)</span></div>
+          <div class="challenge-list">
+            <div class="challenge-item">
+              <div class="ch-icon ch-done">✓</div>
+              <span class="ch-text">Face centred in frame</span>
+              <span class="ch-status ch-s-done">Complete</span>
+            </div>
+            <div class="challenge-item">
+              <div class="ch-icon ch-done">✓</div>
+              <span class="ch-text">Blink twice</span>
+              <span class="ch-status ch-s-done">Complete</span>
+            </div>
+            <div class="challenge-item" style="border:1px solid rgba(59,130,246,.3);">
+              <div class="ch-icon ch-active" style="color:var(--accent);">→</div>
+              <span class="ch-text">Turn head left</span>
+              <span class="ch-status ch-s-active">In progress…</span>
+            </div>
+            <div class="challenge-item" style="opacity:.5;">
+              <div class="ch-icon ch-pending">4</div>
+              <span class="ch-text">Turn head right</span>
+              <span class="ch-status ch-s-pend">Waiting</span>
+            </div>
+            <div class="challenge-item" style="opacity:.5;">
+              <div class="ch-icon ch-pending">5</div>
+              <span class="ch-text">Smile</span>
+              <span class="ch-status ch-s-pend">Waiting</span>
+            </div>
+          </div>
+
+          <div class="liveness-score">
+            <div class="score-label">Liveness Score</div>
+            <div class="flex" style="align-items:baseline;gap:8px;margin-bottom:6px;">
+              <div class="score-val">62%</div>
+              <div style="font-size:12px;color:var(--text3);">— 2 of 5 challenges complete</div>
+            </div>
+            <div class="score-bar"><div class="score-fill" style="width:62%;"></div></div>
+          </div>
+
+          <div style="margin-top:14px;font-size:12px;color:var(--text3);line-height:1.6;">
+            🔒 All processing runs in <strong>browser WASM</strong> — no video frames sent to server<br/>
+            ✓ Required score for KYC: <strong>80%</strong> (3 of 5 challenges)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Face comparison panel -->
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:280px;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div class="section-label label-ocr" style="margin-bottom:12px;">👤 DeepFace (Python sidecar)</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:14px;">ID Photo vs Selfie Comparison</div>
+        <div class="flex gap-12" style="margin-bottom:14px;">
+          <div style="flex:1;text-align:center;">
+            <div style="width:80px;height:100px;background:var(--bg3);border-radius:8px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:36px;border:2px solid var(--border);">🪪</div>
+            <div style="font-size:11px;color:var(--text3);">From passport</div>
+          </div>
+          <div style="display:flex;align-items:center;font-size:20px;color:var(--text3);">↔</div>
+          <div style="flex:1;text-align:center;">
+            <div style="width:80px;height:100px;background:var(--bg3);border-radius:8px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:36px;border:2px solid var(--green);">🤳</div>
+            <div style="font-size:11px;color:var(--text3);">Live selfie</div>
+          </div>
+        </div>
+        <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:24px;font-weight:800;color:var(--green);">96.2%</div>
+          <div style="font-size:12px;color:var(--text2);">Face Match (ArcFace model)</div>
+          <div style="font-size:11px;color:var(--green);margin-top:3px;">✓ Above 80% threshold</div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text3);">Model: ArcFace · Threshold: 80% · API call to Python FastAPI sidecar</div>
+      </div>
+
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Where Liveness is placed</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text2);">
+          <div style="background:var(--bg3);border-radius:6px;padding:8px 10px;border-left:3px solid var(--cyan);">
+            <strong style="color:var(--text);">New Case / Onboarding</strong><br/>
+            Step 3 of case creation modal — "Verify Identity" step captures selfie + runs liveness before case is submitted
+          </div>
+          <div style="background:var(--bg3);border-radius:6px;padding:8px 10px;border-left:3px solid var(--cyan);">
+            <strong style="color:var(--text);">Periodic Review</strong><br/>
+            Re-verification widget in case details when a Periodic Review job is triggered
+          </div>
+          <div style="background:var(--bg3);border-radius:6px;padding:8px 10px;border-left:3px solid var(--cyan);">
+            <strong style="color:var(--text);">Document Upload (IDENTIFICATION)</strong><br/>
+            When category = IDENTIFICATION, upload modal adds liveness step before submission
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     VIEW 5 · COMPONENT MAP
+══════════════════════════════════════ -->
+<div id="view-compmap" class="view">
+  <div class="compmap">
+    <div class="compmap-title">Component Architecture Map</div>
+    <div class="compmap-sub">How new libraries slot into existing React components &amp; microservices</div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green);"></div> New library / component</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#60a5fa;"></div> Existing component (modified)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--text3);"></div> Existing (no change)</div>
+    </div>
+
+    <!-- Row 1: Pages -->
+    <div class="arch-row">
+      <div class="arch-lane" style="flex:2;">
+        <div class="arch-lane-header">📄 CaseDetails.jsx <span class="existing-badge">modified</span></div>
+        <div class="arch-lane-body">
+          <div class="arch-item">
+            <div class="arch-item-name">Workflow &amp; Documents tab <span class="existing-badge">existing tab</span></div>
+            <div class="arch-item-sub">Add: DocumentViewer component (new) · OCR Data Panel (new) · Fraud Signals Panel (new)</div>
+          </div>
+          <div class="arch-item">
+            <div class="arch-item-name">Upload Modal <span class="existing-badge">existing</span></div>
+            <div class="arch-item-sub">Add: Step 2 — Zone Crop (react-image-crop) · Step 3 — OCR Preview</div>
+          </div>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-lane" style="flex:1;">
+        <div class="arch-lane-header">🆕 New Pages</div>
+        <div class="arch-lane-body">
+          <div class="arch-item">
+            <div class="arch-item-name">OnboardingWizard.jsx <span class="new-badge">new</span></div>
+            <div class="arch-item-sub">Multi-step case creation with liveness capture</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: New Components -->
+    <div class="arch-row">
+      <div class="arch-lane">
+        <div class="arch-lane-header">🆕 DocumentViewer.jsx <span class="new-badge">new component</span></div>
+        <div class="arch-lane-body">
+          <div class="arch-item">
+            <div class="arch-item-name" style="color:#60a5fa;">@react-pdf-viewer/core</div>
+            <div class="arch-item-sub">PDF rendering with toolbar, thumbnails, zoom, rotation</div>
+          </div>
+          <div class="arch-item">
+            <div class="arch-item-name" style="color:#c084fc;">@annotorious/react</div>
+            <div class="arch-item-sub">Fraud annotation overlay. Saves W3C JSON to case documents</div>
+          </div>
+          <div class="arch-item">
+            <div class="arch-item-name" style="color:#2dd4bf;">openseadragon</div>
+            <div class="arch-item-sub">Deep-zoom mode for high-res 600 DPI ID scans</div>
+          </div>
+        </div>
+      </div>
+      <div class="arch-lane">
+        <div class="arch-lane-header">🆕 DocumentUploadModal.jsx <span class="new-badge">replaces existing modal</span></div>
+        <div class="arch-lane-body">
+          <div class="arch-item">
+            <div class="arch-item-name" style="color:#fcd34d;">react-image-crop</div>
+            <div class="arch-item-sub">Step 2: zone selection (MRZ / face / address / signature)</div>
+          </div>
+          <div class="arch-item">
+            <div class="arch-item-name" style="color:#6ee7b7;">OCR Preview (Step 3)</div>
+            <div class="arch-item-sub">Calls POST /api/documents/ocr-preview with cropped image blob</div>
+          </div>
+        </div>
+      </div>
+      <div class="arch-lane">
+        <div class="arch-lane-header">🆕 LivenessCapture.jsx <span class="new-badge">new component</span></div>
+        <div class="arch-lane-body">
+          <div class="arch-item">
+            <div class="arch-item-name" style="color:#67e8f9;">@mediapipe/tasks-vision</div>
+            <div class="arch-item-sub">FaceLandmarker, blink detection, head-pose challenges</div>
+          </div>
+          <div class="arch-item">
+            <div class="arch-item-name" style="color:#6ee7b7;">FaceComparison (API)</div>
+            <div class="arch-item-sub">POST selfie to /api/documents/face-compare → DeepFace sidecar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Services -->
+    <div class="arch-row">
+      <div class="arch-lane" style="flex:2;">
+        <div class="arch-lane-header">⚙️ documentService.js <span class="new-badge">new service</span></div>
+        <div class="arch-lane-body" style="flex-direction:row;flex-wrap:wrap;gap:6px;">
+          <div class="arch-item" style="flex:1;min-width:160px;">
+            <div class="arch-item-name">uploadDocument()</div>
+            <div class="arch-item-sub">POST /api/cases/{id}/documents — existing, enhanced with crop zone</div>
+          </div>
+          <div class="arch-item" style="flex:1;min-width:160px;">
+            <div class="arch-item-name">ocrPreview() <span class="new-badge">new</span></div>
+            <div class="arch-item-sub">POST /api/documents/ocr-preview — returns extracted fields</div>
+          </div>
+          <div class="arch-item" style="flex:1;min-width:160px;">
+            <div class="arch-item-name">getDocumentOcr() <span class="new-badge">new</span></div>
+            <div class="arch-item-sub">GET /api/cases/{id}/documents/{docId}/ocr — returns stored OCR data</div>
+          </div>
+          <div class="arch-item" style="flex:1;min-width:160px;">
+            <div class="arch-item-name">faceCompare() <span class="new-badge">new</span></div>
+            <div class="arch-item-sub">POST /api/documents/face-compare — selfie vs ID photo</div>
+          </div>
+          <div class="arch-item" style="flex:1;min-width:160px;">
+            <div class="arch-item-name">saveAnnotation() <span class="new-badge">new</span></div>
+            <div class="arch-item-sub">POST /api/cases/{id}/documents/{docId}/annotations</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Backend microservices -->
+    <div class="arch-row">
+      <div class="arch-lane">
+        <div class="arch-lane-header">☕ document-service (NEW microservice)</div>
+        <div class="arch-lane-body">
+          <div class="arch-item"><div class="arch-item-name" style="color:#fde68a;">Apache Tika</div><div class="arch-item-sub">MIME detection · EXIF extraction · tampering signals</div></div>
+          <div class="arch-item"><div class="arch-item-name" style="color:#fde68a;">Apache PDFBox</div><div class="arch-item-sub">PDF text extraction · digital signature verification</div></div>
+          <div class="arch-item"><div class="arch-item-name" style="color:#6ee7b7;">Tess4J (Tesseract 5)</div><div class="arch-item-sub">OCR engine · PSM modes · hOCR confidence</div></div>
+          <div class="arch-item"><div class="arch-item-name" style="color:#5eead4;">ZXing</div><div class="arch-item-sub">PDF417 barcode · QR codes</div></div>
+          <div class="arch-item"><div class="arch-item-name" style="color:#fca5a5;">mrz-parser</div><div class="arch-item-sub">ICAO 9303 MRZ parsing + check digit validation</div></div>
+          <div class="arch-item"><div class="arch-item-name" style="color:#fb923c;">JavaCV / OpenCV</div><div class="arch-item-sub">Image preprocessing pipeline (deskew, binarize)</div></div>
+        </div>
+      </div>
+      <div class="arch-lane">
+        <div class="arch-lane-header">🐍 ocr-service (NEW Python FastAPI)</div>
+        <div class="arch-lane-body">
+          <div class="arch-item"><div class="arch-item-name" style="color:#6ee7b7;">PaddleOCR (PP-OCRv4)</div><div class="arch-item-sub">High-accuracy multilingual OCR · table extraction from bank statements</div></div>
+          <div class="arch-item"><div class="arch-item-name" style="color:#6ee7b7;">DeepFace</div><div class="arch-item-sub">Face comparison · ArcFace model · ID vs selfie matching</div></div>
+          <div class="arch-item"><div class="arch-item-name" style="color:#fcd34d;">Error Level Analysis</div><div class="arch-item-sub">Photo-splice tamper detection (Pillow + NumPy)</div></div>
+        </div>
+      </div>
+      <div class="arch-lane">
+        <div class="arch-lane-header">☕ viewer (existing, minor additions)</div>
+        <div class="arch-lane-body">
+          <div class="arch-item"><div class="arch-item-name" style="color:#60a5fa;">DocumentController <span class="new-badge">new endpoints</span></div><div class="arch-item-sub">Proxies OCR, face-compare, annotation calls to document-service</div></div>
+          <div class="arch-item"><div class="arch-item-name" style="color:#94a3b8;">CaseController (existing)</div><div class="arch-item-sub">Existing document upload endpoints unchanged</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:16px 20px;margin-top:4px;">
+      <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px;">✅ Recommended Implementation Order</div>
+      <div class="flex gap-8 flex-wrap">
+        <span class="chip chip-blue">1 · DocumentViewer (react-pdf)</span>
+        <span class="chip chip-yellow">2 · Upload Crop (react-image-crop)</span>
+        <span class="chip chip-green">3 · document-service (Tika + PDFBox + Tess4J + ZXing + MRZ)</span>
+        <span class="chip chip-purple">4 · Annotations (Annotorious)</span>
+        <span class="chip chip-cyan">5 · LivenessCapture (MediaPipe)</span>
+        <span class="chip chip-red">6 · ocr-service Python sidecar (PaddleOCR + DeepFace)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

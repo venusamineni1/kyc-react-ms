@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { caseService } from '../services/caseService';
 import { riskService } from '../services/riskService';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,6 +10,9 @@ import { useNotification } from '../contexts/NotificationContext';
 import CaseTimeline from '../components/CaseTimeline';
 import CaseActions from '../components/CaseActions';
 import ScreeningPanel from '../components/ScreeningPanel';
+import DocumentViewer from '../components/DocumentViewer';
+import OcrDataPanel from '../components/OcrDataPanel';
+import FraudSignalsPanel from '../components/FraudSignalsPanel';
 
 const CaseDetails = () => {
     const { id } = useParams();
@@ -27,8 +31,18 @@ const CaseDetails = () => {
     const [relatedCases, setRelatedCases] = useState([]);
     const [timeline, setTimeline] = useState([]);
     const [riskHistory, setRiskHistory] = useState([]);
+    const [riskDetails, setRiskDetails] = useState([]);
     const [myTasks, setMyTasks] = useState([]);
     const [activeTab, setActiveTab] = useState('flow');
+
+    // Document viewer modal state
+    const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
+    const [viewerModalDoc, setViewerModalDoc] = useState(null);
+
+    const handleOpenViewer = (doc) => {
+        setViewerModalDoc(doc);
+        setIsViewerModalOpen(true);
+    };
 
     // Modal States
     const [isDocModalOpen, setIsDocModalOpen] = useState(false);
@@ -42,6 +56,8 @@ const CaseDetails = () => {
         file: null, category: 'IDENTIFICATION', comment: '', documentName: ''
     });
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [dragOver, setDragOver] = useState(false);
 
     // Assignment States
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -54,6 +70,17 @@ const CaseDetails = () => {
     const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
     const [taskToComplete, setTaskToComplete] = useState(null);
     const [isCompleting, setIsCompleting] = useState(false);
+
+    // Rework / Cancel / Finalize modal states
+    const [isReworkModalOpen, setIsReworkModalOpen] = useState(false);
+    const [reworkComment, setReworkComment] = useState('');
+    const [isReworking, setIsReworking] = useState(false);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [cancelComment, setCancelComment] = useState('');
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [isFinalizeModalOpen, setIsFinalizeModalOpen] = useState(false);
+    const [finalizeDecision, setFinalizeDecision] = useState('APPROVE'); // 'APPROVE' | 'REJECT'
+    const [isFinalizing, setIsFinalizing] = useState(false);
 
     const loadCaseData = async () => {
         if (!kycCase) setLoading(true);
@@ -78,6 +105,12 @@ const CaseDetails = () => {
                 try {
                     const riskData = await riskService.getRiskHistory(caseData.clientID);
                     setRiskHistory(riskData);
+                    if (riskData && riskData.length > 0 && riskData[0].assessmentID) {
+                        try {
+                            const details = await riskService.getAssessmentDetails(riskData[0].assessmentID);
+                            setRiskDetails(details || []);
+                        } catch { setRiskDetails([]); }
+                    }
                 } catch (rErr) {
                     console.error("Failed to fetch risk history", rErr);
                 }
@@ -133,29 +166,43 @@ const CaseDetails = () => {
     };
 
 
-    const handleUpload = async () => {
+    const handleUpload = () => {
         if (!uploadData.file) return notify('Please select a file', 'warning');
         setUploading(true);
-        try {
-            const formData = new FormData();
-            formData.append('file', uploadData.file);
-            formData.append('category', uploadData.category);
-            formData.append('comment', uploadData.comment);
-            formData.append('uploadedBy', user.username);
-            if (uploadData.documentName) {
-                formData.append('documentName', uploadData.documentName);
-            }
+        setUploadProgress(0);
 
-            await caseService.uploadDocument(id, formData);
-            setIsDocModalOpen(false);
-            setUploadData({ file: null, category: 'IDENTIFICATION', comment: '', documentName: '' });
-            loadCaseData();
-            notify('Document uploaded successfully', 'success');
-        } catch (err) {
-            notify('Upload failed: ' + err.message, 'error');
-        } finally {
+        const formData = new FormData();
+        formData.append('file', uploadData.file);
+        formData.append('category', uploadData.category);
+        formData.append('comment', uploadData.comment);
+        formData.append('uploadedBy', user.username);
+        if (uploadData.documentName) formData.append('documentName', uploadData.documentName);
+
+        const token = localStorage.getItem('token');
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
+        };
+        xhr.onload = () => {
             setUploading(false);
-        }
+            setUploadProgress(0);
+            if (xhr.status >= 200 && xhr.status < 300) {
+                setIsDocModalOpen(false);
+                setUploadData({ file: null, category: 'IDENTIFICATION', comment: '', documentName: '' });
+                loadCaseData();
+                notify('Document uploaded successfully', 'success');
+            } else {
+                notify('Upload failed: ' + xhr.statusText, 'error');
+            }
+        };
+        xhr.onerror = () => {
+            setUploading(false);
+            setUploadProgress(0);
+            notify('Upload failed: network error', 'error');
+        };
+        xhr.open('POST', `/api/cases/${id}/documents`);
+        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.send(formData);
     };
 
     const handleViewHistory = async (docName) => {
@@ -216,12 +263,77 @@ const CaseDetails = () => {
             // Reload risk history and latest assessment
             const riskData = await riskService.getRiskHistory(kycCase.clientID);
             setRiskHistory(riskData);
+            if (riskData && riskData.length > 0 && riskData[0].assessmentID) {
+                try {
+                    const details = await riskService.getAssessmentDetails(riskData[0].assessmentID);
+                    setRiskDetails(details || []);
+                } catch { setRiskDetails([]); }
+            }
         } catch (err) {
             notify('Risk Calculation Failed: ' + err.message, 'error');
         } finally {
             setRunningRisk(false);
         }
     };
+
+    const handleRework = async () => {
+        if (!reworkComment.trim()) return notify('Rework reason is required', 'warning');
+        setIsReworking(true);
+        try {
+            await caseService.reworkCase(id, reworkComment);
+            notify('Case sent back to Analyst for rework', 'success');
+            setIsReworkModalOpen(false);
+            setReworkComment('');
+            loadCaseData();
+        } catch (err) {
+            notify('Rework failed: ' + err.message, 'error');
+        } finally {
+            setIsReworking(false);
+        }
+    };
+
+    const handleCancel = async () => {
+        setIsCancelling(true);
+        try {
+            await caseService.cancelCase(id, cancelComment);
+            notify('Case cancelled', 'success');
+            setIsCancelModalOpen(false);
+            setCancelComment('');
+            loadCaseData();
+        } catch (err) {
+            notify('Cancel failed: ' + err.message, 'error');
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
+    const handleFinalize = async () => {
+        if (!commentInput.trim()) return notify('Comment is required to finalize', 'warning');
+        setIsFinalizing(true);
+        try {
+            await caseService.transitionCase(id, finalizeDecision, commentInput);
+            notify(`Case finalized: ${finalizeDecision}`, 'success');
+            setIsFinalizeModalOpen(false);
+            setCommentInput('');
+            loadCaseData();
+        } catch (err) {
+            notify('Finalize failed: ' + err.message, 'error');
+        } finally {
+            setIsFinalizing(false);
+        }
+    };
+
+    // Determine which workflow actions are available for the current user on this case
+    const isActiveParticipant = kycCase && (kycCase.assignedTo === user?.username || myTasks.length > 0);
+    const isAnalystStage   = kycCase?.status === 'KYC_ANALYST';
+    const isReviewerStage  = kycCase?.status === 'REVIEWER_REVIEW';
+    const isAfcStage       = kycCase?.status === 'AFC_REVIEW';
+    const isAcoStage       = kycCase?.status === 'ACO_REVIEW';
+    const isActiveStage    = isAnalystStage || isReviewerStage || isAfcStage || isAcoStage;
+    const canSubmit    = isActiveParticipant && isActiveStage && !isAcoStage;
+    const canRework    = isActiveParticipant && (isReviewerStage || isAfcStage || isAcoStage);
+    const canFinalize  = isActiveParticipant && (isReviewerStage || isAfcStage || isAcoStage);
+    const canCancel    = isActiveParticipant && isAnalystStage;
 
     const handleOpenAssignModal = async () => {
         const statusToRoleMap = {
@@ -333,17 +445,9 @@ const CaseDetails = () => {
                         <section className="glass-section" style={{ borderLeft: '4px solid var(--primary-color)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                                 <h3>Decision Support</h3>
-                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                    {/* Lifecycle Actions */}
-                                    {['KYC_ANALYST', 'REVIEWER_REVIEW', 'AFC_REVIEW', 'ACO_REVIEW'].includes(kycCase.status) && (kycCase.assignedTo === user.username || myTasks.length > 0) && (
-                                        <>
-                                            <Button onClick={() => handleTransition('APPROVE')} disabled={transitioning} style={{ backgroundColor: '#52c41a', color: '#fff' }}>Approve Case</Button>
-                                            <Button onClick={() => handleTransition('REJECT')} disabled={transitioning} style={{ backgroundColor: '#ff4d4f', color: '#fff' }}>Reject Case</Button>
-                                        </>
-                                    )}
-
+                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                     {/* Assignment Controls */}
-                                    {['APPROVED', 'REJECTED'].indexOf(kycCase.status) === -1 && (
+                                    {isActiveStage && (
                                         <>
                                             {kycCase.assignedTo !== user.username && (
                                                 <Button variant="secondary" onClick={() => handleAssign(user.username)} disabled={assigning}>Assign to Me</Button>
@@ -351,11 +455,57 @@ const CaseDetails = () => {
                                             <Button variant="secondary" onClick={handleOpenAssignModal} disabled={assigning}>Assign To...</Button>
                                         </>
                                     )}
+
+                                    {/* Analyst: Submit + Cancel */}
+                                    {canSubmit && isAnalystStage && (
+                                        <Button onClick={() => handleTransition('SUBMIT')} disabled={transitioning}
+                                            style={{ backgroundColor: '#3b82f6', color: '#fff' }}>
+                                            Submit to Reviewer
+                                        </Button>
+                                    )}
+                                    {canCancel && (
+                                        <Button onClick={() => setIsCancelModalOpen(true)} disabled={transitioning}
+                                            style={{ backgroundColor: '#6b7280', color: '#fff' }}>
+                                            Cancel Case
+                                        </Button>
+                                    )}
+
+                                    {/* Reviewer / AFC: Submit to next stage */}
+                                    {canSubmit && isReviewerStage && (
+                                        <Button onClick={() => handleTransition('SUBMIT')} disabled={transitioning}
+                                            style={{ backgroundColor: '#3b82f6', color: '#fff' }}>
+                                            Submit to AFC
+                                        </Button>
+                                    )}
+                                    {canSubmit && isAfcStage && (
+                                        <Button onClick={() => handleTransition('SUBMIT')} disabled={transitioning}
+                                            style={{ backgroundColor: '#3b82f6', color: '#fff' }}>
+                                            Submit to ACO
+                                        </Button>
+                                    )}
+
+                                    {/* Rework (Reviewer / AFC / ACO) */}
+                                    {canRework && (
+                                        <Button onClick={() => setIsReworkModalOpen(true)} disabled={transitioning}
+                                            style={{ backgroundColor: '#f59e0b', color: '#fff' }}>
+                                            Rework
+                                        </Button>
+                                    )}
+
+                                    {/* Finalize (Reviewer / AFC / ACO) */}
+                                    {canFinalize && (
+                                        <Button onClick={() => setIsFinalizeModalOpen(true)} disabled={transitioning}
+                                            style={{ backgroundColor: '#22c55e', color: '#fff' }}>
+                                            Finalize
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <label style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>Decision Comment (Required)</label>
+                                <label style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>
+                                    {isAnalystStage ? 'Submission Notes' : 'Decision Comment (Required for Finalize)'}
+                                </label>
                                 <textarea
                                     value={commentInput}
                                     onChange={(e) => setCommentInput(e.target.value)}
@@ -364,6 +514,94 @@ const CaseDetails = () => {
                                 />
                             </div>
                         </section>
+
+                        {/* Rework Modal */}
+                        <Modal isOpen={isReworkModalOpen} onClose={() => { setIsReworkModalOpen(false); setReworkComment(''); }} title="Send for Rework">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+                                    This will terminate the current workflow and restart from Analyst Review.
+                                    All comments and documents are preserved.
+                                </p>
+                                <label style={{ fontWeight: 600 }}>Reason for Rework <span style={{ color: '#ef4444' }}>*</span></label>
+                                <textarea
+                                    value={reworkComment}
+                                    onChange={e => setReworkComment(e.target.value)}
+                                    placeholder="Explain what needs to be corrected or re-examined..."
+                                    rows={4}
+                                    style={{ padding: '0.5rem', background: 'var(--hover-bg)', color: 'var(--text-color)', border: '1px solid var(--glass-border)', borderRadius: '6px', resize: 'vertical' }}
+                                />
+                                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                    <Button variant="secondary" onClick={() => { setIsReworkModalOpen(false); setReworkComment(''); }}>Cancel</Button>
+                                    <Button onClick={handleRework} disabled={isReworking || !reworkComment.trim()}
+                                        style={{ backgroundColor: '#f59e0b', color: '#fff' }}>
+                                        {isReworking ? 'Sending...' : 'Send for Rework'}
+                                    </Button>
+                                </div>
+                            </div>
+                        </Modal>
+
+                        {/* Cancel Modal */}
+                        <Modal isOpen={isCancelModalOpen} onClose={() => { setIsCancelModalOpen(false); setCancelComment(''); }} title="Cancel Case">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+                                    This will permanently cancel the case. This action cannot be undone.
+                                </p>
+                                <label style={{ fontWeight: 600 }}>Reason (optional)</label>
+                                <textarea
+                                    value={cancelComment}
+                                    onChange={e => setCancelComment(e.target.value)}
+                                    placeholder="Optional: provide a reason for cancellation..."
+                                    rows={3}
+                                    style={{ padding: '0.5rem', background: 'var(--hover-bg)', color: 'var(--text-color)', border: '1px solid var(--glass-border)', borderRadius: '6px', resize: 'vertical' }}
+                                />
+                                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                    <Button variant="secondary" onClick={() => { setIsCancelModalOpen(false); setCancelComment(''); }}>Back</Button>
+                                    <Button onClick={handleCancel} disabled={isCancelling}
+                                        style={{ backgroundColor: '#ef4444', color: '#fff' }}>
+                                        {isCancelling ? 'Cancelling...' : 'Confirm Cancel'}
+                                    </Button>
+                                </div>
+                            </div>
+                        </Modal>
+
+                        {/* Finalize Modal */}
+                        <Modal isOpen={isFinalizeModalOpen} onClose={() => setIsFinalizeModalOpen(false)} title="Finalize Case">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+                                    Select the outcome and confirm. The decision comment in the main panel is required.
+                                </p>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1,
+                                        padding: '0.75rem', borderRadius: '6px', border: `2px solid ${finalizeDecision === 'APPROVE' ? '#22c55e' : 'var(--glass-border)'}`,
+                                        background: finalizeDecision === 'APPROVE' ? 'rgba(34,197,94,0.1)' : 'var(--hover-bg)' }}>
+                                        <input type="radio" name="finalize" value="APPROVE"
+                                            checked={finalizeDecision === 'APPROVE'}
+                                            onChange={() => setFinalizeDecision('APPROVE')} />
+                                        <span style={{ fontWeight: 600, color: '#22c55e' }}>Approve</span>
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1,
+                                        padding: '0.75rem', borderRadius: '6px', border: `2px solid ${finalizeDecision === 'REJECT' ? '#ef4444' : 'var(--glass-border)'}`,
+                                        background: finalizeDecision === 'REJECT' ? 'rgba(239,68,68,0.1)' : 'var(--hover-bg)' }}>
+                                        <input type="radio" name="finalize" value="REJECT"
+                                            checked={finalizeDecision === 'REJECT'}
+                                            onChange={() => setFinalizeDecision('REJECT')} />
+                                        <span style={{ fontWeight: 600, color: '#ef4444' }}>Reject</span>
+                                    </label>
+                                </div>
+                                {!commentInput.trim() && (
+                                    <p style={{ color: '#f59e0b', fontSize: '0.82rem', margin: 0 }}>
+                                        A decision comment is required. Please fill in the comment field before finalizing.
+                                    </p>
+                                )}
+                                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                    <Button variant="secondary" onClick={() => setIsFinalizeModalOpen(false)}>Back</Button>
+                                    <Button onClick={handleFinalize} disabled={isFinalizing || !commentInput.trim()}
+                                        style={{ backgroundColor: finalizeDecision === 'APPROVE' ? '#22c55e' : '#ef4444', color: '#fff' }}>
+                                        {isFinalizing ? 'Finalizing...' : `Confirm ${finalizeDecision === 'APPROVE' ? 'Approval' : 'Rejection'}`}
+                                    </Button>
+                                </div>
+                            </div>
+                        </Modal>
 
                         {/* Supporting Documents */}
                         <section className="glass-section">
@@ -388,7 +626,15 @@ const CaseDetails = () => {
                                     {docs.map(d => (
                                         <tr key={d.documentID}>
                                             <td style={{ fontWeight: '600' }}>{d.category}</td>
-                                            <td><a href={`/api/cases/documents/${d.documentID}`} target="_blank" rel="noreferrer" className="doc-link">{d.documentName}</a></td>
+                                            <td>
+                                                <button
+                                                    onClick={() => handleOpenViewer(d)}
+                                                    className="doc-link"
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
+                                                >
+                                                    {d.documentName}
+                                                </button>
+                                            </td>
                                             <td><span className="status-badge-modern info">v{d.version || 1}</span></td>
                                             <td>{d.uploadedBy}</td>
                                             <td>{new Date(d.uploadDate).toLocaleDateString()}</td>
@@ -454,33 +700,52 @@ const CaseDetails = () => {
                                 </button>
                             </div>
 
-                            {riskHistory.length > 0 ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                                    {/* Compact score circle */}
-                                    <div style={{
-                                        width: '76px', height: '76px', borderRadius: '50%', flexShrink: 0,
-                                        border: `5px solid ${riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'}`,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: '1.7rem', fontWeight: 'bold',
-                                        boxShadow: `inset 0 0 14px ${riskHistory[0].overallRiskLevel === 'HIGH' ? 'rgba(255,77,79,0.2)' : 'rgba(82,196,26,0.2)'}`,
-                                        color: 'white'
-                                    }}>
-                                        {riskHistory[0].overallRiskScore}
-                                    </div>
-                                    {/* Level + date beside the circle */}
+                            {riskHistory.length > 0 ? (() => {
+                                const latest = riskHistory[0];
+                                const levelColor = latest.overallRiskLevel === 'HIGH' ? '#ff4d4f' : latest.overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a';
+
+                                // Build pillar data from assessment details
+                                const PILLARS = ['ENTITY', 'INDUSTRY', 'GEOGRAPHIC', 'PRODUCT', 'CHANNEL'];
+                                const pillarScores = PILLARS.map(pillar => {
+                                    const matches = riskDetails.filter(d => (d.riskType || '').toUpperCase() === pillar);
+                                    const avg = matches.length > 0
+                                        ? Math.round(matches.reduce((s, d) => s + (d.riskScore || 0), 0) / matches.length)
+                                        : 0;
+                                    return { pillar: pillar.charAt(0) + pillar.slice(1).toLowerCase(), score: avg };
+                                });
+                                const hasDetails = riskDetails.length > 0;
+
+                                return (
                                     <div>
-                                        <div style={{
-                                            fontSize: '1rem', fontWeight: 'bold', textTransform: 'uppercase',
-                                            color: riskHistory[0].overallRiskLevel === 'HIGH' ? '#ff4d4f' : riskHistory[0].overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'
-                                        }}>
-                                            {riskHistory[0].overallRiskLevel} RISK
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1rem' }}>
+                                            <div style={{ width: '76px', height: '76px', borderRadius: '50%', flexShrink: 0, border: `5px solid ${levelColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.7rem', fontWeight: 'bold', boxShadow: `inset 0 0 14px ${levelColor}33`, color: 'white' }}>
+                                                {latest.overallRiskScore}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '1rem', fontWeight: 'bold', textTransform: 'uppercase', color: levelColor }}>{latest.overallRiskLevel} RISK</div>
+                                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '0.2rem' }}>
+                                                    Last assessed {new Date(latest.calculationDate || latest.createdAt).toLocaleDateString()}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '0.2rem' }}>
-                                            Last assessed {new Date(riskHistory[0].calculationDate || riskHistory[0].createdAt).toLocaleDateString()}
-                                        </div>
+
+                                        {hasDetails && (
+                                            <div style={{ marginTop: '0.5rem' }}>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Risk Pillar Breakdown</div>
+                                                <ResponsiveContainer width="100%" height={180}>
+                                                    <RadarChart data={pillarScores} margin={{ top: 0, right: 20, bottom: 0, left: 20 }}>
+                                                        <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                                                        <PolarAngleAxis dataKey="pillar" tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }} />
+                                                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                                                        <Radar name="Score" dataKey="score" stroke={levelColor} fill={levelColor} fillOpacity={0.25} />
+                                                        <Tooltip contentStyle={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '0.8rem' }} formatter={(v) => [v, 'Score']} />
+                                                    </RadarChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            ) : (
+                                );
+                            })() : (
                                 <div style={{ padding: '1rem 0', textAlign: 'center', color: '#666', fontSize: '0.85rem' }}>
                                     No risk assessments available for this client.
                                 </div>
@@ -586,11 +851,50 @@ const CaseDetails = () => {
                 )}
             </Modal>
 
-            <Modal isOpen={isDocModalOpen} onClose={() => setIsDocModalOpen(false)} title="Upload Documentation" maxWidth="450px">
+            <Modal isOpen={isDocModalOpen} onClose={() => { setIsDocModalOpen(false); setDragOver(false); }} title="Upload Documentation" maxWidth="450px">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div className="form-group">
                         <label>Select File</label>
-                        <input type="file" onChange={(e) => setUploadData({ ...uploadData, file: e.target.files[0] })} style={{ width: '100%' }} />
+                        <div
+                            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                            onDragLeave={() => setDragOver(false)}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                setDragOver(false);
+                                const f = e.dataTransfer.files[0];
+                                if (f) setUploadData(d => ({ ...d, file: f }));
+                            }}
+                            style={{
+                                border: `2px dashed ${dragOver ? '#4facfe' : 'var(--glass-border)'}`,
+                                borderRadius: '8px',
+                                padding: '1.5rem',
+                                textAlign: 'center',
+                                background: dragOver ? 'rgba(79,172,254,0.08)' : 'rgba(255,255,255,0.03)',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                            onClick={() => document.getElementById('doc-file-input').click()}
+                        >
+                            {uploadData.file ? (
+                                <span style={{ color: '#4facfe', fontWeight: 600 }}>{uploadData.file.name}</span>
+                            ) : (
+                                <span style={{ color: 'var(--text-secondary)' }}>
+                                    {dragOver ? 'Drop file here' : 'Drag & drop or click to select'}
+                                </span>
+                            )}
+                            <input id="doc-file-input" type="file" style={{ display: 'none' }}
+                                onChange={(e) => setUploadData(d => ({ ...d, file: e.target.files[0] }))} />
+                        </div>
+                        {uploading && (
+                            <div style={{ marginTop: '0.75rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                                    <span>Uploading...</span><span>{uploadProgress}%</span>
+                                </div>
+                                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden', height: '6px' }}>
+                                    <div style={{ width: `${uploadProgress}%`, background: '#4facfe', height: '100%', transition: 'width 0.2s' }} />
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <div className="form-group">
                         <label>Category</label>
@@ -624,6 +928,39 @@ const CaseDetails = () => {
                         ))}
                     </div>
                 </div>
+            </Modal>
+
+            {/* Document Viewer Modal */}
+            <Modal
+                isOpen={isViewerModalOpen}
+                onClose={() => setIsViewerModalOpen(false)}
+                title={viewerModalDoc ? `📄 ${viewerModalDoc.documentName}` : 'Document Viewer'}
+                maxWidth="95vw"
+                closeOnOutsideClick={false}
+            >
+                {viewerModalDoc && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', minHeight: '600px' }}>
+                        {/* Left: Document Viewer */}
+                        <DocumentViewer
+                            docs={[viewerModalDoc]}
+                            caseId={id}
+                            currentUser={user?.username}
+                            onUploadNew={() => { setIsViewerModalOpen(false); setIsDocModalOpen(true); }}
+                            hideSelector
+                        />
+                        {/* Right: OCR + Fraud Signals */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', maxHeight: '680px' }}>
+                            <div className="glass-section" style={{ padding: '14px 16px' }}>
+                                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700 }}>Extracted Document Data</h4>
+                                <OcrDataPanel caseId={id} document={viewerModalDoc} />
+                            </div>
+                            <div className="glass-section" style={{ padding: '14px 16px' }}>
+                                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700 }}>Verification &amp; Fraud Signals</h4>
+                                <FraudSignalsPanel caseId={id} document={viewerModalDoc} />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </Modal>
 
             <Modal isOpen={isCompleteModalOpen} onClose={() => setIsCompleteModalOpen(false)} title="Confirm Task Completion" maxWidth="450px">

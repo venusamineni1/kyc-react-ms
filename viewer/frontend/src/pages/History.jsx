@@ -271,7 +271,7 @@ const History = () => {
                                         <button
                                             onClick={() => viewConfig(run)}
                                             disabled={loadingSnapshot}
-                                            title="View mapping configuration used for this batch"
+                                            title={`View mapping config snapshot #${run.mappingSnapshotID} used for this batch`}
                                             style={{
                                                 background: 'rgba(168,85,247,0.12)', color: '#c084fc',
                                                 border: '1px solid rgba(168,85,247,0.3)', borderRadius: '6px',
@@ -279,8 +279,10 @@ const History = () => {
                                                 cursor: 'pointer', whiteSpace: 'nowrap',
                                             }}
                                         >
-                                            ⚙ v{run.mappingSnapshotID}
+                                            ⚙ Snapshot #{run.mappingSnapshotID}
                                         </button>
+                                    ) : run.service === 'Screening' ? (
+                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>No snapshot</span>
                                     ) : (
                                         <span className="text-muted">-</span>
                                     )}

@@ -21,6 +21,10 @@ public class UserAuditService {
         repository.logAction(userId, username, action, details, null);
     }
 
+    public void log(String username, String action, String details, String ipAddress) {
+        repository.logAction(null, username, action, details, ipAddress);
+    }
+
     public List<UserAudit> getAllAudits() {
         return repository.findAll();
     }

@@ -39,9 +39,8 @@ export const InboxProvider = ({ children }) => {
 
     useEffect(() => {
         refreshInbox();
-
-        // Optional: Polling interval? For now fast follow strictly what's needed.
-        // Let's just fetch on mount/user change.
+        const interval = setInterval(refreshInbox, 30_000);
+        return () => clearInterval(interval);
     }, [refreshInbox]);
 
     return (

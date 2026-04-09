@@ -66,6 +66,30 @@ public class CaseController {
         return caseRepository.findCommentsByCaseId(id);
     }
 
+    @Operation(summary = "Get document annotations", description = "Returns all annotations for a specific document within a case")
+    @GetMapping("/{id}/documents/{docId}/annotations")
+    public List<DocumentAnnotation> getDocumentAnnotations(
+            @Parameter(description = "Case ID") @PathVariable Long id,
+            @Parameter(description = "Document ID") @PathVariable Long docId) {
+        return caseRepository.findAnnotationsByDocumentId(docId);
+    }
+
+    @Operation(summary = "Add document annotation", description = "Creates a new annotation on a document, optionally with geometric coordinates for image documents")
+    @PostMapping("/{id}/documents/{docId}/annotations")
+    public ResponseEntity<Void> addDocumentAnnotation(
+            @Parameter(description = "Case ID") @PathVariable Long id,
+            @Parameter(description = "Document ID") @PathVariable Long docId,
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        String text = request.get("annotationText");
+        if (text == null || text.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        caseRepository.addDocumentAnnotation(docId, id, authentication.getName(),
+                text, request.get("geometry"), request.getOrDefault("label", "Analyst Note"));
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "Get case documents", description = "Returns all documents attached to a case")
     @GetMapping("/{id}/documents")
     public List<CaseDocument> getDocuments(@Parameter(description = "Case ID") @PathVariable Long id) {
@@ -108,6 +132,24 @@ public class CaseController {
         String action = request != null ? request.get("action") : null;
         caseService.completeTask(taskId, authentication.getName(), action);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Reassign a task", description = "Reassigns a workflow task to a different user")
+    @PostMapping("/tasks/{taskId}/reassign")
+    public ResponseEntity<Void> reassignTask(@Parameter(description = "Task ID") @PathVariable String taskId,
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        String assignee = request.get("assignee");
+        if (assignee == null || assignee.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            caseService.reassignTask(taskId, assignee);
+            userAuditService.log(authentication.getName(), "REASSIGN_TASK", "Reassigned task " + taskId + " to " + assignee);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @Operation(summary = "Delete all tasks", description = "Removes all workflow tasks from the system (admin use only)")
@@ -231,6 +273,49 @@ public class CaseController {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Rework case", description = "Terminates the current workflow instance and restarts from Analyst Review. Requires a mandatory comment explaining the reason.")
+    @PostMapping("/{id}/rework")
+    public ResponseEntity<Void> reworkCase(@Parameter(description = "Case ID") @PathVariable Long id,
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        String comment = request.get("comment");
+        if (comment == null || comment.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            String role = getUserRole(authentication);
+            caseRepository.addComment(id, authentication.getName(), "REWORK: " + comment, role);
+            caseService.reworkCase(id, authentication.getName());
+            userAuditService.log(authentication.getName(), "REWORK_CASE", "Sent case " + id + " back to analyst");
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @Operation(summary = "Cancel case", description = "Cancels a case that is in KYC_ANALYST stage. Only the analyst can cancel.")
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancelCase(@Parameter(description = "Case ID") @PathVariable Long id,
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        String comment = request.get("comment");
+        try {
+            String role = getUserRole(authentication);
+            if (comment != null && !comment.isBlank()) {
+                caseRepository.addComment(id, authentication.getName(), "CANCEL: " + comment, role);
+            }
+            caseService.cancelCase(id, authentication.getName());
+            userAuditService.log(authentication.getName(), "CANCEL_CASE", "Cancelled case " + id);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @Operation(summary = "Assign case", description = "Assigns or reassigns a case to a specific user")

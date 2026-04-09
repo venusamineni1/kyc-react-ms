@@ -13,4 +13,47 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // ── Document analysis pipeline ──────────────────────────────────────────
+    // Apache Tika: MIME detection (tika-core) + image/EXIF metadata (image-module only).
+    // We intentionally do NOT include tika-parsers-standard-package because it bundles
+    // PDFBox 2.x internally, which conflicts with PDFBox 3.x below (NoSuchMethodError).
+    implementation 'org.apache.tika:tika-core:2.9.2'
+    implementation 'org.apache.tika:tika-parser-image-module:2.9.2'
+
+    // Apache PDFBox 3.x: PDF text extraction + digital signature verification
+    // Uses the new Loader.loadPDF() API (PDDocument.load() was removed in 3.x)
+    implementation 'org.apache.pdfbox:pdfbox:3.0.3'
+
+    // JavaCPP Tesseract Platform: bundles pre-compiled Tesseract 5 + Leptonica native
+    // binaries for macOS (arm64/x86_64), Linux, and Windows — zero OS installation needed.
+    // The -platform artifact pulls in native libs for the current OS automatically.
+    implementation 'org.bytedeco:tesseract-platform:5.3.4-1.5.10'
+
+    // ZXing: PDF417 (driver licenses) + QR code decoding
+    implementation 'com.google.zxing:core:3.5.3'
+    implementation 'com.google.zxing:javase:3.5.3'
 }
+
+// ── Download eng.traineddata at build time if not already present ─────────────
+// Source: tesseract-ocr/tessdata_fast (~4 MB, LSTM fast model, good accuracy)
+def tessdataDir  = file("src/main/resources/tessdata")
+def tessdataFile = file("src/main/resources/tessdata/eng.traineddata")
+def tessdataUrl  = "https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata"
+
+task downloadTessdata {
+    description = "Download Tesseract eng.traineddata language model into classpath resources."
+    outputs.file(tessdataFile)
+    onlyIf { !tessdataFile.exists() }
+    doLast {
+        tessdataDir.mkdirs()
+        println "Downloading ${tessdataUrl} ..."
+        new URL(tessdataUrl).withInputStream { is ->
+            tessdataFile.withOutputStream { os -> os << is }
+        }
+        println "Saved ${tessdataFile} (${tessdataFile.length()} bytes)"
+    }
+}
+
+// Make sure tessdata is present before the resource processing step
+processResources.dependsOn downloadTessdata

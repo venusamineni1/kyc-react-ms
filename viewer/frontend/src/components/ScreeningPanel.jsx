@@ -241,6 +241,8 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
     return (
         <div style={{
             flex: 1,
+            height: '100%',
+            boxSizing: 'border-box',
             background: 'rgba(255,255,255,0.02)',
             border: '1px solid var(--glass-border)',
             borderRadius: '8px',

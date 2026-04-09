@@ -197,6 +197,15 @@ public class CaseService {
     }
 
     @Transactional
+    public void reassignTask(String taskId, String assignee) {
+        Task task = cmmnTaskService.createTaskQuery().taskId(taskId).singleResult();
+        if (task == null) {
+            throw new IllegalArgumentException("Task not found: " + taskId);
+        }
+        cmmnTaskService.setAssignee(taskId, assignee);
+    }
+
+    @Transactional
     public void completeTask(String taskId, String userId) {
         completeTask(taskId, userId, null);
     }
@@ -236,24 +245,22 @@ public class CaseService {
 
         cmmnTaskService.complete(task.getId());
 
-        // Update Status logic based on task definition
+        // Determine next status: any stage can FINALIZE (approve/reject) or SUBMIT to next stage
         String taskKey = task.getTaskDefinitionKey();
-        String nextStatus = "PROCESSING";
+        String nextStatus;
 
-        if ("ht_acoReview".equals(taskKey)) {
-            if ("APPROVE".equalsIgnoreCase(action)) {
-                nextStatus = "APPROVED";
-            } else if ("REJECT".equalsIgnoreCase(action)) {
-                nextStatus = "REJECTED";
-            } else {
-                nextStatus = "COMPLETED";
-            }
-        } else if ("ht_analystReview".equals(taskKey)) {
-            nextStatus = "REVIEWER_REVIEW";
-        } else if ("ht_reviewerReview".equals(taskKey)) {
-            nextStatus = "AFC_REVIEW";
-        } else if ("ht_afcStandardReview".equals(taskKey)) {
-            nextStatus = "ACO_REVIEW";
+        if ("APPROVE".equalsIgnoreCase(action)) {
+            nextStatus = "APPROVED";
+        } else if ("REJECT".equalsIgnoreCase(action)) {
+            nextStatus = "REJECTED";
+        } else {
+            // SUBMIT — advance to the next stage
+            nextStatus = switch (taskKey) {
+                case "ht_analystReview"    -> "REVIEWER_REVIEW";
+                case "ht_reviewerReview"   -> "AFC_REVIEW";
+                case "ht_afcStandardReview"-> "ACO_REVIEW";
+                default                    -> "PROCESSING";
+            };
         }
 
         caseRepository.updateStatus(caseId, nextStatus, null);
@@ -262,6 +269,67 @@ public class CaseService {
             clientRepository.updateClientStatus(clientId, nextStatus);
             sendFeedbackToClientFacingSystem(clientId, nextStatus);
         }
+    }
+
+    /**
+     * Rework: terminate the current CMMN instance and start a fresh one,
+     * resetting the case to Analyst Review. DB comments/documents are preserved.
+     * A mandatory rework comment must be passed by the caller before invoking this.
+     */
+    @Transactional
+    public void reworkCase(Long caseId, String userId) {
+        Case c = caseRepository.findById(caseId).orElseThrow(
+                () -> new IllegalArgumentException("Case not found: " + caseId));
+
+        if (c.instanceID() == null || c.instanceID().isEmpty()) {
+            throw new IllegalStateException("Case has no active workflow instance");
+        }
+
+        // Preserve variables before terminating
+        String oldInstanceId = c.instanceID();
+        Object clientIdObj = cmmnRuntimeService.getVariable(oldInstanceId, "clientID");
+        Object initiatorObj = cmmnRuntimeService.getVariable(oldInstanceId, "initiator");
+
+        // Terminate existing instance
+        cmmnRuntimeService.terminateCaseInstance(oldInstanceId);
+
+        // Start a fresh instance
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("clientID", clientIdObj);
+        variables.put("initiator", initiatorObj != null ? initiatorObj : userId);
+        variables.put("caseId", caseId);
+
+        CaseInstance newInstance = cmmnRuntimeService.createCaseInstanceBuilder()
+                .caseDefinitionKey("kycCase")
+                .variables(variables)
+                .start();
+
+        // Update DB with new instance ID and reset status to analyst
+        caseRepository.updateInstanceInfo(caseId, newInstance.getId(), "CMMN");
+        caseRepository.updateStatus(caseId, "KYC_ANALYST", null);
+    }
+
+    /**
+     * Cancel: only the Analyst can cancel a case. Terminates the CMMN instance
+     * and marks the case CANCELLED.
+     */
+    @Transactional
+    public void cancelCase(Long caseId, String userId) {
+        Case c = caseRepository.findById(caseId).orElseThrow(
+                () -> new IllegalArgumentException("Case not found: " + caseId));
+
+        if (!"KYC_ANALYST".equals(c.status())) {
+            throw new IllegalStateException("Only cases in KYC_ANALYST stage can be cancelled");
+        }
+
+        if (c.instanceID() != null && !c.instanceID().isEmpty()) {
+            try {
+                cmmnRuntimeService.terminateCaseInstance(c.instanceID());
+            } catch (Exception ignored) {
+            }
+        }
+
+        caseRepository.updateStatus(caseId, "CANCELLED", null);
     }
 
     private void sendFeedbackToClientFacingSystem(Long clientId, String finalDecision) {

@@ -119,5 +119,38 @@ export const caseService = {
 
     completeTask: async (taskId) => {
         return apiClient.post(`${API_BASE_URL}/tasks/${taskId}/complete`, {});
+    },
+
+    reassignTask: async (taskId, assignee) => {
+        return apiClient.post(`${API_BASE_URL}/tasks/${taskId}/reassign`, { assignee });
+    },
+
+    reworkCase: async (id, comment) => {
+        return apiClient.post(`${API_BASE_URL}/${id}/rework`, { comment });
+    },
+
+    cancelCase: async (id, comment) => {
+        return apiClient.post(`${API_BASE_URL}/${id}/cancel`, { comment });
+    },
+
+    getDocumentAnnotations: async (caseId, docId) => {
+        return apiClient.get(`${API_BASE_URL}/${caseId}/documents/${docId}/annotations`);
+    },
+
+    addDocumentAnnotation: async (caseId, docId, annotationText, geometry = null, label = 'Analyst Note') => {
+        return apiClient.post(`${API_BASE_URL}/${caseId}/documents/${docId}/annotations`, {
+            annotationText,
+            geometry: geometry ? JSON.stringify(geometry) : null,
+            label,
+        });
+    },
+
+    // Workflow Configuration
+    getWorkflowDefinition: async () => {
+        return apiClient.get('/admin/workflow/definition');
+    },
+
+    deployWorkflowConfig: async (config) => {
+        return apiClient.post('/admin/workflow/deploy', config);
     }
 };

@@ -29,6 +29,7 @@ import BatchRiskPipeline from './pages/BatchRiskPipeline';
 import History from './pages/History';
 import AdminControlCenter from './pages/AdminControlCenter';
 import AdminJobScheduler from './pages/AdminJobScheduler';
+import WorkflowConfig from './pages/WorkflowConfig';
 
 
 import Profile from './pages/Profile';
@@ -129,6 +130,11 @@ function App() {
                           <Route path="/admin/jobs" element={
                             <ProtectedRoute requiredPermission="MANAGE_CONFIG">
                               <AdminJobScheduler />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/admin/workflow-config" element={
+                            <ProtectedRoute requiredPermission="MANAGE_CONFIG">
+                              <WorkflowConfig />
                             </ProtectedRoute>
                           } />
                           <Route path="/history" element={

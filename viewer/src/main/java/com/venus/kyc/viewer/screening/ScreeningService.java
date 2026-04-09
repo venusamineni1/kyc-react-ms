@@ -21,11 +21,15 @@ public class ScreeningService {
     private final String screeningServiceUrl;
 
     public ScreeningService(ClientRepository clientRepository, UserAuditService userAuditService,
-            @Value("${screening.service.url}") String screeningServiceUrl, RestClient.Builder restClientBuilder) {
+            @Value("${screening.service.url}") String screeningServiceUrl,
+            @Value("${internal.api.key}") String internalApiKey,
+            RestClient.Builder restClientBuilder) {
         this.clientRepository = clientRepository;
         this.userAuditService = userAuditService;
         this.screeningServiceUrl = screeningServiceUrl;
-        this.restClient = restClientBuilder.build();
+        this.restClient = restClientBuilder
+                .defaultHeader("X-Internal-Api-Key", internalApiKey)
+                .build();
     }
 
     public ScreeningDTOs.InitiateScreeningResponse initiateScreening(Long clientId) {

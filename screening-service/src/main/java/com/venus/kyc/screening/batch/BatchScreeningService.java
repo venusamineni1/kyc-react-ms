@@ -4,6 +4,8 @@ import com.venus.kyc.screening.batch.model.*;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,8 @@ import java.util.UUID;
 
 @Service
 public class BatchScreeningService {
+
+    private static final Logger log = LoggerFactory.getLogger(BatchScreeningService.class);
 
     private final EncryptionService encryptionService;
     private final CompressionService compressionService;
@@ -148,7 +152,7 @@ public class BatchScreeningService {
             }
         } else {
             // Fallback for testing/dev: Just copy the file if key is missing
-            System.out.println("WARN: Public key not found at " + publicKeyPath + ". Skipping encryption (Mock Mode).");
+            log.warn("Public key not found at {}. Skipping encryption (Mock Mode).", publicKeyPath);
             Files.copy(zipFile.toPath(), encryptedFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }
 
@@ -163,7 +167,7 @@ public class BatchScreeningService {
         File encryptedFile = new File(batchDir, run.batchName() + ".zip.gpg");
 
         if (sftpMock) {
-            System.out.println("WARN: SFTP mock mode enabled. Skipping upload for batch " + run.batchName() + ". File ready at: " + encryptedFile.getAbsolutePath());
+            log.warn("SFTP mock mode enabled. Skipping upload for batch {}. File ready at: {}", run.batchName(), encryptedFile.getAbsolutePath());
         } else {
             sftpService.uploadFile(encryptedFile, sftpUploadDir);
         }

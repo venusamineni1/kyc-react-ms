@@ -10,9 +10,24 @@ import java.util.Optional;
 public class ClientRepository {
 
         private final JdbcClient jdbcClient;
+        private final EncryptionService enc;
 
-        public ClientRepository(JdbcClient jdbcClient) {
+        public ClientRepository(JdbcClient jdbcClient, EncryptionService enc) {
                 this.jdbcClient = jdbcClient;
+                this.enc = enc;
+        }
+
+        /** Decrypt all PII string fields on a client read from the DB. */
+        private Client decrypt(Client c) {
+                return new Client(
+                        c.clientID(), c.titlePrefix(),
+                        enc.decrypt(c.firstName()), enc.decrypt(c.middleName()), enc.decrypt(c.lastName()),
+                        c.titleSuffix(), c.citizenship1(), c.citizenship2(), c.onboardingDate(), c.status(),
+                        enc.decrypt(c.nameAtBirth()), enc.decrypt(c.nickName()), c.gender(), c.dateOfBirth(),
+                        c.language(), c.occupation(), c.countryOfTax(), c.sourceOfFundsCountry(),
+                        c.fatcaStatus(), c.crsStatus(),
+                        enc.decrypt(c.placeOfBirth()), enc.decrypt(c.cityOfBirth()), c.countryOfBirth(),
+                        c.addresses(), c.identifiers(), c.relatedParties(), c.accounts(), c.portfolios());
         }
 
         public List<Client> findAll() {
@@ -33,7 +48,7 @@ public class ClientRepository {
                                 "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients LIMIT :limit OFFSET :offset")
                                 .param("limit", size)
                                 .param("offset", page * size)
-                                .query((rs, rowNum) -> new Client(
+                                .query((rs, rowNum) -> decrypt(new Client(
                                                 rs.getLong("ClientID"),
                                                 rs.getString("TitlePrefix"),
                                                 rs.getString("FirstName"),
@@ -63,7 +78,7 @@ public class ClientRepository {
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
-                                                new java.util.ArrayList<>()))
+                                                new java.util.ArrayList<>())))
                                 .list();
 
                 for (Client client : clients) {
@@ -88,7 +103,7 @@ public class ClientRepository {
                                 .param("limit", limit)
                                 .param("offset", offset)
                                 .param("statuses", prospectStatuses)
-                                .query((rs, rowNum) -> new Client(
+                                .query((rs, rowNum) -> decrypt(new Client(
                                                 rs.getLong("ClientID"),
                                                 rs.getString("TitlePrefix"),
                                                 rs.getString("FirstName"),
@@ -118,7 +133,7 @@ public class ClientRepository {
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
-                                                new java.util.ArrayList<>()))
+                                                new java.util.ArrayList<>())))
                                 .list();
 
                 for (Client client : content) {
@@ -140,7 +155,7 @@ public class ClientRepository {
                 Optional<Client> clientOpt = jdbcClient.sql(
                                 "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients WHERE ClientID = :id")
                                 .param("id", id)
-                                .query((rs, rowNum) -> new Client(
+                                .query((rs, rowNum) -> decrypt(new Client(
                                                 rs.getLong("ClientID"),
                                                 rs.getString("TitlePrefix"),
                                                 rs.getString("FirstName"),
@@ -170,7 +185,7 @@ public class ClientRepository {
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
-                                                new java.util.ArrayList<>()))
+                                                new java.util.ArrayList<>())))
                                 .optional();
 
                 if (clientOpt.isPresent()) {
@@ -190,16 +205,16 @@ public class ClientRepository {
                 jdbcClient.sql(
                                 "INSERT INTO Clients (TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth) VALUES (:titlePrefix, :firstName, :middleName, :lastName, :titleSuffix, :citizenship1, :citizenship2, :onboardingDate, :status, :nameAtBirth, :nickName, :gender, :dateOfBirth, :language, :occupation, :countryOfTax, :sourceOfFundsCountry, :fatcaStatus, :crsStatus, :placeOfBirth, :cityOfBirth, :countryOfBirth)")
                                 .param("titlePrefix", client.titlePrefix())
-                                .param("firstName", client.firstName())
-                                .param("middleName", client.middleName())
-                                .param("lastName", client.lastName())
+                                .param("firstName", enc.encrypt(client.firstName()))
+                                .param("middleName", enc.encrypt(client.middleName()))
+                                .param("lastName", enc.encrypt(client.lastName()))
                                 .param("titleSuffix", client.titleSuffix())
                                 .param("citizenship1", client.citizenship1())
                                 .param("citizenship2", client.citizenship2())
                                 .param("onboardingDate", client.onboardingDate() != null ? client.onboardingDate() : java.time.LocalDate.now())
                                 .param("status", client.status() != null ? client.status() : "NEW")
-                                .param("nameAtBirth", client.nameAtBirth())
-                                .param("nickName", client.nickName())
+                                .param("nameAtBirth", enc.encrypt(client.nameAtBirth()))
+                                .param("nickName", enc.encrypt(client.nickName()))
                                 .param("gender", client.gender())
                                 .param("dateOfBirth", client.dateOfBirth())
                                 .param("language", client.language())
@@ -208,8 +223,8 @@ public class ClientRepository {
                                 .param("sourceOfFundsCountry", client.sourceOfFundsCountry())
                                 .param("fatcaStatus", client.fatcaStatus())
                                 .param("crsStatus", client.crsStatus())
-                                .param("placeOfBirth", client.placeOfBirth())
-                                .param("cityOfBirth", client.cityOfBirth())
+                                .param("placeOfBirth", enc.encrypt(client.placeOfBirth()))
+                                .param("cityOfBirth", enc.encrypt(client.cityOfBirth()))
                                 .param("countryOfBirth", client.countryOfBirth())
                                 .update(keyHolder, new String[] { "ClientID" });
 
@@ -416,12 +431,13 @@ public class ClientRepository {
                 long totalElements = countSearchClients(query);
                 int totalPages = (int) Math.ceil((double) totalElements / size);
 
+                // Note: LIKE search on encrypted names is not supported.
+                // Search currently returns all clients and filters in-memory.
                 List<Client> clients = jdbcClient.sql(
-                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients WHERE FirstName LIKE :query OR MiddleName LIKE :query OR LastName LIKE :query LIMIT :limit OFFSET :offset")
-                                .param("query", likeQuery)
+                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients LIMIT :limit OFFSET :offset")
                                 .param("limit", size)
                                 .param("offset", page * size)
-                                .query((rs, rowNum) -> new Client(
+                                .query((rs, rowNum) -> decrypt(new Client(
                                                 rs.getLong("ClientID"),
                                                 rs.getString("TitlePrefix"),
                                                 rs.getString("FirstName"),
@@ -451,8 +467,15 @@ public class ClientRepository {
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
-                                                new java.util.ArrayList<>()))
+                                                new java.util.ArrayList<>())))
                                 .list();
+                // Filter decrypted results in-memory
+                String lowerQuery = query.toLowerCase();
+                clients = clients.stream()
+                                .filter(c -> (c.firstName() != null && c.firstName().toLowerCase().contains(lowerQuery))
+                                        || (c.middleName() != null && c.middleName().toLowerCase().contains(lowerQuery))
+                                        || (c.lastName() != null && c.lastName().toLowerCase().contains(lowerQuery)))
+                                .collect(java.util.stream.Collectors.toList());
 
                 for (Client client : clients) {
                         client.addresses().addAll(fetchAddresses(client.clientID()));
@@ -470,15 +493,15 @@ public class ClientRepository {
                                 "UPDATE Clients SET TitlePrefix = :titlePrefix, FirstName = :firstName, MiddleName = :middleName, LastName = :lastName, TitleSuffix = :titleSuffix, Citizenship1 = :citizenship1, Citizenship2 = :citizenship2, Status = :status, NameAtBirth = :nameAtBirth, NickName = :nickName, Gender = :gender, DateOfBirth = :dateOfBirth, Language = :language, Occupation = :occupation, CountryOfTax = :countryOfTax, SourceOfFundsCountry = :sourceOfFundsCountry, FATCAStatus = :fatcaStatus, CRSStatus = :crsStatus, PlaceOfBirth = :placeOfBirth, CityOfBirth = :cityOfBirth, CountryOfBirth = :countryOfBirth WHERE ClientID = :id")
                                 .param("id", client.clientID())
                                 .param("titlePrefix", client.titlePrefix())
-                                .param("firstName", client.firstName())
-                                .param("middleName", client.middleName())
-                                .param("lastName", client.lastName())
+                                .param("firstName", enc.encrypt(client.firstName()))
+                                .param("middleName", enc.encrypt(client.middleName()))
+                                .param("lastName", enc.encrypt(client.lastName()))
                                 .param("titleSuffix", client.titleSuffix())
                                 .param("citizenship1", client.citizenship1())
                                 .param("citizenship2", client.citizenship2())
                                 .param("status", client.status())
-                                .param("nameAtBirth", client.nameAtBirth())
-                                .param("nickName", client.nickName())
+                                .param("nameAtBirth", enc.encrypt(client.nameAtBirth()))
+                                .param("nickName", enc.encrypt(client.nickName()))
                                 .param("gender", client.gender())
                                 .param("dateOfBirth", client.dateOfBirth())
                                 .param("language", client.language())
@@ -487,8 +510,8 @@ public class ClientRepository {
                                 .param("sourceOfFundsCountry", client.sourceOfFundsCountry())
                                 .param("fatcaStatus", client.fatcaStatus())
                                 .param("crsStatus", client.crsStatus())
-                                .param("placeOfBirth", client.placeOfBirth())
-                                .param("cityOfBirth", client.cityOfBirth())
+                                .param("placeOfBirth", enc.encrypt(client.placeOfBirth()))
+                                .param("cityOfBirth", enc.encrypt(client.cityOfBirth()))
                                 .param("countryOfBirth", client.countryOfBirth())
                                 .update();
         }
