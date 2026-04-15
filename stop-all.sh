@@ -45,6 +45,7 @@ kill_port 8084 "Auth Service"
 kill_port 8081 "Risk Service"
 kill_port 8082 "Screening Service"
 kill_port 8085 "Document Service"
+kill_port 8086 "Orchestration Service"
 kill_port 8083 "Viewer Service"
 kill_port 5173 "Frontend"
 

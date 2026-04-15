@@ -16,6 +16,7 @@ build/
 .vscode/
 *.iml
 .DS_Store
+.gradle/
 
 # Logs
 *.log
@@ -23,6 +24,7 @@ logs/
 
 # Batch processing
 batch-data/
+batch-work/
 upload/
 download/
 

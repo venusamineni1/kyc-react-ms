@@ -1,0 +1,40 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: kyc-orchestration
+  datasource:
+    url: jdbc:h2:mem:kycorchestrationdb
+    driverClassName: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: true
+
+hashids:
+  # Override via HASHIDS_SALT env var in production — never commit the real value
+  salt: ${HASHIDS_SALT:kyc-dev-salt-change-in-prod}
+  min-length: 8
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html          # redirect: /swagger-ui.html → /swagger-ui/index.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true  # show response time in the UI
+    try-it-out-enabled: true        # enable "Try it out" by default
+  api-docs:
+    path: /v3/api-docs
+  packages-to-scan: com.venus.kyc.orchestration.controller
+

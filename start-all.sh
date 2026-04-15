@@ -56,6 +56,7 @@ start_service 8084 "Auth Service"     auth-service      auth.log
 start_service 8081 "Risk Service"     risk-service      risk.log
 start_service 8082 "Screening Service" screening-service screening.log
 start_service 8085 "Document Service" document-service  document.log
+start_service 8086 "Orchestration"    kyc-orchestration orchestration.log
 start_service 8083 "Viewer Service"   viewer            viewer.log
 start_service 8080 "API Gateway"      api-gateway       gateway.log
 

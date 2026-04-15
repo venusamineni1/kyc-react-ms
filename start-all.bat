@@ -10,6 +10,7 @@ call :StartService 8084 "Auth Service"      auth-service      auth.log
 call :StartService 8081 "Risk Service"      risk-service      risk.log
 call :StartService 8082 "Screening Service" screening-service screening.log
 call :StartService 8085 "Document Service"  document-service  document.log
+call :StartService 8086 "Orchestration"     kyc-orchestration orchestration.log
 call :StartService 8083 "Viewer Service"    viewer            viewer.log
 call :StartService 8080 "API Gateway"       api-gateway       gateway.log
 

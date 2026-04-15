@@ -1,0 +1,299 @@
+Summary,Issue Type,Priority,Description,Acceptance Criteria,Labels,Epic Name,Epic Link,Story Points,Component/s
+"KYC Screening Orchestration & Real-Time Flow",Epic,High,"Covers the end-to-end orchestration of the real-time KYC pre-check flow: from receiving the screening initiation request from EIS/InvestiFi Gateway through parallel KYC-NCA ingestion and NLS/NRTS screening to sequential CRRE risk rating and consolidated response delivery (NCA Steps 1–4). Maps to requirements KYC-F-01 through KYC-F-08, KYC-I-12 to KYC-I-19.","","KYC,Screening,Sprint1","KYC Screening Orchestration & Real-Time Flow","",0,kyc-orchestration
+"KYC On-Hold Detection & NCA Case Creation",Epic,High,"Covers the sub-flow triggered when a screening Hit or HIGH risk rating is detected. KYC Orchestration must create an internal tracking record and invoke the KYC-NCA Case API to open a new NCA case in 'New' state (NCA Step 5). Maps to requirements KYC-F-10 through KYC-F-13, KYC-I-07.","","KYC,CaseManagement,Sprint1","KYC On-Hold Detection & NCA Case Creation","",0,kyc-orchestration
+"KYC NLS Final Feedback Processing",Epic,High,"Covers the asynchronous processing of the final NLS feedback file after initial real-time screening. KYC Orchestration must poll NLS, route confirmed alerts and attached documents to the corresponding NCA case, and handle NAR (false-positive) notifications (NCA Steps 6–7). Maps to requirements KYC-F-15 through KYC-F-17.","","KYC,NLS,Feedback,Sprint2","KYC NLS Final Feedback Processing","",0,kyc-orchestration
+"KYC IDV Confirmation & Case Status Transition",Epic,High,"Covers the callback flow where EIS/InvestiFi Gateway notifies IDV completion, triggering a case status transition in KYC-NCA from 'New' to 'Ready for Review' (or 'Cancelled' on rejection) (NCA Steps 8–9). Maps to requirements KYC-F-18 through KYC-F-20, KYC-I-08.","","KYC,IDV,Sprint2","KYC IDV Confirmation & Case Status Transition","",0,kyc-orchestration
+"KYC Case Finalization & Feedback Delivery",Epic,High,"Covers the polling of KYC-NCA for finalized cases and the delivery of final KYC decisions (PROCEED / REJECT) back to EIS/InvestiFi Gateway, with tracking DB updates and idempotent delivery guarantees (NCA Step 11). Maps to requirements KYC-F-21 through KYC-F-26.","","KYC,Feedback,Sprint3","KYC Case Finalization & Feedback Delivery","",0,kyc-orchestration
+"KYC API Integration & Authentication",Epic,High,"Governs how KYC Orchestration interfaces with EIS/InvestiFi Gateway and KYC-NCA: TLS, OAuth 2.0, UniqueClientID correlation, structured error responses, idempotency, and KYC-NCA retry policies. Maps to requirements KYC-I-01 through KYC-I-10.","","KYC,Integration,Security,Sprint1","KYC API Integration & Authentication","",0,kyc-orchestration
+"KYC Security & Data Privacy Compliance",Epic,High,"Covers scope-based authorisation, TLS 1.2+ transport security, PII masking in logs, and immutable audit trail for all state transitions. Ensures compliance with GDPR and BaFin data handling standards. Maps to requirements KYC-NF-09 through KYC-NF-13.","","KYC,Security,GDPR,Sprint2","KYC Security & Data Privacy Compliance","",0,kyc-orchestration
+"KYC Performance, Reliability & Resilience",Epic,High,"Covers end-to-end latency targets, throughput requirements (20 req/s), configurable downstream timeouts, retry with exponential back-off, partial failure handling, and idempotency for all state-changing operations. Maps to requirements KYC-NF-01 through KYC-NF-08.","","KYC,Performance,Reliability,Sprint2","KYC Performance, Reliability & Resilience","",0,kyc-orchestration
+"KYC Observability & Alerting",Epic,Medium,"Covers distributed trace ID propagation across all downstream calls, metrics exposure, and alerting for downstream unavailability and SLA breach risk. Maps to requirements KYC-NF-14 through KYC-NF-16.","","KYC,Observability,Sprint3","KYC Observability & Alerting","",0,kyc-orchestration
+"Expose KYC pre-check initiation API endpoint",Story,High,"As an EIS or PPR Gateway, I want to call a single REST endpoint to initiate a KYC pre-check for a new client, so that I receive consolidated screening and risk rating results in a single synchronous response.
+
+Background: KYC Orchestration is the central coordinator. EIS/InvestiFi Gateway is the caller. The endpoint must accept all mandatory client details including UniqueClientID (ref. OI-01 for source confirmation).
+
+Requirements: KYC-F-01, KYC-I-01","AC1: POST /api/v1/kyc/initiate is available and returns HTTP 200 with a structured response body on success.
+AC2: The request body must include UniqueClientID, firstName, lastName, dob, businessLine, cityOfBirth, primaryCitizenship, residentialAddress, and countryOfResidence as mandatory fields.
+AC3: Missing or invalid mandatory fields return HTTP 400 with a structured ErrorResponse (field name + validation message).
+AC4: The endpoint is accessible over HTTPS (TLS 1.2 or higher) — HTTP is rejected.
+AC5: Unauthenticated requests return HTTP 401.
+AC6: The API is discoverable via Swagger UI at /swagger-ui/index.html.","KYC-F-01,KYC-I-01,MUST","","KYC Screening Orchestration & Real-Time Flow",5,kyc-orchestration
+"Parallel invocation of KYC-NCA ingestion and NLS/NRTS screening",Story,High,"As KYC Orchestration, I want to invoke KYC-NCA Data Ingestion and NLS/NRTS screening simultaneously in parallel threads, so that the combined latency of both calls does not exceed the sum of sequential calls and the 3–5 second end-to-end SLA can be met.
+
+Background: Sequential execution is explicitly forbidden (KYC-C-06). Both calls must be genuinely concurrent using async futures. NCA ingestion failure is non-fatal but must trigger retries.
+
+Requirements: KYC-F-02, KYC-C-06, KYC-NF-06, KYC-NF-07","AC1: KYC-NCA ingestion and NLS/NRTS screening are dispatched concurrently — confirmed by log timestamps showing overlapping execution windows.
+AC2: The orchestration waits for the NLS/NRTS result before dispatching CRRE (sequential dependency preserved).
+AC3: If KYC-NCA ingestion fails, the orchestration does NOT return a success response to the caller; it retries per the retry policy.
+AC4: If NCA ingestion fails after all retries, the failure is dead-lettered and an alert is raised; the caller receives a structured error.
+AC5: KYC-NCA ingestion failure does not prevent NLS screening from completing.
+AC6: Thread pool configuration is externalised (core size, max size, queue depth) in application configuration.","KYC-F-02,KYC-C-06,KYC-NF-07,MUST","","KYC Screening Orchestration & Real-Time Flow",8,kyc-orchestration
+"Forward complete client data to KYC-NCA ingestion",Story,High,"As KYC Orchestration, I want to send all available client attributes to the KYC-NCA Data Ingestion API, so that the client record in KYC-NCA is complete and does not require manual data entry by analysts.
+
+Requirements: KYC-F-03, KYC-I-06","AC1: The payload sent to KYC-NCA includes all fields provided in the initiation request (personal details, biographical, address, document, tax identifier).
+AC2: No client fields from the initiation request are silently dropped.
+AC3: The UniqueClientID is included in the KYC-NCA ingestion payload as the primary correlation key.
+AC4: Integration test confirms KYC-NCA receives a payload that matches the initiation request structure.","KYC-F-03,KYC-I-06,MUST","","KYC Screening Orchestration & Real-Time Flow",3,kyc-orchestration
+"Invoke NLS/NRTS real-time screening and handle Hit/No-Hit response",Story,High,"As KYC Orchestration, I want to invoke the NLS/NRTS Real-Time Screening API using NLS Source ID OAP (2475) and receive a binary Hit/No-Hit result with context type, so that the screening outcome can be used to determine the case status and risk rating input.
+
+Requirements: KYC-F-04, KYC-F-05, KYC-I-12, KYC-I-13","AC1: NRTS request includes UniqueClientID, required client attributes, and NLS Source ID OAP (2475).
+AC2: Source ID 2475 is a fixed configuration value applied to both EIS and PPR business lines.
+AC3: Response is parsed into a binary Hit/No-Hit indicator plus context type(s) (e.g. PEP, ADM, SAN).
+AC4: If NRTS does not respond within the configured timeout (default: 30 seconds), a timeout error is returned to the caller with HTTP 504 and the event is logged.
+AC5: Screening result (hit indicator + context) is stored in the KYC tracking database.
+AC6: Hit context types are stored as a list (pipe-delimited in the DB).","KYC-F-04,KYC-F-05,KYC-I-12,KYC-I-13,MUST","","KYC Screening Orchestration & Real-Time Flow",5,kyc-orchestration
+"Invoke CRRE risk rating sequentially after NLS screening",Story,High,"As KYC Orchestration, I want to invoke the CRRE Risk Rating API only after the NLS/NRTS screening result is received, passing both client data and the screening result (PEP/ADM context), so that the risk rating accurately reflects the screening outcome.
+
+Requirements: KYC-F-06, KYC-F-07, KYC-I-16, KYC-I-17, KYC-I-18","AC1: CRRE is never invoked before the NLS/NRTS response is received.
+AC2: CRRE request payload includes both client data and the screening result (PEP, ADM flags).
+AC3: CRRE response is parsed into a risk rating enum: LOW, MEDIUM, HIGH, or UNKNOWN (for unparseable/timeout).
+AC4: Risk rating is stored in the KYC tracking database.
+AC5: If CRRE times out or returns an error, rating is set to UNKNOWN and the event is logged; the orchestration continues.
+AC6: Risk rating is included in both the response to EIS/InvestiFi Gateway and any subsequent NCA case payload.","KYC-F-06,KYC-F-07,KYC-I-16,KYC-I-17,KYC-I-18,MUST","","KYC Screening Orchestration & Real-Time Flow",5,kyc-orchestration
+"Return consolidated screening and risk result to EIS/InvestiFi Gateway",Story,High,"As EIS/InvestiFi Gateway, I want to receive a consolidated response containing both the NLS screening result and CRRE risk rating in a single synchronous reply, so that I can immediately communicate the outcome to the end user and decide on the onboarding flow.
+
+Requirements: KYC-F-08","AC1: Response includes: kycId, kycStatus (APPROVED or ON_HOLD), screeningResult (Hit/NoHit), hitContext (list), riskRating, userId (NCA), screeningRequestId, riskRequestId, and latency timestamps.
+AC2: kycStatus is APPROVED when screeningResult is NoHit AND riskRating is not HIGH.
+AC3: kycStatus is ON_HOLD when screeningResult is Hit OR riskRating is HIGH.
+AC4: Response is returned after both NLS/NRTS and CRRE calls complete.
+AC5: All four latency timestamps (screeningStartAt, screeningEndAt, riskStartAt, riskEndAt) are populated.
+AC6: kycId is an opaque, non-sequential identifier that does not reveal record volume.","KYC-F-08,MUST","","KYC Screening Orchestration & Real-Time Flow",3,kyc-orchestration
+"CRRE timeout, retry and structured error handling",Story,Medium,"As KYC Orchestration, I want to apply the same timeout and retry policy to CRRE as to NRTS, so that transient CRRE failures do not cause unhandled exceptions and the caller always receives a structured response.
+
+Requirements: KYC-I-19, KYC-NF-06","AC1: CRRE call has a configurable timeout (default: 30 seconds).
+AC2: On timeout or 5xx error, up to 3 retry attempts are made with exponential back-off (1s, 2s, 4s).
+AC3: After retry exhaustion, the failure is dead-lettered and a WARN-level alert is logged.
+AC4: Caller receives a structured ErrorResponse (not a raw exception stack trace) when CRRE is permanently unavailable.
+AC5: Retry count and back-off interval are externalised in application configuration.","KYC-I-19,KYC-NF-06,SHOULD","","KYC Screening Orchestration & Real-Time Flow",3,kyc-orchestration
+"Detect screening Hit or HIGH risk and trigger on-hold sub-flow",Story,High,"As KYC Orchestration, I want to automatically detect when a screening result is Hit or the risk rating is HIGH, so that the on-hold case creation sub-flow is triggered without any manual intervention.
+
+Requirements: KYC-F-10","AC1: On-hold is triggered when screeningResult == 'Hit' OR riskRating == 'HIGH' (case-insensitive comparison).
+AC2: On-hold is NOT triggered for riskRating == 'UNKNOWN' alone (consumers must apply their own escalation policy).
+AC3: On-hold is NOT triggered when screeningResult is 'NoHit' AND riskRating is LOW or MEDIUM.
+AC4: The detection logic is unit-tested for all four boundary combinations (Hit+LOW, NoHit+HIGH, Hit+HIGH, NoHit+LOW).
+AC5: On-hold trigger fires before the response is returned to the caller.","KYC-F-10,MUST","","KYC On-Hold Detection & NCA Case Creation",3,kyc-orchestration
+"Create KYC Orchestration tracking record for on-hold cases",Story,High,"As KYC Orchestration, I want to persist a tracking record in the KYC Orchestration database when a Hit or HIGH risk is detected, so that the lifecycle of the case can be tracked and queried by downstream processes and the status endpoint.
+
+Requirements: KYC-F-11","AC1: A tracking record is created with status PENDING when on-hold is triggered.
+AC2: The record includes: kycId (Hashids-encoded DB sequence), uniqueClientID, businessLine, kycStatus, screeningStatus, screeningContext, riskRating, screeningRequestId, riskRequestId, createdAt.
+AC3: All PII fields (firstName, lastName, dob, addressLine1, addressLine2, identificationNumber, germanTaxID) are AES-GCM encrypted before persistence.
+AC4: The record is created synchronously so kycId is available before the response is dispatched.
+AC5: kycId is returned in the initiation response for polling and webhook matching.","KYC-F-11,MUST","","KYC On-Hold Detection & NCA Case Creation",3,kyc-orchestration
+"Create NCA case via KYC-NCA Case API on Hit or HIGH risk",Story,High,"As KYC Orchestration, I want to invoke the KYC-NCA Case API to create an NCA case in 'New' state when a Hit or HIGH risk is detected, so that CDD/Coverage teams can review the case in KYC-NCA.
+
+Requirements: KYC-F-12, KYC-I-07","AC1: NCA case is created with status 'New' when on-hold is triggered.
+AC2: Case payload includes UniqueClientID, initial screening result (unconfirmed hit), context types, and risk rating.
+AC3: The NCA Case ID returned by KYC-NCA is stored in the KYC Orchestration tracking record.
+AC4: Case creation failure triggers the retry policy (3 attempts, exponential back-off); persistent failures are dead-lettered.
+AC5: The orchestration does not block the response to EIS/InvestiFi while awaiting NCA case creation confirmation.","KYC-F-12,KYC-I-07,MUST","","KYC On-Hold Detection & NCA Case Creation",5,kyc-orchestration
+"Enforce 'New' state visibility restriction for NCA cases",Story,High,"As a Business Operations team member, I want cases created in 'New' state to be invisible to my review queue, so that I only see cases that are ready for review and have completed IDV.
+
+Requirements: KYC-F-13","AC1: NCA cases created by the on-hold sub-flow are created in 'New' state only.
+AC2: KYC Orchestration does NOT transition a case to 'Ready for Review' at creation time.
+AC3: Business Operations teams are not notified of cases in 'New' state.
+AC4: Integration test confirms the case is in 'New' state immediately after creation via the KYC-NCA Case API.","KYC-F-13,MUST","","KYC On-Hold Detection & NCA Case Creation",2,kyc-orchestration
+"Poll NLS for final feedback and route confirmed alerts to NCA",Story,High,"As KYC Orchestration, I want to periodically poll NLS for final feedback files and route confirmed alert information to the corresponding NCA case, so that analysts see the final (confirmed) screening outcome rather than the initial real-time result.
+
+Requirements: KYC-F-15","AC1: A scheduled polling job runs at a configurable interval to retrieve NLS final feedback.
+AC2: Each feedback record is matched to a KYC Orchestration tracking record using UniqueClientID.
+AC3: Confirmed alert details are forwarded to the corresponding NCA case via the KYC-NCA Case API.
+AC4: Successfully processed feedback records are marked to prevent reprocessing (idempotent).
+AC5: If a feedback record cannot be matched to a tracking record, it is logged as a dead-letter for manual review.
+AC6: Polling interval is externalised in application configuration.","KYC-F-15,MUST","","KYC NLS Final Feedback Processing",5,kyc-orchestration
+"Retrieve and upload NLS alert documents to NCA case",Story,High,"As a KYC Analyst, I want alert-related documents from NLS to be automatically uploaded to the corresponding NCA case, so that I have all supporting evidence available in KYC-NCA without manual document retrieval.
+
+Requirements: KYC-F-16","AC1: When a confirmed alert is received from NLS, any attached documents are retrieved from NLS.
+AC2: Retrieved documents are uploaded to the corresponding NCA case via the KYC-NCA document upload API, identified by UniqueClientID.
+AC3: Upload failures are retried per the standard retry policy; persistent failures are dead-lettered and alerted.
+AC4: Successfully uploaded documents are recorded in the tracking DB to prevent duplicate uploads.
+AC5: Document retrieval and upload is performed asynchronously — it does not block other feedback processing.","KYC-F-16,MUST","","KYC NLS Final Feedback Processing",5,kyc-orchestration
+"Handle NAR false-positive alerts from NLS",Story,High,"As KYC Orchestration, I want to process NAR (No Action Required) notifications from NLS for false-positive initial hits and update the NCA case accordingly, so that cases with no genuine match are correctly closed or downgraded without analyst intervention.
+
+Requirements: KYC-F-17","AC1: NAR notifications are identified in the NLS final feedback file and processed separately from confirmed alerts.
+AC2: On NAR receipt, the corresponding NCA case is updated via the KYC-NCA Case API to reflect the false-positive outcome.
+AC3: The tracking record in KYC Orchestration DB is updated to reflect the NAR outcome.
+AC4: NAR processing is idempotent — reprocessing the same NAR notification does not create duplicate updates.
+AC5: Unmatched NAR notifications are dead-lettered and alerted.","KYC-F-17,MUST","","KYC NLS Final Feedback Processing",3,kyc-orchestration
+"Expose IDV confirmation callback endpoint",Story,High,"As EIS/InvestiFi Gateway, I want to notify KYC Orchestration when a client completes IDV (Identity Verification), so that the NCA case can be advanced to 'Ready for Review' and the analyst review process can begin.
+
+Requirements: KYC-F-18","AC1: A dedicated callback endpoint is exposed: POST /api/v1/kyc/callbacks/idv-confirmation.
+AC2: The request body includes UniqueClientID and IDV reference details (reference ID, confirmation timestamp).
+AC3: The endpoint validates the payload and returns HTTP 400 for missing or invalid fields.
+AC4: Unauthenticated requests return HTTP 401.
+AC5: The endpoint is restricted to the kyc:callbacks:write OAuth scope.
+AC6: IDV reference details are stored in the KYC Orchestration tracking record.","KYC-F-18,MUST","","KYC IDV Confirmation & Case Status Transition",3,kyc-orchestration
+"Transition NCA case to Ready for Review on IDV confirmation",Story,High,"As KYC Orchestration, I want to invoke the KYC-NCA Case API to transition a case from 'New' to 'Ready for Review' when IDV confirmation is received (or to 'Cancelled' on IDV rejection), so that Business Operations teams can begin their review.
+
+Requirements: KYC-F-19, KYC-I-08","AC1: On valid IDV confirmation, the NCA case is transitioned from 'New' to 'Ready for Review' via the KYC-NCA Case API.
+AC2: On IDV rejection, the NCA case is transitioned to 'Cancelled'.
+AC3: The transition uses UniqueClientID as the lookup key.
+AC4: Transition failure triggers the retry policy; persistent failures are dead-lettered and alerted.
+AC5: idvConfirmedAt timestamp is recorded in the KYC Orchestration tracking record.","KYC-F-19,KYC-I-08,MUST","","KYC IDV Confirmation & Case Status Transition",5,kyc-orchestration
+"Reject IDV callbacks for cases not in New state",Story,High,"As KYC Orchestration, I want to reject IDV confirmation callbacks for NCA cases that are not currently in 'New' state, so that duplicate or out-of-order callbacks do not corrupt the case state in KYC-NCA.
+
+Requirements: KYC-F-20","AC1: Before processing an IDV callback, KYC Orchestration checks the current case state in the tracking DB.
+AC2: If the case is not in 'New' state, the callback is rejected with HTTP 409 Conflict and an appropriate error message.
+AC3: The rejection is logged with the UniqueClientID, current case state, and callback timestamp.
+AC4: Rejected callbacks do not trigger any NCA case state transition.
+AC5: Unit test covers all non-New states (PENDING, IN_PROGRESS, COMPLETED) to confirm rejection.","KYC-F-20,MUST","","KYC IDV Confirmation & Case Status Transition",2,kyc-orchestration
+"Poll KYC-NCA for finalized cases and update tracking database",Story,High,"As KYC Orchestration, I want to periodically poll KYC-NCA for cases in a finalized state (Proceed or Reject), so that feedback can be delivered to EIS/InvestiFi Gateway without delay once analyst review is complete.
+
+Requirements: KYC-F-21","AC1: A scheduled polling job queries KYC-NCA for cases associated with tracking records in PENDING or IN_PROGRESS state.
+AC2: Cases in 'Proceed' or 'Reject' state are identified as finalized.
+AC3: Polling interval and batch size are externalised in application configuration.
+AC4: Polling job failures are logged and alerted; they do not crash the service.
+AC5: Successfully polled cases are marked to prevent repeated polling in the same cycle (idempotent).","KYC-F-21,MUST","","KYC Case Finalization & Feedback Delivery",5,kyc-orchestration
+"Deliver final KYC decision feedback to EIS/InvestiFi Gateway",Story,High,"As EIS/InvestiFi Gateway, I want to receive the final KYC decision (PROCEED or REJECT) from KYC Orchestration once analyst review is complete, so that I can communicate the onboarding outcome to the client and proceed or abort accordingly.
+
+Requirements: KYC-F-23","AC1: For each finalized case, KYC Orchestration sends an outbound POST request to EIS/InvestiFi Gateway containing: UniqueClientID, final decision (PROCEED/REJECT), kycId, screeningStatus, riskRating, and feedbackSentAt timestamp.
+AC2: Delivery uses the webhook URL registered at initiation (if provided) or the configured gateway feedback endpoint.
+AC3: Delivery failure triggers the retry policy (3 attempts, exponential back-off).
+AC4: Persistent delivery failures are dead-lettered and an ops alert is raised.
+AC5: The X-KYC-Id idempotency header is included on every delivery attempt.","KYC-F-23,MUST","","KYC Case Finalization & Feedback Delivery",5,kyc-orchestration
+"Mark tracking record as Completed after successful feedback delivery",Story,High,"As KYC Orchestration, I want to update the KYC Orchestration tracking record to 'COMPLETED' status after successfully delivering feedback to EIS/InvestiFi Gateway, so that the record lifecycle is closed and the case is removed from the pending polling backlog.
+
+Requirements: KYC-F-24","AC1: The tracking record status is updated to COMPLETED and feedbackSentAt is set only after confirmed delivery (2xx response).
+AC2: The update is transactional — partial updates are not possible.
+AC3: A COMPLETED record is excluded from future polling cycles.
+AC4: Integration test confirms the transition from PENDING → COMPLETED after a successful mock delivery.","KYC-F-24,MUST","","KYC Case Finalization & Feedback Delivery",2,kyc-orchestration
+"Guarantee at-least-once feedback delivery with idempotency",Story,Medium,"As EIS/InvestiFi Gateway, I want KYC Orchestration to guarantee at-least-once delivery of KYC feedback and to handle duplicates gracefully on my side via the X-KYC-Id header, so that I never miss a final decision even under transient network failures.
+
+Requirements: KYC-F-25","AC1: KYC Orchestration includes the X-KYC-Id header (set to kycId) on every feedback delivery attempt.
+AC2: On non-2xx response, delivery is retried per the retry policy before dead-lettering.
+AC3: The caller uses X-KYC-Id to deduplicate — delivering the same kycId twice is safe on the receiver side.
+AC4: At-least-once delivery is documented in the API reference with deduplication guidance.
+AC5: Load test confirms at-least-once delivery under simulated intermittent 503 responses.","KYC-F-25,SHOULD","","KYC Case Finalization & Feedback Delivery",5,kyc-orchestration
+"Manual feedback trigger endpoint for operational teams",Story,Low,"As an operations team member, I want a secured internal endpoint that forces feedback delivery for a specific case outside the scheduled polling cycle, so that I can unblock a gateway that is waiting for a decision without waiting for the next poll window.
+
+Requirements: KYC-F-26","AC1: POST /api/v1/internal/kyc/{kycId}/deliver-feedback triggers immediate feedback delivery for the specified record.
+AC2: The endpoint is restricted to an internal OAuth scope (e.g. kyc:ops:write) not held by EIS/InvestiFi.
+AC3: The endpoint returns HTTP 404 if the kycId is not found.
+AC4: The endpoint returns HTTP 409 if the record is already in COMPLETED state.
+AC5: Delivery follows the same retry policy as the scheduled job.
+AC6: Each manual trigger invocation is recorded in the audit log.","KYC-F-26,MAY","","KYC Case Finalization & Feedback Delivery",3,kyc-orchestration
+"Implement HTTPS and OAuth 2.0 authentication for all inbound endpoints",Story,High,"As the KYC Platform security team, I want all inbound KYC Orchestration API endpoints to be protected by OAuth 2.0 Client Credentials via Keycloak and accessible only over TLS, so that only authorised EIS/InvestiFi Gateway clients can call the service.
+
+Requirements: KYC-I-01, KYC-I-02, KYC-NF-09","AC1: All endpoints reject HTTP connections — TLS 1.2 or higher is enforced.
+AC2: All endpoints return HTTP 401 for requests without a valid Bearer token.
+AC3: OAuth 2.0 Client Credentials grant type is configured with Keycloak as the authorisation server.
+AC4: Token validation includes expiry, signature, and audience checks.
+AC5: The Keycloak realm and client configuration are documented in the deployment runbook.
+AC6: Integration test confirms that a valid token grants access and an expired token returns 401.","KYC-I-01,KYC-I-02,KYC-NF-09,MUST","","KYC API Integration & Authentication",5,kyc-orchestration
+"UniqueClientID correlation and structured error responses",Story,High,"As EIS/InvestiFi Gateway, I want KYC Orchestration to accept my UniqueClientID as the primary correlation key and return structured error responses with HTTP status, error code, and trace ID, so that I can trace failures end-to-end without manual log searching.
+
+Requirements: KYC-I-03, KYC-I-04","AC1: UniqueClientID from the request is propagated to all downstream calls (KYC-NCA, NRTS, CRRE) as the correlation key.
+AC2: All error responses follow the ErrorResponse schema: {timestamp, status, error, message}.
+AC3: A distributed traceId is included in all error response headers (X-Trace-Id or similar).
+AC4: HTTP 400 errors include field-level validation detail (field name: message).
+AC5: HTTP 502 errors include a generic downstream error message — no internal system details are leaked.","KYC-I-03,KYC-I-04,MUST","","KYC API Integration & Authentication",3,kyc-orchestration
+"Request idempotency via caller-supplied requestId header",Story,Medium,"As EIS/InvestiFi Gateway, I want to supply a requestId header on screening initiation requests, so that retries due to network failures do not result in duplicate KYC records or duplicate NCA cases.
+
+Requirements: KYC-I-05","AC1: KYC Orchestration reads the X-Request-Id header on POST /api/v1/kyc/initiate.
+AC2: If a request with the same X-Request-Id has already been successfully processed, KYC Orchestration returns the original response (HTTP 200) without re-executing the orchestration.
+AC3: The idempotency window is configurable (default: 24 hours).
+AC4: If the original request is still in-flight, KYC Orchestration returns HTTP 202 Accepted.
+AC5: Missing X-Request-Id is allowed (no error) — idempotency is opt-in.","KYC-I-05,SHOULD","","KYC API Integration & Authentication",3,kyc-orchestration
+"Expose KYC-NCA case status update callback endpoint",Story,High,"As KYC-NCA, I want to call KYC Orchestration to update the status of a KYC case (e.g. to APPROVED or COMPLETED) after analyst review, so that EIS/InvestiFi Gateway can be notified of the final decision via webhook.
+
+Requirements: KYC-I-09","AC1: PATCH /api/v1/orchestration/{kycId}/status accepts kycStatus: APPROVED or COMPLETED.
+AC2: PENDING and ON_HOLD are rejected as target statuses with HTTP 400.
+AC3: Attempting to update a COMPLETED record returns HTTP 409.
+AC4: A valid update triggers the webhook notification to EIS/InvestiFi Gateway asynchronously.
+AC5: The endpoint is restricted to the internal KYC-NCA OAuth scope.","KYC-I-09,MUST","","KYC API Integration & Authentication",3,kyc-orchestration
+"KYC-NCA retry, exponential back-off and dead-letter handling",Story,Medium,"As KYC Orchestration, I want to apply retry with exponential back-off to all KYC-NCA API calls, so that transient failures (network blips, KYC-NCA restarts) are self-healing and only persistent failures generate operational alerts.
+
+Requirements: KYC-I-10, KYC-NF-06","AC1: All KYC-NCA calls (ingestion, case create, case update, status query) are wrapped with retry logic.
+AC2: Retry policy: maximum 3 attempts, back-off intervals 1s, 2s, 4s.
+AC3: After 3 failed attempts, the event is written to a dead-letter log with full context (endpoint, payload hash, error).
+AC4: Dead-letter events trigger an operational alert (log-based or metrics-based).
+AC5: Retry count and back-off intervals are externalised in application configuration.
+AC6: 5xx errors are retried; 4xx client errors are not retried (fail fast).","KYC-I-10,KYC-NF-06,SHOULD","","KYC API Integration & Authentication",3,kyc-orchestration
+"Scope-based authorisation per endpoint",Story,High,"As the KYC Platform security team, I want each endpoint to enforce a specific OAuth scope, so that EIS/InvestiFi Gateway cannot call internal callback endpoints and KYC-NCA cannot call consumer-facing endpoints.
+
+Requirements: KYC-NF-10","AC1: POST /api/v1/kyc/initiate requires scope kyc:screening:write.
+AC2: GET /api/v1/kyc/{kycId}/status requires scope kyc:screening:read.
+AC3: POST /api/v1/kyc/callbacks/idv-confirmation requires scope kyc:callbacks:write (EIS/InvestiFi only).
+AC4: PATCH /api/v1/orchestration/{kycId}/status requires scope kyc:internal:write (KYC-NCA only).
+AC5: A token with a valid signature but wrong scope returns HTTP 403 Forbidden.
+AC6: Scope requirements are documented in the Swagger UI description of each endpoint.","KYC-NF-10,MUST","","KYC Security & Data Privacy Compliance",3,kyc-orchestration
+"TLS 1.2+ enforcement for all inter-service communication",Story,High,"As the DWS InfoSec team, I want all inter-service communication (inbound and outbound) to use TLS 1.2 or higher with validated certificates, so that data in transit is protected and man-in-the-middle attacks are mitigated.
+
+Requirements: KYC-NF-11","AC1: Inbound connections below TLS 1.2 are rejected.
+AC2: Outbound calls to KYC-NCA, NRTS, CRRE, and EIS/InvestiFi Gateway use TLS 1.2+.
+AC3: Certificate validation is enabled — self-signed certificates are rejected in production.
+AC4: A dedicated non-production TLS configuration allows self-signed certificates for local development only.
+AC5: TLS version and cipher suite requirements are documented in the deployment runbook.","KYC-NF-11,MUST","","KYC Security & Data Privacy Compliance",2,kyc-orchestration
+"PII masking in application logs (GDPR/BaFin compliance)",Story,High,"As the DWS Data Privacy Officer, I want all application log output to mask or tokenise client PII fields, so that KYC Orchestration logs are safe to export to centralised logging platforms without violating GDPR Article 5(1)(e) or BaFin data handling standards.
+
+Requirements: KYC-NF-12, KYC-C-03","AC1: firstName, lastName, dob, addressLine1, addressLine2, identificationNumber, and germanTaxID are never logged in plain text.
+AC2: Masked format: first character + *** + last character (e.g. 'Smith' → 'S***h').
+AC3: PiiMaskingUtil is applied at every log call site that references a PII field.
+AC4: A code review checklist item confirms no raw PII appears in log statements.
+AC5: Automated test verifies that mock log output contains masked values only.
+AC6: PII fields are not included in error response bodies returned to callers.","KYC-NF-12,KYC-C-03,MUST","","KYC Security & Data Privacy Compliance",3,kyc-orchestration
+"Immutable audit trail for all state transitions",Story,High,"As the AFC (Anti-Financial Crime) governance team, I want every KYC lifecycle state transition to be written to an immutable audit log with timestamp, actor, and previous/new state, so that a full audit trail is available for regulatory review without reliance on application logs.
+
+Requirements: KYC-NF-13","AC1: All state transitions (case creation, IDV confirmation, Ready for Review, feedback delivery, COMPLETED) are written to the audit log.
+AC2: Each audit entry includes: event type, kycId, uniqueClientID, previous state, new state, actor (OAuth client ID), and timestamp.
+AC3: Audit entries are append-only — no update or delete operations are permitted on the audit table.
+AC4: Audit log writes are transactional with the state change they record.
+AC5: Audit entries are exposed via a secured internal read-only endpoint (or accessible via the database directly).
+AC6: Integration test confirms that a state transition without a corresponding audit entry cannot occur.","KYC-NF-13,MUST","","KYC Security & Data Privacy Compliance",5,kyc-orchestration
+"End-to-end latency target and configurable downstream timeouts",Story,High,"As EIS/InvestiFi Gateway, I want the KYC pre-check initiation endpoint to respond within 3–5 seconds under normal load, with configurable timeouts for each downstream call, so that my end-user experience is not degraded by slow downstream systems.
+
+Requirements: KYC-NF-01, KYC-NF-02","AC1: End-to-end response time for POST /api/v1/kyc/initiate is within 3–5 seconds at p95 under normal load (NRTS + CRRE both responding in sub-second time).
+AC2: Timeout for NRTS is configurable; default 30 seconds.
+AC3: Timeout for CRRE is configurable; default 30 seconds.
+AC4: Timeout for KYC-NCA ingestion is configurable; default 30 seconds.
+AC5: All timeout values are externalised in application.yml; no hardcoded values.
+AC6: Performance test (JMeter or equivalent) confirms p95 < 5s under 20 concurrent users.","KYC-NF-01,KYC-NF-02,MUST","","KYC Performance, Reliability & Resilience",3,kyc-orchestration
+"Support 20 concurrent screening requests per second without degradation",Story,High,"As the KYC Platform operations team, I want KYC Orchestration to sustain at least 20 concurrent screening requests per second without response time degradation, so that peak onboarding periods do not cause SLA breaches.
+
+Requirements: KYC-NF-03","AC1: Load test confirms the service sustains 20 req/s for a 5-minute sustained run with p95 latency < 5 seconds.
+AC2: Thread pool configuration supports the required concurrency (core: 20, max: 40, queue: 200).
+AC3: Thread pool settings are externalised in application configuration.
+AC4: No memory leaks or thread pool exhaustion occur during the sustained load test.
+AC5: Metrics show no HTTP 429 or 503 responses under 20 req/s.","KYC-NF-03,MUST","","KYC Performance, Reliability & Resilience",5,kyc-orchestration
+"Retry with exponential back-off for all outbound API calls",Story,High,"As KYC Orchestration, I want a consistent retry policy with exponential back-off applied to all outbound API calls (NRTS, CRRE, KYC-NCA, EIS feedback), so that transient failures are self-healing and persistent failures raise an alert rather than causing silent data loss.
+
+Requirements: KYC-NF-06","AC1: Maximum 3 retry attempts for all outbound calls.
+AC2: Back-off intervals: attempt 1 immediately, attempt 2 after 1s, attempt 3 after 2s, attempt 4 after 4s.
+AC3: 4xx errors (client errors) are not retried.
+AC4: After retry exhaustion, the event is written to a dead-letter log entry and an alert is raised.
+AC5: Retry behaviour is covered by unit tests using a mock server that returns 503 on the first N attempts.
+AC6: Retry count, back-off base, and multiplier are externalised in configuration.","KYC-NF-06,MUST","","KYC Performance, Reliability & Resilience",5,kyc-orchestration
+"Partial failure handling — KYC-NCA ingestion failure policy",Story,High,"As KYC Orchestration, I want to ensure that a KYC-NCA ingestion failure never causes a false success response to EIS/InvestiFi Gateway, so that the client record is guaranteed to exist in KYC-NCA before any downstream case management occurs.
+
+Requirements: KYC-NF-07","AC1: If KYC-NCA ingestion fails after all retries, KYC Orchestration returns a 502 error to EIS/InvestiFi — NOT a 200.
+AC2: The 502 error body uses the standard ErrorResponse schema with a meaningful message.
+AC3: NLS/NRTS screening may still proceed in parallel and its result is stored; only the final response is withheld.
+AC4: A dead-letter entry and operational alert are raised on ingestion failure.
+AC5: Unit test confirms that a mock NCA ingestion that always fails results in a 502 response from the orchestration endpoint.","KYC-NF-07,MUST","","KYC Performance, Reliability & Resilience",3,kyc-orchestration
+"Idempotency for all state-changing operations",Story,High,"As KYC Orchestration, I want all state-changing operations (case creation, status update, feedback delivery) to be idempotent, so that reprocessing the same event due to retries or message redelivery does not create duplicate records or send duplicate feedback.
+
+Requirements: KYC-NF-08","AC1: Resubmitting the same initiation request (same X-Request-Id) does not create a duplicate tracking record or NCA case.
+AC2: Calling PATCH /orchestration/{kycId}/status with the same status twice does not corrupt the record (second call returns current state).
+AC3: Re-triggering feedback delivery for a COMPLETED record returns the existing feedback without re-sending.
+AC4: Idempotency keys are stored in the tracking DB with a configurable TTL.
+AC5: Integration test verifies that repeating a full lifecycle produces exactly one tracking record and one NCA case.","KYC-NF-08,MUST","","KYC Performance, Reliability & Resilience",5,kyc-orchestration
+"Distributed trace ID propagation across all downstream calls",Story,High,"As a KYC Platform engineer, I want a distributed trace ID to be generated at request intake and propagated to all outbound calls to KYC-NCA, NRTS, and CRRE, so that any cross-service failure can be traced end-to-end in the centralised logging platform without manual correlation.
+
+Requirements: KYC-NF-14","AC1: A traceId is generated (UUID or W3C Trace Context format) on receipt of each inbound request.
+AC2: The traceId is propagated to KYC-NCA, NRTS, and CRRE via the X-B3-TraceId header (or W3C traceparent).
+AC3: The traceId is included in all log entries within the request scope (MDC).
+AC4: The traceId is returned in the response header X-Trace-Id.
+AC5: Integration test confirms the traceId appears in mock downstream call headers.","KYC-NF-14,MUST","","KYC Observability & Alerting",3,kyc-orchestration
+"Metrics exposure for rate, latency, error rates and pending count",Story,Medium,"As a KYC Platform SRE, I want KYC Orchestration to expose operational metrics via a standard endpoint, so that dashboards and SLA reports can be built without custom log parsing.
+
+Requirements: KYC-NF-15","AC1: The following metrics are exposed (Micrometer/Prometheus format): screening_request_total (counter), downstream_call_latency_seconds (histogram, labelled by system: nrts, crre, nca), error_rate_per_endpoint (counter, labelled by endpoint + status), pending_cases_count (gauge).
+AC2: Metrics are accessible at /actuator/prometheus (or equivalent).
+AC3: The metrics endpoint is secured to internal access only (not exposed to EIS/InvestiFi).
+AC4: A sample Grafana dashboard definition (JSON) is provided in the repository.","KYC-NF-15,MUST","","KYC Observability & Alerting",3,kyc-orchestration
+"Alerting for downstream unavailability, retry exhaustion and SLA breach",Story,Medium,"As a KYC Platform on-call engineer, I want automated alerts to fire when downstream systems are unavailable, retry attempts are exhausted, polling jobs fail, or pending cases risk breaching the agreed SLA, so that I am notified before a business impact occurs.
+
+Requirements: KYC-NF-16","AC1: Alert fires when any downstream system (NRTS, CRRE, KYC-NCA) returns errors on all retry attempts within a 5-minute window.
+AC2: Alert fires when a scheduled polling job fails to complete successfully.
+AC3: Alert fires when any pending case has been in PENDING state beyond the configured SLA threshold (configurable, default: 24h).
+AC4: All alerts are routed to the KYC Platform on-call channel (PagerDuty / Opsgenie configuration documented).
+AC5: Alert thresholds are externalised in application/infrastructure configuration.
+AC6: Runbook links are included in alert definitions.","KYC-NF-16,MUST","","KYC Observability & Alerting",3,kyc-orchestration

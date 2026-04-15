@@ -9,6 +9,7 @@ call :StopService 8084 "Auth Service"
 call :StopService 8081 "Risk Service"
 call :StopService 8082 "Screening Service"
 call :StopService 8085 "Document Service"
+call :StopService 8086 "Orchestration Service"
 call :StopService 8083 "Viewer Service"
 
 REM Frontend (Port 5173)

@@ -10,6 +10,7 @@ call :CheckService "Viewer Service   " 8083
 call :CheckService "Risk Service     " 8081
 call :CheckService "Screening Service" 8082
 call :CheckService "Document Service " 8085
+call :CheckService "Orchestration    " 8086
 call :CheckService "Frontend         " 5173
 
 echo ================================

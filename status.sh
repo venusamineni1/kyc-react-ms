@@ -17,11 +17,13 @@ check_service() {
 }
 
 echo "=== KYC Microservices Status ==="
-check_service "Service Registry" 8761
+check_service "Service Registry " 8761
 check_service "API Gateway     " 8080
 check_service "Auth Service    " 8084
 check_service "Viewer Service  " 8083
 check_service "Risk Service    " 8081
 check_service "Screening Service" 8082
+check_service "Document Service" 8085
+check_service "Orchestration   " 8086
 check_service "Frontend        " 5173
 echo "================================"
