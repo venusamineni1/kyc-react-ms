@@ -36,7 +36,10 @@ public class BatchScreeningService {
     private String sftpUploadDir;
 
     @Value("${batch.publicKeyPath}")
-    private String publicKeyPath; // Public key for encrypting requests
+    private String publicKeyPath;
+
+    @Value("${batch.keep-temp-files:false}")
+    private boolean keepTempFiles;
 
     private final BatchRepository batchRepository;
     private final MappingConfigRepository mappingConfigRepository;
@@ -51,12 +54,16 @@ public class BatchScreeningService {
     }
 
     public Long createBatch(List<Client> clients) {
-        return createBatch(clients, "MANUAL", null);
+        return createBatch(clients, "MANUAL", null, 1);
     }
 
     public Long createBatch(List<Client> clients, String source, String createdBy) {
+        return createBatch(clients, source, createdBy, 1);
+    }
+
+    public Long createBatch(List<Client> clients, String source, String createdBy, int batchNumber) {
         String batchIdStr = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-        String batchName = "2475_RC_DELTA_" + batchIdStr + "_1";
+        String batchName = "2475_RC_DELTA_" + batchIdStr + "_" + batchNumber;
         File batchDir = new File(workDir, batchName);
         if (!batchDir.exists()) {
             batchDir.mkdirs();
@@ -165,6 +172,11 @@ public class BatchScreeningService {
 
         fileStorageService.uploadFile(encryptedFile, sftpUploadDir);
         batchRepository.updateBatchStatus(batchId, "UPLOADED", null, null);
+
+        if (!keepTempFiles) {
+            deleteDirectory(batchDir);
+            log.debug("Cleaned up temp dir: {}", batchDir);
+        }
     }
 
     public String getFileContent(Long batchId, String fileType) throws Exception {
@@ -791,5 +803,14 @@ public class BatchScreeningService {
 
     public List<MappingConfigSnapshot> getAllMappingSnapshots() {
         return batchRepository.findAllSnapshots();
+    }
+
+    private void deleteDirectory(File dir) {
+        if (dir == null || !dir.exists()) return;
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File f : files) f.delete();
+        }
+        dir.delete();
     }
 }

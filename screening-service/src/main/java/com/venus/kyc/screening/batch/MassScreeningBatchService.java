@@ -56,6 +56,9 @@ public class MassScreeningBatchService {
     @Value("${batch.work.dir:batch-work}")
     private String workDir;
 
+    @Value("${batch.keep-temp-files:false}")
+    private boolean keepTempFiles;
+
     public MassScreeningBatchService(BatchScreeningService batchScreeningService,
                                      BatchScreeningRunRepository runRepository,
                                      BatchScreeningStagingRepository stagingRepository,
@@ -100,8 +103,13 @@ public class MassScreeningBatchService {
             log.error("[{}] Mass screening failed: {}", runGroupId, e.getMessage(), e);
             runRepository.markFailed(runGroupId, e.getMessage());
         } finally {
-            if (tempCsv != null && tempCsv.exists()) {
+            if (!keepTempFiles && tempCsv != null && tempCsv.exists()) {
+                File tempDir = tempCsv.getParentFile();
                 tempCsv.delete();
+                if (tempDir != null) tempDir.delete();
+                log.debug("[{}] Cleaned up CSV temp dir: {}", runGroupId, tempDir);
+            } else if (keepTempFiles && tempCsv != null) {
+                log.debug("[{}] Keeping temp CSV: {}", runGroupId, tempCsv.getAbsolutePath());
             }
         }
     }
@@ -221,7 +229,7 @@ public class MassScreeningBatchService {
         log.info("[{}] Dispatching batch {} ({} clients)...", runGroupId, batchNumber, clients.size());
         try {
             // createBatch + full pipeline (XML → checksum → zip → encrypt → SFTP upload)
-            Long batchId = batchScreeningService.createBatch(clients, "MASS_SCREENING", runGroupId);
+            Long batchId = batchScreeningService.createBatch(clients, "MASS_SCREENING", runGroupId, batchNumber);
             batchScreeningService.generateBatchXml(batchId);
             batchScreeningService.generateBatchChecksum(batchId);
             batchScreeningService.zipBatchFiles(batchId);
