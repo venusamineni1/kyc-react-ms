@@ -9,5 +9,6 @@ public record ScreeningLog(
         String responsePayload,
         String overallStatus,
         String externalRequestID,
-        LocalDateTime createdAt) {
-}
+        LocalDateTime createdAt,
+        Long nrtsProcessId        // NRTS numeric processId — used for get_status polling
+) {}

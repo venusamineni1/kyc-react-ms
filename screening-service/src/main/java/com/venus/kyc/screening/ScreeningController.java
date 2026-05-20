@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/internal/screening")
-@Tag(name = "Client Screening", description = "Endpoints for initiating and monitoring client sanctions/PEP screenings")
+@Tag(name = "Client Screening", description = "NRTS-backed endpoints for initiating and monitoring client sanctions/PEP screenings")
 public class ScreeningController {
 
     private final ScreeningService service;
@@ -19,30 +19,105 @@ public class ScreeningController {
         this.service = service;
     }
 
-    @Operation(summary = "Initiate client screening", description = "Submits a screening request for a client to check against sanctions, PEP, and adverse media lists")
+    // ── Endpoint 1: Initiate ─────────────────────────────────────────────────
+
+    @Operation(
+        summary = "Initiate NRTS screening",
+        description = """
+            Submits a single client to NRTS /nrts/submit.
+            If alerts are found (HTTP 202), waits statusCheckDelayMs (0 = immediate)
+            then calls NRTS /nrts/get_status once to retrieve initial context info.
+            Returns 'Hot' with processId, reqId, and alertContexts, or 'No-Hit'.
+            """
+    )
     @PostMapping("/initiate")
-    public ResponseEntity<?> initiateScreening(@RequestBody ScreeningDTOs.ScreeningInternalRequest request) {
+    public ResponseEntity<?> initiateScreening(
+            @RequestBody ScreeningDTOs.ScreeningInternalRequest request) {
         try {
             return ResponseEntity.ok(service.initiateScreening(request));
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Error initiating screening: " + e.getMessage());
+            return ResponseEntity.internalServerError()
+                    .body("Error initiating screening: " + e.getMessage());
         }
     }
 
-    @Operation(summary = "Get screening status", description = "Returns the current status of a screening request by its unique request ID")
-    @GetMapping("/status/{requestId}")
+    // ── Endpoint 2: Poll Status ───────────────────────────────────────────────
+
+    @Operation(
+        summary = "Poll NRTS screening status",
+        description = """
+            Calls NRTS /nrts/get_status/:processId for the given processId.
+            Returns current investigation status per context, plus a 'finalized' flag.
+            Caller is responsible for periodic invocation (e.g. every 6 hours).
+            Stop polling when finalized=true. Use the returned reqId for Endpoint 3.
+            """
+    )
+    @GetMapping("/status/{processId}")
     public ResponseEntity<ScreeningDTOs.ScreeningStatusResponse> getStatus(
-            @Parameter(description = "Screening request ID") @PathVariable String requestId) {
-        return ResponseEntity.ok(service.checkStatus(requestId));
+            @Parameter(description = "NRTS processId returned by /initiate")
+            @PathVariable long processId) {
+        return ResponseEntity.ok(service.checkStatus(processId));
     }
 
-    @Operation(summary = "Get screening history", description = "Returns the complete screening history for a specific client")
+    // ── Endpoint 3: Alert Details ─────────────────────────────────────────────
+
+    @Operation(
+        summary = "Get alert decision history",
+        description = """
+            Calls NRTS /nrts/get_final_request_details/:requestId.
+            Returns full alert history, hits, operator decisions, and Filenet document IDs.
+            Only call after finalized=true and client Final=T. Returns 409 if investigation
+            is still in progress (NRTS 412 Precondition Failed).
+            """
+    )
+    @GetMapping("/details/{reqId}")
+    public ResponseEntity<?> getAlertDetails(
+            @Parameter(description = "NRTS reqId for the client, returned by /status")
+            @PathVariable long reqId) {
+        try {
+            return ResponseEntity.ok(service.getAlertDetails(reqId));
+        } catch (Exception e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("412")) {
+                return ResponseEntity.status(409)
+                        .body("Investigation not yet finalized for reqId: " + reqId);
+            }
+            return ResponseEntity.internalServerError()
+                    .body("Error retrieving alert details: " + msg);
+        }
+    }
+
+    // ── Endpoint 4: Document Download ─────────────────────────────────────────
+
+    @Operation(
+        summary = "Download Filenet document",
+        description = """
+            Calls NRTS /nrts/get_document/:documentId to download an attachment.
+            documentId is the filenet-id from an alert details response
+            (alertDocuments[].filenetId or decisionHistory[].document.filenetId).
+            Returns the raw binary file with original Content-Type and Content-Disposition headers.
+            """
+    )
+    @GetMapping("/document/{documentId}")
+    public ResponseEntity<byte[]> getDocument(
+            @Parameter(description = "Filenet document ID from alert details response")
+            @PathVariable String documentId) {
+        return service.getDocument(documentId);
+    }
+
+    // ── Existing: History ─────────────────────────────────────────────────────
+
+    @Operation(
+        summary = "Get screening history for a client",
+        description = "Returns all past screening logs for the given internal client ID"
+    )
     @GetMapping("/history/{clientId}")
     public ResponseEntity<List<ScreeningLog>> getHistory(
-            @Parameter(description = "Client ID") @PathVariable Long clientId) {
+            @Parameter(description = "Internal client ID") @PathVariable Long clientId) {
         return ResponseEntity.ok(service.getHistory(clientId));
     }
+
+    // ── Exception handler ─────────────────────────────────────────────────────
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(Exception e) {

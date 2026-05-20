@@ -81,6 +81,12 @@
             <artifactId>commons-io</artifactId>
             <version>2.11.0</version>
         </dependency>
+        <!-- CSV parsing for 700K-client mass screening input files -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.11.0</version>
+        </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -104,6 +110,68 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+
+			<!--
+			  Generates openapi.json at build time by starting the app, hitting
+			  /v3/api-docs, then stopping the app. Runs during the pre-integration-test
+			  phase so it is part of: mvn verify
+			-->
+			<plugin>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-maven-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<id>generate-openapi-spec</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<!-- Where the running app is listening -->
+					<apiDocsUrl>http://localhost:8082/v3/api-docs</apiDocsUrl>
+					<!-- Output file location -->
+					<outputDir>${project.basedir}/docs</outputDir>
+					<outputFileName>openapi.json</outputFileName>
+					<skip>false</skip>
+				</configuration>
+			</plugin>
+
+			<!--
+			  Bundles the generated openapi.json into a single self-contained HTML
+			  using Redocly CLI (npx — no global install needed).
+			  Runs after the spec is generated: mvn verify
+			  Requires Node.js / npx on the build machine.
+			  To skip: mvn verify -Dskip.docs=true
+			-->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>generate-redoc-html</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+						<configuration>
+							<skip>${skip.docs}</skip>
+							<executable>npx</executable>
+							<arguments>
+								<argument>@redocly/cli</argument>
+								<argument>build-docs</argument>
+								<argument>${project.basedir}/docs/openapi.json</argument>
+								<argument>--output</argument>
+								<argument>${project.basedir}/docs/screening-api.html</argument>
+								<argument>--title</argument>
+								<argument>Screening Service API</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

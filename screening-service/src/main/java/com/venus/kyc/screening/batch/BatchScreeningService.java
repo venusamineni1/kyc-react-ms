@@ -27,16 +27,13 @@ public class BatchScreeningService {
 
     private final EncryptionService encryptionService;
     private final CompressionService compressionService;
-    private final SftpService sftpService;
+    private final FileStorageService fileStorageService;
 
     @Value("${batch.work.dir:/tmp/screening-batch}")
     private String workDir;
 
     @Value("${batch.sftp.upload.dir:upload}")
     private String sftpUploadDir;
-
-    @Value("${batch.sftp.mock:true}")
-    private boolean sftpMock;
 
     @Value("${batch.publicKeyPath}")
     private String publicKeyPath; // Public key for encrypting requests
@@ -45,10 +42,10 @@ public class BatchScreeningService {
     private final MappingConfigRepository mappingConfigRepository;
 
     public BatchScreeningService(EncryptionService encryptionService, CompressionService compressionService,
-            SftpService sftpService, BatchRepository batchRepository, MappingConfigRepository mappingConfigRepository) {
+            FileStorageService fileStorageService, BatchRepository batchRepository, MappingConfigRepository mappingConfigRepository) {
         this.encryptionService = encryptionService;
         this.compressionService = compressionService;
-        this.sftpService = sftpService;
+        this.fileStorageService = fileStorageService;
         this.batchRepository = batchRepository;
         this.mappingConfigRepository = mappingConfigRepository;
     }
@@ -166,11 +163,7 @@ public class BatchScreeningService {
         File batchDir = new File(workDir, run.batchName());
         File encryptedFile = new File(batchDir, run.batchName() + ".zip.gpg");
 
-        if (sftpMock) {
-            log.warn("SFTP mock mode enabled. Skipping upload for batch {}. File ready at: {}", run.batchName(), encryptedFile.getAbsolutePath());
-        } else {
-            sftpService.uploadFile(encryptedFile, sftpUploadDir);
-        }
+        fileStorageService.uploadFile(encryptedFile, sftpUploadDir);
         batchRepository.updateBatchStatus(batchId, "UPLOADED", null, null);
     }
 
@@ -662,7 +655,7 @@ public class BatchScreeningService {
     public void processResponse(String remoteFileName) throws Exception {
         // 1. Download
         File localEncryptedFile = new File(workDir, remoteFileName);
-        sftpService.downloadFile(remoteFileName, localEncryptedFile);
+        fileStorageService.downloadFile(remoteFileName, localEncryptedFile);
 
         // 2. Decrypt
         File decryptedZipFile = new File(workDir, remoteFileName.replace(".gpg", ""));

@@ -2,11 +2,11 @@ package com.venus.kyc.screening;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class ScreeningService {
@@ -16,98 +16,122 @@ public class ScreeningService {
     private final ScreeningProvider screeningProvider;
 
     public ScreeningService(ScreeningRepository repository,
-            ObjectMapper objectMapper, ScreeningProvider screeningProvider) {
+                             ObjectMapper objectMapper,
+                             ScreeningProvider screeningProvider) {
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.screeningProvider = screeningProvider;
     }
 
-    public ScreeningDTOs.InitiateScreeningResponse initiateScreening(ScreeningDTOs.ScreeningInternalRequest request) {
-        // 1. Construct Backend Request from internal Request
-        ScreeningDTOs.ExternalScreeningRequest externalRequest = new ScreeningDTOs.ExternalScreeningRequest(
-                request.firstName() + " " + request.lastName(),
-                request.dateOfBirth(),
-                request.citizenship());
+    // ── Endpoint 1: Initiate ─────────────────────────────────────────────────
 
-        String requestJson;
-        try {
-            requestJson = objectMapper.writeValueAsString(externalRequest);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize external request", e);
-        }
+    /**
+     * Submits one client for NRTS screening.
+     * If alerts are found, immediately calls get_status (after optional delay)
+     * to retrieve context info. Returns Hot/No-Hit + alert contexts.
+     */
+    public ScreeningDTOs.InitiateScreeningResponse initiateScreening(
+            ScreeningDTOs.ScreeningInternalRequest request) {
 
-        // 2. Delegate to Provider
-        String externalRequestId = screeningProvider.initiate(externalRequest);
+        String requestJson = serialize(request);
 
-        // 3. Save Log
-        ScreeningLog log = new ScreeningLog(null, request.clientId(), requestJson, null, "IN_PROGRESS",
-                externalRequestId,
-                LocalDateTime.now());
+        // 1. Call provider (submit + optional immediate get_status)
+        ScreeningDTOs.InitiateScreeningResponse providerResult = screeningProvider.initiate(request);
+
+        // 2. Persist log
+        String externalId = providerResult.processId() != null
+                ? String.valueOf(providerResult.processId())
+                : "NO_HIT_" + System.currentTimeMillis();
+
+        ScreeningLog log = new ScreeningLog(
+                null, request.clientId(), requestJson, null,
+                "Hot".equals(providerResult.result()) ? "IN_PROGRESS" : "COMPLETED",
+                externalId, LocalDateTime.now(), providerResult.processId());
         Long logId = repository.saveLog(log);
 
-        // Initialize empty results as IN_PROGRESS
-        saveInitialResults(logId);
-
-        // Note: Audit logging is handled by caller (Viewer) or separate mechanism
-        // System.out.println("Initiated screening for client " + request.clientId());
-
-        return new ScreeningDTOs.InitiateScreeningResponse(false, externalRequestId);
-    }
-
-    private void saveInitialResults(Long logId) {
-        String[] contexts = { "PEP", "ADM", "INT", "SAN" };
-        for (String ctx : contexts) {
-            repository.saveResult(new ScreeningResult(null, logId, ctx, "IN_PROGRESS", null, null, null));
-        }
-    }
-
-    public ScreeningDTOs.ScreeningStatusResponse checkStatus(String requestId) {
-        ScreeningLog log = repository.findLogByExternalId(requestId);
-        if (log == null) {
-            throw new RuntimeException("Request ID not found: " + requestId);
-        }
-
-        // 1. Check DB first to see if already done?
-        List<ScreeningResult> currentResults = repository.findResultsByLogId(log.logID());
-        boolean anyInProgress = currentResults.stream().anyMatch(r -> "IN_PROGRESS".equals(r.status()));
-
-        if (!anyInProgress) {
-            // Already completed, just return DB results
-            List<ScreeningDTOs.ContextResult> dtoResults = currentResults.stream()
-                    .map(r -> new ScreeningDTOs.ContextResult(r.contextType(), r.status(), r.alertMessage()))
-                    .toList();
-            return new ScreeningDTOs.ScreeningStatusResponse(requestId, dtoResults);
-        }
-
-        // 2. Poll Provider
-        List<ScreeningDTOs.ContextResult> newResults = screeningProvider.checkStatus(requestId);
-
-        if (!newResults.isEmpty()) {
-            // Provider returned results, update DB
-            repository.deleteResultsByLogId(log.logID()); // Clear old (or in_progress)
-
-            for (ScreeningDTOs.ContextResult res : newResults) {
-                repository.saveResult(new ScreeningResult(null, log.logID(), res.contextType(),
-                        res.status(),
-                        "HIT".equals(res.status()) ? "OPEN" : null,
-                        res.alertMessage(),
-                        "HIT".equals(res.status()) ? "ALT-" + UUID.randomUUID().toString().substring(0, 5) : null));
+        // 3. Persist per-context results
+        if ("Hot".equals(providerResult.result()) && providerResult.alertContexts() != null) {
+            for (String ctx : providerResult.alertContexts()) {
+                repository.saveResult(new ScreeningResult(
+                        null, logId, ctx, "HIT", "OPEN", ctx + " alert raised by NRTS",
+                        null, providerResult.reqId()));
             }
-
-            // Update Log Status
-            repository.updateLog(log.logID(), "[Provider Response]", "COMPLETED");
-
-            return new ScreeningDTOs.ScreeningStatusResponse(requestId, newResults);
+            // Non-alerted contexts (not returned by initiate) — mark NO_HIT
+            List<String> allContexts = List.of("PEP", "ADM", "INT", "SAN");
+            for (String ctx : allContexts) {
+                if (!providerResult.alertContexts().contains(ctx)) {
+                    repository.saveResult(new ScreeningResult(
+                            null, logId, ctx, "NO_HIT", null, null, null, null));
+                }
+            }
         } else {
-            // Still in progress
-            List<ScreeningDTOs.ContextResult> dtoResults = currentResults.stream()
-                    .map(r -> new ScreeningDTOs.ContextResult(r.contextType(), r.status(), r.alertMessage()))
-                    .toList();
-            return new ScreeningDTOs.ScreeningStatusResponse(requestId, dtoResults);
+            // No-Hit: all contexts NO_HIT
+            for (String ctx : List.of("PEP", "ADM", "INT", "SAN")) {
+                repository.saveResult(new ScreeningResult(
+                        null, logId, ctx, "NO_HIT", null, null, null, null));
+            }
         }
+
+        return providerResult;
     }
+
+    // ── Endpoint 2: Status ───────────────────────────────────────────────────
+
+    /**
+     * Polls NRTS get_status for a given processId.
+     * Caller drives the polling schedule. Returns finalized=true when done.
+     */
+    public ScreeningDTOs.ScreeningStatusResponse checkStatus(long processId) {
+        ScreeningDTOs.ScreeningStatusResponse response = screeningProvider.checkStatus(processId);
+
+        // If now finalized, update our log to COMPLETED
+        if (response.finalized()) {
+            ScreeningLog log = repository.findLogByNrtsProcessId(processId);
+            if (log != null) {
+                repository.updateLog(log.logID(), "NRTS_FINISHED", "COMPLETED");
+                // Update reqId on result rows if we got one back
+                if (response.reqId() != null) {
+                    repository.updateNrtsReqId(log.logID(), response.reqId());
+                }
+            }
+        }
+
+        return response;
+    }
+
+    // ── Endpoint 3: Alert Details ────────────────────────────────────────────
+
+    /**
+     * Retrieves full alert decision history from NRTS for a finalized client.
+     * Only call after finalized=true and reqId is known from Endpoint 2.
+     */
+    public ScreeningDTOs.AlertDetailsResponse getAlertDetails(long reqId) {
+        return screeningProvider.getAlertDetails(reqId);
+    }
+
+    // ── Endpoint 4: Document Download ────────────────────────────────────────
+
+    /**
+     * Proxies a Filenet document download from NRTS.
+     * documentId is the filenet-id from an alert details response.
+     */
+    public ResponseEntity<byte[]> getDocument(String documentId) {
+        return screeningProvider.getDocument(documentId);
+    }
+
+    // ── History (existing) ────────────────────────────────────────────────────
 
     public List<ScreeningLog> getHistory(Long clientId) {
         return repository.findLogsByClientId(clientId);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private String serialize(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            return "{}";
+        }
     }
 }

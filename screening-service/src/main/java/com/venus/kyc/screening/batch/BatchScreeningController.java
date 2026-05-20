@@ -6,7 +6,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/internal/screening/batch")
@@ -15,11 +18,17 @@ public class BatchScreeningController {
 
     private final BatchScreeningService batchScreeningService;
     private final MappingConfigRepository mappingConfigRepository;
+    private final BatchScreeningRunRepository batchScreeningRunRepository;
+    private final BatchRepository batchRepository;
 
     public BatchScreeningController(BatchScreeningService batchScreeningService,
-            MappingConfigRepository mappingConfigRepository) {
+            MappingConfigRepository mappingConfigRepository,
+            BatchScreeningRunRepository batchScreeningRunRepository,
+            BatchRepository batchRepository) {
         this.batchScreeningService = batchScreeningService;
         this.mappingConfigRepository = mappingConfigRepository;
+        this.batchScreeningRunRepository = batchScreeningRunRepository;
+        this.batchRepository = batchRepository;
     }
 
     @Operation(summary = "Get screening field mappings", description = "Returns the configured mapping between client fields and screening XML request fields")
@@ -185,5 +194,67 @@ public class BatchScreeningController {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Failed to generate test XML: " + e.getMessage());
         }
+    }
+
+    // ── Mass Screening Run Status ──────────────────────────────────────────────
+
+    @Operation(summary = "Get mass screening run status by runGroupId",
+               description = "Returns overall progress of a 700K-client mass screening run and its sub-batches")
+    @GetMapping("/runs/{runGroupId}")
+    public ResponseEntity<Map<String, Object>> getRunStatus(
+            @Parameter(description = "Run group ID (correlationId from .meta.json or UUID from .ack.json)")
+            @PathVariable String runGroupId) {
+
+        Optional<BatchScreeningRun> runOpt = batchScreeningRunRepository.findByRunGroupId(runGroupId);
+        if (runOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(buildRunStatusResponse(runOpt.get()));
+    }
+
+    @Operation(summary = "Get mass screening run status by fileName",
+               description = "Looks up the run status by the original CSV filename dropped on SFTP")
+    @GetMapping("/runs")
+    public ResponseEntity<Map<String, Object>> getRunStatusByFileName(
+            @Parameter(description = "Original CSV filename, e.g. DOWNSTREAM_A_clients_20260519143022.csv")
+            @RequestParam String fileName) {
+
+        Optional<BatchScreeningRun> runOpt = batchScreeningRunRepository.findByFileName(fileName);
+        if (runOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(buildRunStatusResponse(runOpt.get()));
+    }
+
+    private Map<String, Object> buildRunStatusResponse(BatchScreeningRun run) {
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("runGroupId", run.runGroupId());
+        resp.put("fileName", run.fileName());
+        resp.put("systemId", run.systemId());
+        resp.put("persistClients", run.persistClients());
+        resp.put("totalClientCount", run.totalClientCount());
+        resp.put("totalBatches", run.totalBatches());
+        resp.put("batchesCompleted", run.batchesCompleted());
+        resp.put("overallStatus", run.overallStatus());
+        resp.put("createdAt", run.createdAt());
+        resp.put("completedAt", run.completedAt());
+
+        // Attach sub-batch list
+        List<BatchRun> subBatches = batchRepository.findByRunGroupId(run.runGroupId());
+        List<Map<String, Object>> batchList = new java.util.ArrayList<>();
+        for (int i = 0; i < subBatches.size(); i++) {
+            BatchRun b = subBatches.get(i);
+            Map<String, Object> bm = new LinkedHashMap<>();
+            bm.put("batchId", b.batchID());
+            bm.put("batchNumber", i + 1);
+            bm.put("batchName", b.batchName());
+            bm.put("clientCount", b.clientCount());
+            bm.put("status", b.runStatus());
+            bm.put("createdAt", b.createdAt());
+            bm.put("updatedAt", b.updatedAt());
+            batchList.add(bm);
+        }
+        resp.put("batches", batchList);
+        return resp;
     }
 }

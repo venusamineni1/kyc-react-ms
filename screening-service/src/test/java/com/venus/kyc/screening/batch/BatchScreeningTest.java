@@ -18,7 +18,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(properties = {
         "batch.work.dir=/tmp/screening-batch-test",
-        "batch.privateKeyPath=/tmp/screening-batch-test/dummy_private.asc"
+        "batch.privateKeyPath=/tmp/screening-batch-test/dummy_private.asc",
+        "batch.publicKeyPath=/tmp/screening-batch-test/dummy_public.asc",
+        "storage.mode=local",
+        "storage.local.base-dir=/tmp/screening-batch-test"
 })
 @org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 public class BatchScreeningTest {
@@ -33,6 +36,11 @@ public class BatchScreeningTest {
             key.createNewFile();
             Files.writeString(key.toPath(), "DUMMY KEY CONTENT");
         }
+        File pubKey = new File(dir, "dummy_public.asc");
+        if (!pubKey.exists()) {
+            pubKey.createNewFile();
+            Files.writeString(pubKey.toPath(), "DUMMY PUBLIC KEY CONTENT");
+        }
     }
 
     @Autowired
@@ -42,24 +50,35 @@ public class BatchScreeningTest {
     private EncryptionService encryptionService;
 
     @MockBean
-    private SftpService sftpService;
+    private FileStorageService fileStorageService;
 
     // CompressionService is not mocked, we want to test it real
     @Autowired
     private CompressionService compressionService;
 
+    @MockBean
+    private BatchRepository batchRepository;
+
     @Test
     public void testInitiateBatch() throws Exception {
-        // Mock encryption to just copy file or do nothing (simulate success)
+        // Capture the BatchRun passed to saveBatchRun so findById can return it
+        final BatchRun[] savedRun = {null};
+        when(batchRepository.saveBatchRun(any(BatchRun.class))).thenAnswer(inv -> {
+            savedRun[0] = inv.getArgument(0);
+            return 1L;
+        });
+        when(batchRepository.findById(1L)).thenAnswer(inv -> savedRun[0]);
+
+        // Mock encryption to just copy file (simulate success)
         doAnswer(invocation -> {
             File inputFile = invocation.getArgument(0);
             File outputFile = invocation.getArgument(1);
-            Files.copy(inputFile.toPath(), outputFile.toPath()); // Fake encryption by copy
+            Files.copy(inputFile.toPath(), outputFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             return null;
         }).when(encryptionService).encryptFile(any(File.class), any(File.class), any(InputStream.class));
 
-        // Mock upload
-        doNothing().when(sftpService).uploadFile(any(File.class), anyString());
+        // Mock upload (delegates to FileStorageService)
+        doNothing().when(fileStorageService).uploadFile(any(File.class), anyString());
 
         Client client1 = new Client(1L, null, "John", null, "Doe", null, null, null, null, null, null, null, "Male",
                 null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
@@ -71,18 +90,10 @@ public class BatchScreeningTest {
         Long batchId = batchScreeningService.initiateBatch(clients);
 
         assertNotNull(batchId);
-        // assertTrue(batchName.startsWith("2475_RC_DELTA_")); // No longer checked here
-        // -> maybe check via repository verify? OR assume if ID returned it worked.
-        // Actually, we can verify that saveBatchRun was called with a constructed name.
         verify(batchRepository).saveBatchRun(argThat(run -> run.batchName().startsWith("2475_RC_DELTA_")));
-
-        // Verify calls
         verify(encryptionService, times(1)).encryptFile(any(File.class), any(File.class), any(InputStream.class));
-        verify(sftpService, times(1)).uploadFile(any(File.class), anyString());
+        verify(fileStorageService, times(1)).uploadFile(any(File.class), anyString());
     }
-
-    @MockBean
-    private BatchRepository batchRepository;
 
     @Test
     public void testProcessResponse_Notification() throws Exception {
@@ -106,7 +117,7 @@ public class BatchScreeningTest {
             File f = inv.getArgument(1);
             f.createNewFile();
             return null;
-        }).when(sftpService).downloadFile(anyString(), any(File.class));
+        }).when(fileStorageService).downloadFile(anyString(), any(File.class));
 
         // Mock decrypt (copy prepared zip to target)
         doAnswer(inv -> {
@@ -145,7 +156,7 @@ public class BatchScreeningTest {
             File f = inv.getArgument(1);
             f.createNewFile();
             return null;
-        }).when(sftpService).downloadFile(anyString(), any(File.class));
+        }).when(fileStorageService).downloadFile(anyString(), any(File.class));
 
         // Mock decrypt
         doAnswer(inv -> {
@@ -170,8 +181,24 @@ public class BatchScreeningTest {
 
     @Test
     public void testInitiateBatch_Json() throws Exception {
+        // Capture the BatchRun passed to saveBatchRun so findById can return it
+        final BatchRun[] savedRun = {null};
+        when(batchRepository.saveBatchRun(any(BatchRun.class))).thenAnswer(inv -> {
+            savedRun[0] = inv.getArgument(0);
+            return 1L;
+        });
+        when(batchRepository.findById(1L)).thenAnswer(inv -> savedRun[0]);
+
+        // Mock encryption to just copy file (simulate success)
+        doAnswer(invocation -> {
+            File inputFile = invocation.getArgument(0);
+            File outputFile = invocation.getArgument(1);
+            Files.copy(inputFile.toPath(), outputFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            return null;
+        }).when(encryptionService).encryptFile(any(File.class), any(File.class), any(InputStream.class));
+
         // Mock upload
-        doNothing().when(sftpService).uploadFile(any(File.class), anyString());
+        doNothing().when(fileStorageService).uploadFile(any(File.class), anyString());
 
         Client client1 = new Client(1L, null, "John", null, "Doe", null, null, null, null, null, null, null, "Male",
                 null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
@@ -180,7 +207,8 @@ public class BatchScreeningTest {
 
         org.springframework.test.web.servlet.ResultActions result = mockMvc.perform(
                 org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                        .post("/api/screening/batch/initiate")
+                        .post("/api/internal/screening/batch/initiate")
+                        .header("X-Internal-Api-Key", "dev-internal-kyc-key-change-in-prod")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(clients)));
 
@@ -188,8 +216,6 @@ public class BatchScreeningTest {
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                         .string(org.hamcrest.Matchers.matchesPattern("\\d+")));
 
-        // Verify service was called logic is implicitly covered by real service
-        // execution and repository save
         verify(batchRepository).saveBatchRun(any(BatchRun.class));
     }
 }

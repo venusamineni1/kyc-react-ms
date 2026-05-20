@@ -19,7 +19,7 @@ public class BatchRepository {
     }
 
     public Long saveBatchRun(BatchRun run) {
-        String sql = "INSERT INTO BatchRuns (BatchName, RunStatus, NotificationStatus, FeedbackCount, CreatedAt, UpdatedAt, MappingSnapshotID, ClientCount) VALUES (:batchName, :runStatus, :notificationStatus, :feedbackCount, :createdAt, :updatedAt, :mappingSnapshotID, :clientCount)";
+        String sql = "INSERT INTO BatchRuns (BatchName, RunStatus, NotificationStatus, FeedbackCount, CreatedAt, UpdatedAt, MappingSnapshotID, ClientCount, RunGroupId) VALUES (:batchName, :runStatus, :notificationStatus, :feedbackCount, :createdAt, :updatedAt, :mappingSnapshotID, :clientCount, :runGroupId)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcClient.sql(sql)
@@ -31,9 +31,17 @@ public class BatchRepository {
                 .param("updatedAt", run.updatedAt() != null ? run.updatedAt() : LocalDateTime.now())
                 .param("mappingSnapshotID", run.mappingSnapshotID())
                 .param("clientCount", run.clientCount())
+                .param("runGroupId", run.runGroupId())
                 .update(keyHolder);
 
         return extractKey(keyHolder, "BatchID");
+    }
+
+    public List<BatchRun> findByRunGroupId(String runGroupId) {
+        return jdbcClient.sql("SELECT * FROM BatchRuns WHERE RunGroupId = :runGroupId ORDER BY CreatedAt ASC")
+                .param("runGroupId", runGroupId)
+                .query(BatchRun.class)
+                .list();
     }
 
     public void updateBatchStatus(Long batchId, String status, String notificationStatus, Integer feedbackCount) {

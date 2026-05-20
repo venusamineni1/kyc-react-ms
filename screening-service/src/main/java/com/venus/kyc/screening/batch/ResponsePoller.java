@@ -16,7 +16,7 @@ import java.util.List;
 @Service
 public class ResponsePoller {
 
-    private final SftpService sftpService;
+    private final FileStorageService fileStorageService;
     private final EncryptionService encryptionService;
     private final CompressionService compressionService;
 
@@ -32,9 +32,9 @@ public class ResponsePoller {
     @Value("${batch.passphrase:}")
     private String passphrase;
 
-    public ResponsePoller(SftpService sftpService, EncryptionService encryptionService,
+    public ResponsePoller(FileStorageService fileStorageService, EncryptionService encryptionService,
             CompressionService compressionService) {
-        this.sftpService = sftpService;
+        this.fileStorageService = fileStorageService;
         this.encryptionService = encryptionService;
         this.compressionService = compressionService;
     }
@@ -42,7 +42,7 @@ public class ResponsePoller {
     @Scheduled(fixedDelay = 60000) // Poll every minute
     public void pollForResponses() {
         try {
-            List<String> files = sftpService.listFiles(downloadDir);
+            List<String> files = fileStorageService.listFiles(downloadDir);
             for (String filename : files) {
                 if (filename.endsWith(".zip.gpg")) {
                     processFile(filename);
@@ -60,7 +60,7 @@ public class ResponsePoller {
 
         // 1. Download
         File encryptedFile = new File(localWorkDir, filename);
-        sftpService.downloadFile(downloadDir + "/" + filename, encryptedFile);
+        fileStorageService.downloadFile(downloadDir + "/" + filename, encryptedFile);
 
         // 2. Decrypt
         File zipFile = new File(localWorkDir, filename.replace(".gpg", ""));
@@ -81,7 +81,7 @@ public class ResponsePoller {
             }
         }
 
-        // Cleanup? sftpService.deleteFile(downloadDir + "/" + filename);
+        // Cleanup? fileStorageService.deleteFile(downloadDir + "/" + filename);
     }
 
     private void parseAndProcess(File xmlFile) {
