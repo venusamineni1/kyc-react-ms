@@ -98,7 +98,7 @@ const ScreeningCard = ({ title, context, result, onRun }) => {
     );
 };
 
-const ScreeningPanel = ({ clientId, hasPermission }) => {
+const ScreeningPanel = ({ clientId, clientData, hasPermission }) => {
     const { notify } = useNotification();
     const [status, setStatus] = useState('NOT_RUN'); // NOT_RUN, IN_PROGRESS, HIT, NO_HIT
     const [results, setResults] = useState([]); // [{contextType, status, alertMessage}]
@@ -187,9 +187,23 @@ const ScreeningPanel = ({ clientId, hasPermission }) => {
 
     const runScreening = async () => {
         if (!hasPermission) return;
+        if (!clientData) {
+            notify('Client data not loaded', 'error');
+            return;
+        }
         try {
-            const res = await screeningService.initiateScreening(clientId);
-            setCurrentRequestId(res.requestId);
+            // Build screening request with full client details required by NRTS
+            const screeningRequest = {
+                clientId: clientId,
+                firstName: clientData.firstName || '',
+                lastName: clientData.lastName || '',
+                dateOfBirth: clientData.dateOfBirth || '',
+                citizenship: clientData.citizenship || '',
+                statusCheckDelayMs: 0  // Immediate status check
+            };
+
+            const res = await screeningService.initiateScreening(screeningRequest);
+            setCurrentRequestId(res.requestId || res.processId);
             setStatus('IN_PROGRESS');
             setResults([
                 { contextType: 'PEP', status: 'IN_PROGRESS' },

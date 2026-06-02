@@ -448,7 +448,7 @@ const ClientDetails = () => {
                                     })() : <p style={{ padding: '1rem 0', textAlign: 'center', color: '#666', fontSize: '0.85rem' }}>No risk assessments available for this client.</p>}
                                 </section>
 
-                                <ScreeningPanel clientId={id} hasPermission={hasPermission('MANAGE_SCREENING')} />
+                                <ScreeningPanel clientId={id} clientData={client} hasPermission={hasPermission('MANAGE_SCREENING')} />
                             </div>
 
                             <Section title="Tax & Financial Declarations">

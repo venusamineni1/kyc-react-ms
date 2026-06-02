@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { caseService } from '../services/caseService';
+import { clientService } from '../services/clientService';
 import { riskService } from '../services/riskService';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
@@ -34,6 +35,7 @@ const CaseDetails = () => {
     const [riskDetails, setRiskDetails] = useState([]);
     const [myTasks, setMyTasks] = useState([]);
     const [activeTab, setActiveTab] = useState('flow');
+    const [clientData, setClientData] = useState(null);
 
     // Document viewer modal state
     const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
@@ -96,8 +98,16 @@ const CaseDetails = () => {
             setDocs(docsData || []);
             setEvents(eventsData || []);
 
-            // Fetch related cases after getting case details
+            // Fetch related cases and client details after getting case details
             if (caseData.clientID) {
+                try {
+                    // Fetch client details for screening service
+                    const clientDetails = await clientService.getClientDetails(caseData.clientID);
+                    setClientData(clientDetails);
+                } catch (cErr) {
+                    console.error("Failed to fetch client details", cErr);
+                }
+
                 const related = await caseService.getCasesByClient(caseData.clientID);
                 setRelatedCases(related.filter(c => c.caseID !== parseInt(id)));
 
@@ -754,7 +764,7 @@ const CaseDetails = () => {
 
                         <section className="glass-section">
                             <h3 style={{ marginBottom: '0.75rem' }}>Screening Verdicts</h3>
-                            <ScreeningPanel clientId={kycCase.clientID} hasPermission={true} />
+                            <ScreeningPanel clientId={kycCase.clientID} clientData={clientData} hasPermission={true} />
                         </section>
 
                     </div>
