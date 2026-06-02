@@ -146,28 +146,33 @@ public class WorkflowConfigService {
                 .findFirst()
                 .orElse(stages.get(0));
 
-        // Build map: sourceRef plan item ID -> dependent plan item
-        Map<String, PlanItem> dependencyMap = new HashMap<>();
+        // Build map: sourceRef plan item ID -> list of dependent plan items (for conditional sentries)
+        // With escalation, multiple sentries can depend on the same source
+        Map<String, List<PlanItem>> dependencyMap = new HashMap<>();
         for (PlanItem pi : stages) {
             for (Criterion criterion : pi.getEntryCriteria()) {
                 Sentry sentry = sentryMap.get(criterion.getSentryRef());
                 if (sentry != null) {
                     for (SentryOnPart onPart : sentry.getOnParts()) {
                         if ("complete".equals(onPart.getStandardEvent())) {
-                            dependencyMap.put(onPart.getSourceRef(), pi);
+                            String sourceId = onPart.getSourceRef();
+                            dependencyMap.computeIfAbsent(sourceId, k -> new ArrayList<>()).add(pi);
                         }
                     }
                 }
             }
         }
 
-        // Follow the chain from first stage
+        // Follow the chain from first stage, preferring the default flow path
+        // For stages with multiple dependencies (escalations), pick the first one (default flow)
         List<PlanItem> ordered = new ArrayList<>();
         PlanItem current = first;
         Set<String> visited = new HashSet<>();
         while (current != null && visited.add(current.getId())) {
             ordered.add(current);
-            current = dependencyMap.get(current.getId());
+            List<PlanItem> dependents = dependencyMap.get(current.getId());
+            // Pick the first dependent (default flow), skip escalation alternatives
+            current = (dependents != null && !dependents.isEmpty()) ? dependents.get(0) : null;
         }
         return ordered;
     }
