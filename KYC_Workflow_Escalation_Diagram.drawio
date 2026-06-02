@@ -1,0 +1,242 @@
+<mxfile host="app.diagrams.net" modified="2026-06-02" agent="CloudAI" version="24.0.0" type="device">
+  <diagram id="KYC-Workflow-Escalation" name="KYC Workflow with Escalation">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="KYC Case Workflow with Escalation Paths" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="10" width="600" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- START -->
+        <mxCell id="start" value="START" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#4A90E2;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="120" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ANALYST REVIEW -->
+        <mxCell id="analyst" value="Analyst Review&#10;(KYC_ANALYST)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A90E2;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="150" y="105" width="120" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- REVIEWER REVIEW -->
+        <mxCell id="reviewer" value="Reviewer Review&#10;(KYC_REVIEWER)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6366F1;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="105" width="120" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ACO REVIEW -->
+        <mxCell id="aco" value="ACO Review&#10;(ACO_REVIEWER)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9333EA;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="105" width="120" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- AFC REVIEW -->
+        <mxCell id="afc" value="AFC Review&#10;(AFC_REVIEWER)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EC4899;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="105" width="120" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- FINALIZE DECISION -->
+        <mxCell id="finalize" value="FINALIZE&#10;DECISION" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F59E0B;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="990" y="120" width="100" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- APPROVED -->
+        <mxCell id="approved" value="✓ APPROVED&#10;Case Closed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#22C55E;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="60" width="120" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- REJECTED -->
+        <mxCell id="rejected" value="✗ REJECTED&#10;Case Closed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EF4444;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="170" width="120" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- CANCELLED -->
+        <mxCell id="cancelled" value="⊘ CANCELLED&#10;(Analyst Only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="150" y="280" width="120" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ===== PRIMARY FLOW EDGES ===== -->
+        <!-- START → ANALYST -->
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666;strokeWidth=2;" edge="1" parent="1" source="start" target="analyst">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ANALYST → REVIEWER (primary flow) -->
+        <mxCell id="e2" value="SUBMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666;strokeWidth=2;fontSize=10;" edge="1" parent="1" source="analyst" target="reviewer">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="235" y="60" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- REVIEWER → AFC (primary flow) -->
+        <mxCell id="e3" value="SUBMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666;strokeWidth=2;fontSize=10;" edge="1" parent="1" source="reviewer" target="afc">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="470" y="60" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- AFC → ACO (primary flow) -->
+        <mxCell id="e4" value="SUBMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666;strokeWidth=2;fontSize=10;" edge="1" parent="1" source="afc" target="aco">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="880" y="60" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ACO → FINALIZE -->
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666;strokeWidth=2;" edge="1" parent="1" source="aco" target="finalize">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- FINALIZE → APPROVED -->
+        <mxCell id="e6" value="APPROVE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#22C55E;strokeWidth=2;fontSize=10;fontColor=#22C55E;" edge="1" parent="1" source="finalize" target="approved">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- FINALIZE → REJECTED -->
+        <mxCell id="e7" value="REJECT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#EF4444;strokeWidth=2;fontSize=10;fontColor=#EF4444;" edge="1" parent="1" source="finalize" target="rejected">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== ESCALATION PATHS (Dashed Arrows) ===== -->
+
+        <!-- ANALYST → ACO (Regulatory Check) -->
+        <mxCell id="e_escalate_aco_1" value="ESCALATE to ACO&#10;(Regulatory Check)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor:#F59E0B;strokeWidth=2;dashed=1;fontSize=9;" edge="1" parent="1" source="analyst" target="aco">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="300" y="50" as="sourcePoint" />
+            <mxPoint x="500" y="40" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ANALYST → AFC (Challenge Screening Hit) -->
+        <mxCell id="e_escalate_afc_1" value="ESCALATE to AFC&#10;(Challenge Hit)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor:#A855F7;strokeWidth=2;dashed=1;fontSize=9;" edge="1" parent="1" source="analyst" target="afc">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="270" y="80" as="sourcePoint" />
+            <mxPoint x="850" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- REVIEWER → ACO (Risk Assessment) -->
+        <mxCell id="e_escalate_aco_2" value="ESCALATE to ACO&#10;(Risk Assessment)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor:#F59E0B;strokeWidth=2;dashed=1;fontSize=9;" edge="1" parent="1" source="reviewer" target="aco">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="440" y="80" as="sourcePoint" />
+            <mxPoint x="650" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ACO → AFC (Final Approval) -->
+        <mxCell id="e_escalate_afc_2" value="ESCALATE to AFC&#10;(Final Approval)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#A855F7;strokeWidth=2;dashed=1;fontSize=9;" edge="1" parent="1" source="aco" target="afc">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="770" y="100" as="sourcePoint" />
+            <mxPoint x="820" y="100" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== REWORK PATHS (Orange Dashed, going back) ===== -->
+
+        <!-- REVIEWER → ANALYST (Rework) -->
+        <mxCell id="e_rework_reviewer" value="REWORK" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor:#F59E0B;strokeWidth=2;dashed=1;fontSize=10;fontColor:#F59E0B;" edge="1" parent="1" source="reviewer" target="analyst">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="370" y="200" as="sourcePoint" />
+            <mxPoint x="220" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ACO → ANALYST (Rework) -->
+        <mxCell id="e_rework_aco" value="REWORK" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor:#F59E0B;strokeWidth=2;dashed=1;fontSize=10;fontColor:#F59E0B;" edge="1" parent="1" source="aco" target="analyst">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="200" as="sourcePoint" />
+            <mxPoint x="270" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- AFC → ANALYST (Rework) -->
+        <mxCell id="e_rework_afc" value="REWORK" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor:#F59E0B;strokeWidth=2;dashed=1;fontSize=10;fontColor:#F59E0B;" edge="1" parent="1" source="afc" target="analyst">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="880" y="200" as="sourcePoint" />
+            <mxPoint x="270" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== CANCEL PATH (from Analyst only) ===== -->
+        <mxCell id="e_cancel" value="CANCEL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6B7280;strokeWidth=2;dashed=1;fontSize=10;fontColor=#6B7280;" edge="1" parent="1" source="analyst" target="cancelled">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="210" y="200" as="sourcePoint" />
+            <mxPoint x="210" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== LEGEND ===== -->
+        <mxCell id="legend_title" value="Legend" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="380" width="100" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Legend: Primary Flow -->
+        <mxCell id="leg_primary_line" value="" style="line;strokeColor=#666;strokeWidth=2;html=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="410" width="40" height="0" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_primary_text" value="Primary Flow" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="405" width="120" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Legend: Escalation -->
+        <mxCell id="leg_escalate_line" value="" style="line;strokeColor:#F59E0B;strokeWidth=2;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="440" width="40" height="0" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_escalate_text" value="Escalation Path" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="435" width="120" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Legend: Rework -->
+        <mxCell id="leg_rework_line" value="" style="line;strokeColor:#F59E0B;strokeWidth=2;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="470" width="40" height="0" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_rework_text" value="Rework (back to Analyst)" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="465" width="180" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Legend: Cancel -->
+        <mxCell id="leg_cancel_line" value="" style="line;strokeColor=#6B7280;strokeWidth=2;dashed=1;html=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="500" width="40" height="0" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_cancel_text" value="Cancel (Analyst Only)" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="495" width="150" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ===== ESCALATION RULES TABLE ===== -->
+        <mxCell id="rules_title" value="Escalation Rules" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="380" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Rules: Analyst -->
+        <mxCell id="rule_analyst" value="KYC Analyst can escalate to:&#10;  • ACO (Regulatory Check)&#10;  • AFC (Challenge Screening Hit)" style="text;html=1;align=left;verticalAlign=top;resizable=0;points=[];fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="350" y="405" width="280" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Rules: Reviewer -->
+        <mxCell id="rule_reviewer" value="KYC Reviewer can escalate to:&#10;  • ACO (Risk Assessment)" style="text;html=1;align=left;verticalAlign=top;resizable=0;points=[];fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="350" y="465" width="280" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Rules: ACO -->
+        <mxCell id="rule_aco" value="ACO can escalate to:&#10;  • AFC (Final Approval)" style="text;html=1;align=left;verticalAlign=top;resizable=0;points=[];fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="700" y="405" width="280" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Rules: Rework -->
+        <mxCell id="rule_rework" value="Rework:&#10;  • Available from ANY stage&#10;  • Always returns to KYC Analyst&#10;  • Escalation state is cleared" style="text;html=1;align=left;verticalAlign=top;resizable=0;points=[];fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="700" y="450" width="280" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ===== CASE STATUS VALUES ===== -->
+        <mxCell id="status_title" value="Case Status Values" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="540" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="status_values" value="KYC_ANALYST → REVIEWER → ACO → AFC → APPROVED/REJECTED/CANCELLED&#10;&#10;Escalation Variables Tracked:&#10;  • escalationLevel: 0 (none), 1+ (escalated)&#10;  • escalationPath: JSON array with full history&#10;  • escalationReason: Why the escalation occurred&#10;  • escalationInitiator: User who initiated escalation" style="text;html=1;align=left;verticalAlign=top;resizable=0;points=[];fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="50" y="560" width="1300" height="70" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
