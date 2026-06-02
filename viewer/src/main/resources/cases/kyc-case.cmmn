@@ -9,20 +9,23 @@
 
     <case id="kycCase" name="KYC Case Management (CMMN)">
         <casePlanModel id="kycCasePlanModel" name="KYC Case">
-            
-            <!-- Standard Plan Items -->
+
+            <!-- Standard Plan Items with Conditional Routing -->
             <planItem id="pi_analystReview" name="Analyst Review" definitionRef="ht_analystReview"/>
-            
+
+            <!-- KYC Reviewer: Activates when analyst completes AND nextStage == 'REVIEWER' -->
             <planItem id="pi_reviewerReview" name="Reviewer Review" definitionRef="ht_reviewerReview">
-                <entryCriterion id="ec_reviewer" sentryRef="sentry_analystComplete"/>
+                <entryCriterion id="ec_reviewer" sentryRef="sentry_escalationToReviewer"/>
             </planItem>
 
-            <planItem id="pi_afcStandardReview" name="AFC Review (Standard)" definitionRef="ht_afcStandardReview">
-                <entryCriterion id="ec_afcStandard" sentryRef="sentry_reviewerComplete"/>
+            <!-- ACO Reviewer: Activates when analyst/reviewer completes AND nextStage == 'ACO' -->
+            <planItem id="pi_acoReview" name="ACO Review" definitionRef="ht_acoReview">
+                <entryCriterion id="ec_aco" sentryRef="sentry_escalationToACO"/>
             </planItem>
 
-            <planItem id="pi_acoReview" name="ACO Final Review" definitionRef="ht_acoReview">
-                <entryCriterion id="ec_aco" sentryRef="sentry_afcComplete"/>
+            <!-- AFC Reviewer: Activates when analyst/reviewer/aco completes AND nextStage == 'AFC' -->
+            <planItem id="pi_afcStandardReview" name="AFC Review" definitionRef="ht_afcStandardReview">
+                <entryCriterion id="ec_afcStandard" sentryRef="sentry_escalationToAFC"/>
             </planItem>
 
             <!-- Discretionary Plan Items -->
@@ -41,23 +44,45 @@
                 <entryCriterion id="ec_evtOverride" sentryRef="sentry_evtOverride" />
             </planItem>
 
-            <!-- Sentries -->
-            <sentry id="sentry_analystComplete">
-                <planItemOnPart id="onPart_analystComplete" sourceRef="pi_analystReview">
+            <!-- Conditional Sentries for Task Routing -->
+
+            <!-- Analyst → Reviewer: Activates when analyst completes AND nextStage == 'REVIEWER' -->
+            <sentry id="sentry_escalationToReviewer">
+                <planItemOnPart id="onPart_analystToReviewer" sourceRef="pi_analystReview">
                     <standardEvent>complete</standardEvent>
                 </planItemOnPart>
+                <ifPart>
+                    <condition><![CDATA[${nextStage == 'REVIEWER'}]]></condition>
+                </ifPart>
             </sentry>
 
-            <sentry id="sentry_reviewerComplete">
-                <planItemOnPart id="onPart_reviewerComplete" sourceRef="pi_reviewerReview">
+            <!-- Analyst/Reviewer → ACO: Activates when analyst/reviewer completes AND nextStage == 'ACO' -->
+            <sentry id="sentry_escalationToACO">
+                <planItemOnPart id="onPart_escalationToACO_1" sourceRef="pi_analystReview">
                     <standardEvent>complete</standardEvent>
                 </planItemOnPart>
+                <planItemOnPart id="onPart_escalationToACO_2" sourceRef="pi_reviewerReview">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+                <ifPart>
+                    <condition><![CDATA[${nextStage == 'ACO'}]]></condition>
+                </ifPart>
             </sentry>
 
-            <sentry id="sentry_afcComplete">
-                <planItemOnPart id="onPart_afcComplete" sourceRef="pi_afcStandardReview">
+            <!-- Analyst/Reviewer/ACO → AFC: Activates when any stage completes AND nextStage == 'AFC' -->
+            <sentry id="sentry_escalationToAFC">
+                <planItemOnPart id="onPart_escalationToAFC_1" sourceRef="pi_analystReview">
                     <standardEvent>complete</standardEvent>
                 </planItemOnPart>
+                <planItemOnPart id="onPart_escalationToAFC_2" sourceRef="pi_reviewerReview">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+                <planItemOnPart id="onPart_escalationToAFC_3" sourceRef="pi_acoReview">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+                <ifPart>
+                    <condition><![CDATA[${nextStage == 'AFC'}]]></condition>
+                </ifPart>
             </sentry>
 
             <sentry id="sentry_evtComm">

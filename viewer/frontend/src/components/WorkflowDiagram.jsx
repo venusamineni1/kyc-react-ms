@@ -113,6 +113,11 @@ const WorkflowDiagram = ({ config }) => {
     const M_REWORK = `ar-${uid}`;
     const M_CANCEL = `ac-${uid}`;
     const M_DISC   = `ad-${uid}`;
+    const M_ESCAL  = `ae-${uid}`;
+
+    // Escalation colors
+    const C_ESCAL_ORANGE = '#f59e0b';
+    const C_ESCAL_PURPLE = '#a855f7';
 
     const marker = (id, color) => (
         <marker key={id} id={id} markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
@@ -135,6 +140,7 @@ const WorkflowDiagram = ({ config }) => {
                     {marker(M_REWORK, C_REWORK)}
                     {marker(M_CANCEL, C_CANCEL)}
                     {marker(M_DISC,   C_DISC)}
+                    {marker(M_ESCAL,  C_ESCAL_ORANGE)}
                     <filter id={`sh-${uid}`} x="-10%" y="-10%" width="120%" height="120%">
                         <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.4)" />
                     </filter>
@@ -199,6 +205,53 @@ const WorkflowDiagram = ({ config }) => {
                 <line x1={stageLeft(N - 1) + BOX_W} y1={MAIN_Y}
                     x2={diamCX - DIAM_W / 2 - 4} y2={MAIN_Y}
                     stroke={C_ARROW} strokeWidth="1.5" markerEnd={`url(#${M_MAIN})`} />
+
+                {/* ── Escalation arrows ── */}
+                {N >= 3 && (
+                    <g>
+                        {/* Analyst → ACO (stage 0 → stage 2) */}
+                        <path
+                            d={`M ${stageCX(0)} ${MAIN_Y - BOX_H / 2}
+                                Q ${stageCX(1.5)} ${MAIN_Y - 80}
+                                  ${stageCX(2)} ${MAIN_Y - BOX_H / 2 - 20}`}
+                            fill="none" stroke={C_ESCAL_ORANGE} strokeWidth="2"
+                            strokeDasharray="5 5" markerEnd={`url(#${M_ESCAL})`} />
+                        <text x={stageCX(1)} y={MAIN_Y - 85} textAnchor="middle"
+                            fontSize="8" fill={C_ESCAL_ORANGE} fontWeight="600">
+                            escalate
+                        </text>
+
+                        {/* Reviewer → ACO (stage 1 → stage 2) if enough stages */}
+                        {N >= 4 && (
+                            <path
+                                d={`M ${stageCX(1)} ${MAIN_Y - BOX_H / 2}
+                                    Q ${stageCX(1.5)} ${MAIN_Y - 55}
+                                      ${stageCX(2)} ${MAIN_Y - BOX_H / 2 - 15}`}
+                                fill="none" stroke={C_ESCAL_ORANGE} strokeWidth="2"
+                                strokeDasharray="5 5" markerEnd={`url(#${M_ESCAL})`} />
+                        )}
+
+                        {/* ACO → AFC (stage 2 → stage 3) if ACO exists */}
+                        {N >= 4 && (
+                            <path
+                                d={`M ${stageCX(2)} ${MAIN_Y + BOX_H / 2}
+                                    Q ${stageCX(2.5)} ${MAIN_Y + 60}
+                                      ${stageCX(3)} ${MAIN_Y + BOX_H / 2 + 18}`}
+                                fill="none" stroke={C_ESCAL_PURPLE} strokeWidth="2"
+                                strokeDasharray="5 5" markerEnd={`url(#${M_ESCAL})`} />
+                        )}
+
+                        {/* Analyst → AFC (stage 0 → stage 3) if AFC exists */}
+                        {N >= 4 && (
+                            <path
+                                d={`M ${stageCX(0)} ${MAIN_Y + BOX_H / 2}
+                                    Q ${stageCX(1.5)} ${MAIN_Y + 95}
+                                      ${stageCX(3)} ${MAIN_Y + BOX_H / 2 + 20}`}
+                                fill="none" stroke={C_ESCAL_PURPLE} strokeWidth="2"
+                                strokeDasharray="5 5" markerEnd={`url(#${M_ESCAL})`} />
+                        )}
+                    </g>
+                )}
 
                 {/* ── Decision diamond ── */}
                 <polygon points={diamondPoints(diamCX, diamCY, DIAM_W, DIAM_H)}
@@ -452,6 +505,7 @@ const WorkflowDiagram = ({ config }) => {
                     { color: '#ef4444', label: 'Rejected outcome' },
                     { color: '#f59e0b', label: 'Rework → Analyst', dashed: true },
                     { color: '#6b7280', label: 'Cancel (Analyst only)', dashed: true },
+                    { color: '#f59e0b', label: 'Escalate (manual routing)', dashed: true },
                     ...(enabledActions.length > 0 ? [{ color: '#8b5cf6', label: 'Discretionary action', dashed: true }] : []),
                 ].map(({ color, label, dashed }) => (
                     <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>

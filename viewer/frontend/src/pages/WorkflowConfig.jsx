@@ -11,6 +11,19 @@ const AVAILABLE_ROLES = [
     { value: 'ROLE_ACO_REVIEWER', label: 'ACO Reviewer' },
 ];
 
+const ESCALATION_PATHS = [
+    { from: 'ROLE_KYC_ANALYST', to: 'ACO', reason: 'Regulatory Check' },
+    { from: 'ROLE_KYC_ANALYST', to: 'AFC', reason: 'Challenge Screening Hit' },
+    { from: 'ROLE_KYC_REVIEWER', to: 'ACO', reason: 'Risk Assessment' },
+    { from: 'ROLE_ACO_REVIEWER', to: 'AFC', reason: 'Final Approval' },
+];
+
+const formatRole = (roleKey) => {
+    const role = AVAILABLE_ROLES.find(r => r.value === roleKey);
+    if (role) return role.label;
+    return roleKey.replace('ROLE_', '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
 const WorkflowConfig = () => {
     const { notify } = useNotification();
     const [config, setConfig] = useState(null);
@@ -178,6 +191,32 @@ const WorkflowConfig = () => {
                         <WorkflowDiagram config={config} />
                     </div>
                 )}
+            </section>
+
+            {/* Escalation Paths */}
+            <section style={{ marginBottom: '2rem' }}>
+                <h3 style={{ marginBottom: '1rem' }}>Escalation Paths</h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                    Valid escalation routes between stages. Cases follow the main sequential flow by default, but can be escalated to higher authorities when needed.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {ESCALATION_PATHS.map((path, idx) => (
+                        <div key={idx} style={{
+                            display: 'grid', gridTemplateColumns: '1fr auto 1fr auto',
+                            gap: '1rem', alignItems: 'center',
+                            background: 'var(--hover-bg)', border: '1px solid var(--glass-border)',
+                            borderRadius: '6px', padding: '0.75rem 1rem'
+                        }}>
+                            <strong>{formatRole(path.from)}</strong>
+                            <span style={{ color: 'var(--primary-color)', fontSize: '1.2rem', textAlign: 'center' }}>→</span>
+                            <strong>{formatRole(path.to)}</strong>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+                                {path.reason}
+                            </span>
+                        </div>
+                    ))}
+                </div>
             </section>
 
             {/* Sequential Stages */}

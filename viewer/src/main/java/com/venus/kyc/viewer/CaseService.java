@@ -52,10 +52,15 @@ public class CaseService {
 
     @Transactional
     public Long createCase(Long clientID, String reason, String userId) {
-        // Start Flowable CMMN Case
+        // Start Flowable CMMN Case with routing variables
         Map<String, Object> variables = new HashMap<>();
         variables.put("clientID", clientID);
         variables.put("initiator", userId);
+        variables.put("nextStage", "REVIEWER");           // Default: flow to reviewer
+        variables.put("escalationLevel", 0);              // No escalation initially
+        variables.put("escalationPath", new ArrayList<>()); // Track escalation history
+        variables.put("escalationReason", null);
+        variables.put("escalationInitiator", null);
 
         CaseInstance caseInstance = cmmnRuntimeService.createCaseInstanceBuilder()
                 .caseDefinitionKey("kycCase")
@@ -205,6 +210,85 @@ public class CaseService {
         cmmnTaskService.setAssignee(taskId, assignee);
     }
 
+    /**
+     * Escalate case to a higher authority (ACO or AFC).
+     * Validates the escalation is allowed from current stage, tracks the escalation path,
+     * and completes current task to trigger conditional sentry evaluation.
+     */
+    @Transactional
+    public void escalateCase(Long caseId, String targetRole, String userId, String reason) {
+        Case c = caseRepository.findById(caseId)
+                .orElseThrow(() -> new IllegalArgumentException("Case not found: " + caseId));
+
+        String caseInstanceId = c.instanceID();
+        if (caseInstanceId == null || caseInstanceId.isEmpty()) {
+            throw new IllegalStateException("Case has no active workflow instance");
+        }
+
+        // Validate escalation path
+        String currentStage = c.status();
+        validateEscalationPath(currentStage, targetRole);
+
+        // Get current escalation path
+        Object pathObj = cmmnRuntimeService.getVariable(caseInstanceId, "escalationPath");
+        List<Map<String, String>> escalationPath = new ArrayList<>();
+        if (pathObj != null) {
+            escalationPath = (List<Map<String, String>>) pathObj;
+        }
+
+        // Record escalation event
+        Map<String, String> escalationEvent = new HashMap<>();
+        escalationEvent.put("from", currentStage);
+        escalationEvent.put("to", targetRole);
+        escalationEvent.put("reason", reason != null ? reason : "");
+        escalationEvent.put("initiator", userId);
+        escalationEvent.put("timestamp", java.time.Instant.now().toString());
+        escalationPath.add(escalationEvent);
+
+        // Update CMMN variables to route to target stage
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("nextStage", targetRole);
+        variables.put("escalationLevel", escalationPath.size());
+        variables.put("escalationPath", escalationPath);
+        variables.put("escalationReason", reason);
+        variables.put("escalationInitiator", userId);
+        cmmnRuntimeService.setVariables(caseInstanceId, variables);
+
+        // Complete current task to trigger conditional sentries
+        List<Task> tasks = cmmnTaskService.createTaskQuery()
+                .caseInstanceId(caseInstanceId)
+                .active()
+                .list();
+        if (!tasks.isEmpty()) {
+            cmmnTaskService.complete(tasks.get(0).getId());
+        }
+
+        // Audit logging
+        caseRepository.addComment(caseId, userId,
+                "ESCALATE: Escalated to " + targetRole + (reason != null ? " (" + reason + ")" : ""), "SYSTEM");
+    }
+
+    /**
+     * Validates that escalation from one stage to another is allowed.
+     * Rules:
+     * - KYC_ANALYST can escalate to ACO or AFC
+     * - KYC_REVIEWER can escalate to ACO
+     * - ACO can escalate to AFC
+     */
+    private void validateEscalationPath(String fromStage, String toStage) {
+        boolean valid = switch (fromStage) {
+            case "KYC_ANALYST" -> "ACO".equals(toStage) || "AFC".equals(toStage);
+            case "KYC_REVIEWER" -> "ACO".equals(toStage);
+            case "ACO" -> "AFC".equals(toStage);
+            default -> false;
+        };
+
+        if (!valid) {
+            throw new IllegalStateException(
+                    "Cannot escalate from " + fromStage + " to " + toStage);
+        }
+    }
+
     @Transactional
     public void completeTask(String taskId, String userId) {
         completeTask(taskId, userId, null);
@@ -243,24 +327,55 @@ public class CaseService {
             // cmmnTaskService.setAssignee(task.getId(), userId);
         }
 
+        // Handle escalation actions before completing the task
+        if ("ESCALATE_ACO".equalsIgnoreCase(action)) {
+            escalateCase(caseId, "ACO", userId, "Manual escalation to ACO");
+            return;
+        } else if ("ESCALATE_AFC".equalsIgnoreCase(action)) {
+            escalateCase(caseId, "AFC", userId, "Challenge screening hit");
+            return;
+        }
+
         cmmnTaskService.complete(task.getId());
 
-        // Determine next status: any stage can FINALIZE (approve/reject) or SUBMIT to next stage
+        // Determine routing based on action
         String taskKey = task.getTaskDefinitionKey();
         String nextStatus;
+        Map<String, Object> routingVars = new HashMap<>();
 
         if ("APPROVE".equalsIgnoreCase(action)) {
             nextStatus = "APPROVED";
         } else if ("REJECT".equalsIgnoreCase(action)) {
             nextStatus = "REJECTED";
         } else {
-            // SUBMIT — advance to the next stage
+            // SUBMIT — determine next stage and set nextStage variable for conditional sentry routing
             nextStatus = switch (taskKey) {
-                case "ht_analystReview"    -> "REVIEWER_REVIEW";
-                case "ht_reviewerReview"   -> "AFC_REVIEW";
-                case "ht_afcStandardReview"-> "ACO_REVIEW";
-                default                    -> "PROCESSING";
+                case "ht_analystReview" -> {
+                    routingVars.put("nextStage", "REVIEWER");
+                    yield "REVIEWER";
+                }
+                case "ht_reviewerReview" -> {
+                    routingVars.put("nextStage", "AFC");
+                    yield "AFC";
+                }
+                case "ht_acoReview" -> {
+                    routingVars.put("nextStage", "AFC");
+                    yield "AFC";
+                }
+                case "ht_afcStandardReview" -> {
+                    routingVars.put("nextStage", "FINALIZED");
+                    yield "FINALIZED";
+                }
+                default -> {
+                    routingVars.put("nextStage", "PROCESSING");
+                    yield "PROCESSING";
+                }
             };
+
+            // Set routing variables to trigger conditional sentries
+            if (!routingVars.isEmpty()) {
+                cmmnRuntimeService.setVariables(caseInstanceId, routingVars);
+            }
         }
 
         caseRepository.updateStatus(caseId, nextStatus, null);
@@ -273,8 +388,8 @@ public class CaseService {
 
     /**
      * Rework: terminate the current CMMN instance and start a fresh one,
-     * resetting the case to Analyst Review. DB comments/documents are preserved.
-     * A mandatory rework comment must be passed by the caller before invoking this.
+     * resetting the case to Analyst Review. Escalation variables are cleared.
+     * DB comments/documents are preserved. A mandatory rework comment must be passed by the caller before invoking this.
      */
     @Transactional
     public void reworkCase(Long caseId, String userId) {
@@ -293,11 +408,16 @@ public class CaseService {
         // Terminate existing instance
         cmmnRuntimeService.terminateCaseInstance(oldInstanceId);
 
-        // Start a fresh instance
+        // Start a fresh instance with reset escalation variables
         Map<String, Object> variables = new HashMap<>();
         variables.put("clientID", clientIdObj);
         variables.put("initiator", initiatorObj != null ? initiatorObj : userId);
         variables.put("caseId", caseId);
+        variables.put("nextStage", "REVIEWER");           // Reset to normal flow after rework
+        variables.put("escalationLevel", 0);              // Clear escalation
+        variables.put("escalationPath", new ArrayList<>()); // Reset escalation path
+        variables.put("escalationReason", null);
+        variables.put("escalationInitiator", null);
 
         CaseInstance newInstance = cmmnRuntimeService.createCaseInstanceBuilder()
                 .caseDefinitionKey("kycCase")
@@ -354,11 +474,16 @@ public class CaseService {
             return; // Already has an instance
         }
 
-        // Start Flowable CMMN Case
+        // Start Flowable CMMN Case with escalation variables
         Map<String, Object> variables = new HashMap<>();
         variables.put("clientID", clientId);
         variables.put("initiator", userId);
         variables.put("caseId", caseId); // Important for reverse lookup
+        variables.put("nextStage", "REVIEWER");
+        variables.put("escalationLevel", 0);
+        variables.put("escalationPath", new ArrayList<>());
+        variables.put("escalationReason", null);
+        variables.put("escalationInitiator", null);
 
         CaseInstance caseInstance = cmmnRuntimeService.createCaseInstanceBuilder()
                 .caseDefinitionKey("kycCase")

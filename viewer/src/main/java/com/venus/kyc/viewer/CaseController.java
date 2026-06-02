@@ -227,7 +227,7 @@ public class CaseController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Transition case", description = "Completes the current workflow task to advance the case to the next stage and adds optional comments")
+    @Operation(summary = "Transition case", description = "Completes the current workflow task to advance the case to the next stage and adds optional comments. Supports regular transitions (APPROVE/REJECT/SUBMIT) and escalations (ESCALATE_ACO/ESCALATE_AFC).")
     @PostMapping("/{id}/transition")
     public ResponseEntity<Void> transitionCase(@Parameter(description = "Case ID") @PathVariable Long id,
             @RequestBody Map<String, String> request,
@@ -237,6 +237,27 @@ public class CaseController {
         List<String> groups = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
+
+        String comment = request.get("comment");
+        String action = request.get("action");
+
+        // Handle escalation actions through separate endpoint
+        if ("ESCALATE_ACO".equals(action) || "ESCALATE_AFC".equals(action)) {
+            try {
+                String targetRole = "ESCALATE_ACO".equals(action) ? "ACO" : "AFC";
+                String reason = request.get("reason");
+                caseService.escalateCase(id, targetRole, authentication.getName(), reason != null ? reason : "");
+                if (comment != null && !comment.isBlank()) {
+                    caseRepository.addComment(id, authentication.getName(), comment, role);
+                }
+                userAuditService.log(authentication.getName(), "ESCALATE_CASE", "Escalated case " + id + " to " + targetRole);
+                return ResponseEntity.ok().build();
+            } catch (IllegalStateException e) {
+                return ResponseEntity.badRequest().build();
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.notFound().build();
+            }
+        }
 
         List<Map<String, Object>> tasks = caseService.getUserTasks(authentication.getName(), groups);
 
@@ -254,8 +275,6 @@ public class CaseController {
             return ResponseEntity.status(404).build();
         }
 
-        String comment = request.get("comment");
-        String action = request.get("action");
         if (comment != null) {
             caseRepository.addComment(id, authentication.getName(), comment, role);
         }
@@ -273,6 +292,33 @@ public class CaseController {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Escalate case", description = "Escalates case to a higher authority (ACO or AFC). KYC Analyst can escalate to ACO or AFC, KYC Reviewer can escalate to ACO, and ACO can escalate to AFC.")
+    @PostMapping("/{id}/escalate")
+    public ResponseEntity<Void> escalateCase(@Parameter(description = "Case ID") @PathVariable Long id,
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        String targetRole = request.get("targetRole"); // "ACO" or "AFC"
+        String reason = request.get("reason");          // Optional reason for escalation
+
+        if (targetRole == null || targetRole.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            caseService.escalateCase(id, targetRole, authentication.getName(), reason != null ? reason : "");
+            String role = getUserRole(authentication);
+            caseRepository.addComment(id, authentication.getName(),
+                "ESCALATE: Case escalated to " + targetRole + (reason != null ? " (" + reason + ")" : ""), role);
+            userAuditService.log(authentication.getName(), "ESCALATE_CASE",
+                "Escalated case " + id + " to " + targetRole);
+            return ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @Operation(summary = "Rework case", description = "Terminates the current workflow instance and restarts from Analyst Review. Requires a mandatory comment explaining the reason.")
