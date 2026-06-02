@@ -13,7 +13,7 @@ export const screeningService = {
      * @returns {Promise<Object>} {result, processId, reqId, alertContexts}
      */
     async initiateScreening(clientDetails) {
-        return apiClient.post('/api/internal/screening/initiate', clientDetails);
+        return apiClient.post('/internal/screening/initiate', clientDetails);
     },
 
     /**
@@ -22,7 +22,7 @@ export const screeningService = {
      * @returns {Promise<Object>} {requestId, overallStatus, finalized, reqId, results}
      */
     async getScreeningStatus(processId) {
-        return apiClient.get(`/api/internal/screening/status/${processId}`);
+        return apiClient.get(`/internal/screening/status/${processId}`);
     },
 
     /**
@@ -31,6 +31,6 @@ export const screeningService = {
      * @returns {Promise<Array>} Array of screening logs
      */
     async getHistory(clientId) {
-        return apiClient.get(`/api/internal/screening/history/${clientId}`);
+        return apiClient.get(`/internal/screening/history/${clientId}`);
     }
 };
