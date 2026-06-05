@@ -13,8 +13,10 @@ public class ScreeningDTOs {
         }
 
         public record InitiateScreeningResponse(
-                        boolean hit,
-                        String requestId) {
+                        String result,
+                        String processId,
+                        String reqId,
+                        List<Object> alertContexts) {
         }
 
         public record ScreeningStatusResponse(
