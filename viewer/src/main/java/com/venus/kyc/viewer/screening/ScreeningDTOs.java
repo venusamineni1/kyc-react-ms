@@ -21,6 +21,9 @@ public class ScreeningDTOs {
 
         public record ScreeningStatusResponse(
                         String requestId,
+                        String overallStatus,
+                        boolean finalized,
+                        String reqId,
                         List<ContextResult> results) {
         }
 
