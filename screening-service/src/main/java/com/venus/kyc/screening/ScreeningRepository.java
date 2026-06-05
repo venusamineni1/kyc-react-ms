@@ -23,8 +23,8 @@ public class ScreeningRepository {
     public Long saveLog(ScreeningLog log) {
         String sql = """
                 INSERT INTO ScreeningLogs
-                  (ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, CreatedAt)
-                VALUES (:clientId, :requestPayload, :responsePayload, :overallStatus, :externalRequestID, :createdAt)
+                  (ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, CreatedAt, NrtsProcessId)
+                VALUES (:clientId, :requestPayload, :responsePayload, :overallStatus, :externalRequestID, :createdAt, :nrtsProcessId)
                 """;
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -35,6 +35,7 @@ public class ScreeningRepository {
                 .param("overallStatus", log.overallStatus())
                 .param("externalRequestID", log.externalRequestID())
                 .param("createdAt", log.createdAt() != null ? log.createdAt() : LocalDateTime.now())
+                .param("nrtsProcessId", log.nrtsProcessId())
                 .update(keyHolder);
 
         return extractKey(keyHolder, "LOGID");
