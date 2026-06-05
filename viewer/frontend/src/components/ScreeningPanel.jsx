@@ -139,16 +139,29 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission }) => {
                     const sorted = log.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                     const latest = sorted[0];
 
-                    const reqId = latest.externalRequestID || latest.externalRequestId;
+                    const externalId = latest.externalRequestID || latest.externalRequestId;
+                    const processId = latest.nrtsProcessId;
+
                     if (latest.overallStatus === 'COMPLETED' || latest.overallStatus === 'HIT' || latest.overallStatus === 'NO_HIT' || latest.overallStatus === 'CLEAR') {
-                        if (reqId) {
-                            await checkStatus(reqId, true);
+                        // Check if this is a No-Hit result (no processId)
+                        if (externalId && externalId.toString().startsWith('NO_HIT_')) {
+                            // For No-Hit results, create synthetic response
+                            setResults([
+                                { contextType: 'PEP', status: 'NO_HIT' },
+                                { contextType: 'ADM', status: 'NO_HIT' },
+                                { contextType: 'INT', status: 'NO_HIT' },
+                                { contextType: 'SAN', status: 'NO_HIT' }
+                            ]);
+                            setStatus('NO_HIT');
+                        } else if (processId) {
+                            // For Hot results with processId, query status
+                            await checkStatus(processId, true);
                         }
                     } else if (latest.overallStatus === 'IN_PROGRESS') {
-                        if (reqId) {
-                            setCurrentRequestId(reqId);
+                        if (processId) {
+                            setCurrentRequestId(processId);
                             setStatus('IN_PROGRESS');
-                            await checkStatus(reqId, true);
+                            await checkStatus(processId, true);
                         }
                     }
                 }
