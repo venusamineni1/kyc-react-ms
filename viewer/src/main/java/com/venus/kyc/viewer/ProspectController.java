@@ -76,7 +76,7 @@ public class ProspectController {
             clientRepository.updateClientStatus(clientId, "SCREENING_IN_PROGRESS");
             userAuditService.log(username, "ONBOARDING_SCREENING", "Screening in progress for client: " + clientId);
             var screeningResponse = screeningService.initiateScreening(clientId);
-            boolean isHit = screeningResponse.result() != null && screeningResponse.result().equalsIgnoreCase("Hit");
+            boolean isHit = screeningResponse.result() != null && screeningResponse.result().equalsIgnoreCase("Hot");
 
             // 3. Trigger Risk
             clientRepository.updateClientStatus(clientId, "RISK_EVALUATION_IN_PROGRESS");
