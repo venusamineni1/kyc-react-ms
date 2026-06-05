@@ -203,7 +203,8 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission }) => {
             };
 
             const res = await screeningService.initiateScreening(screeningRequest);
-            setCurrentRequestId(res.requestId || res.processId);
+            const requestId = res.reqId || res.requestId || res.processId;
+            setCurrentRequestId(requestId);
             setStatus('IN_PROGRESS');
             setResults([
                 { contextType: 'PEP', status: 'IN_PROGRESS' },
