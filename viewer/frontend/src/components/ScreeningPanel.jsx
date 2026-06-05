@@ -203,6 +203,21 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission }) => {
             };
 
             const res = await screeningService.initiateScreening(screeningRequest);
+
+            // Handle No-Hit results (no polling needed)
+            if (res.result === 'No-Hit') {
+                setResults([
+                    { contextType: 'PEP', status: 'NO_HIT' },
+                    { contextType: 'ADM', status: 'NO_HIT' },
+                    { contextType: 'INT', status: 'NO_HIT' },
+                    { contextType: 'SAN', status: 'NO_HIT' }
+                ]);
+                setStatus('NO_HIT');
+                notify('Screening Completed: No Hits', 'success');
+                return;
+            }
+
+            // Handle Hot results (need polling)
             const requestId = res.reqId || res.requestId || res.processId;
             setCurrentRequestId(requestId);
             setStatus('IN_PROGRESS');
@@ -212,7 +227,7 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission }) => {
                 { contextType: 'INT', status: 'IN_PROGRESS' },
                 { contextType: 'SAN', status: 'IN_PROGRESS' }
             ]);
-            notify('Screening Initiated', 'info');
+            notify('Screening Initiated - Analyzing Results...', 'info');
         } catch (e) {
             notify('Failed to start screening: ' + e.message, 'error');
             setStatus('NOT_RUN');
