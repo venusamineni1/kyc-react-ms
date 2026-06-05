@@ -13,7 +13,8 @@ export const screeningService = {
      * @returns {Promise<Object>} {result, processId, reqId, alertContexts}
      */
     async initiateScreening(clientDetails) {
-        return apiClient.post('/screening/initiate', clientDetails);
+        const clientId = clientDetails.clientId;
+        return apiClient.post(`/screening/initiate/${clientId}`, clientDetails);
     },
 
     /**
