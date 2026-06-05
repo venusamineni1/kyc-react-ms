@@ -175,8 +175,27 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission }) => {
         setAnalyzeModalOpen(true);
         setLoadingAnalyze(true);
         try {
-            const res = await screeningService.getScreeningStatus(reqId);
-            setAnalyzeResult(res);
+            // Check if this is a No-Hit result (externalRequestID starts with NO_HIT_)
+            if (reqId && reqId.toString().startsWith('NO_HIT_')) {
+                // For No-Hit results, create a synthetic response with all NO_HIT status
+                const syntheticResponse = {
+                    requestId: reqId,
+                    overallStatus: 'No Hits',
+                    finalized: true,
+                    reqId: null,
+                    results: [
+                        { contextType: 'PEP', status: 'NO_HIT', alertMessage: null },
+                        { contextType: 'ADM', status: 'NO_HIT', alertMessage: null },
+                        { contextType: 'INT', status: 'NO_HIT', alertMessage: null },
+                        { contextType: 'SAN', status: 'NO_HIT', alertMessage: null }
+                    ]
+                };
+                setAnalyzeResult(syntheticResponse);
+            } else {
+                // For Hot results with actual processId, query the status endpoint
+                const res = await screeningService.getScreeningStatus(reqId);
+                setAnalyzeResult(res);
+            }
         } catch (e) {
             notify('Failed to load screening analysis details', 'error');
             setAnalyzeModalOpen(false);
