@@ -3,6 +3,9 @@ package com.venus.kyc.viewer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.venus.kyc.viewer.client.KycOrchestrationClient;
+import com.venus.kyc.viewer.risk.RiskAssessmentRepository;
+import com.venus.kyc.viewer.risk.RiskAssessmentLog;
+import com.venus.kyc.viewer.risk.RiskAssessment;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,18 +29,21 @@ public class ProspectController {
     private final KycOrchestrationClient kycOrchestrationClient;
     private final CaseService caseService;
     private final DocumentService documentService;
+    private final RiskAssessmentRepository riskAssessmentRepository;
     private final ObjectMapper objectMapper;
 
     public ProspectController(ClientRepository clientRepository,
                               UserAuditService userAuditService,
                               KycOrchestrationClient kycOrchestrationClient,
                               CaseService caseService,
-                              DocumentService documentService) {
+                              DocumentService documentService,
+                              RiskAssessmentRepository riskAssessmentRepository) {
         this.clientRepository = clientRepository;
         this.userAuditService = userAuditService;
         this.kycOrchestrationClient = kycOrchestrationClient;
         this.caseService = caseService;
         this.documentService = documentService;
+        this.riskAssessmentRepository = riskAssessmentRepository;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
     }
@@ -77,6 +83,38 @@ public class ProspectController {
             // with proper PII encryption, audit trail, and soft-fail strategies
             KycOrchestrationClient.KycPrecheckRequest orchRequest = buildOrchestrationRequest(clientId, incomingClient);
             KycOrchestrationClient.KycPrecheckResponse orchResponse = kycOrchestrationClient.initiatePrecheck(orchRequest);
+
+            // Store precheck results as first entry in risk assessment history
+            try {
+                String orchRequestJson = objectMapper.writeValueAsString(orchRequest);
+                String orchResponseJson = objectMapper.writeValueAsString(orchResponse);
+
+                RiskAssessmentLog riskLog = new RiskAssessmentLog(
+                    null, // logID will be auto-generated
+                    orchRequestJson,
+                    orchResponseJson,
+                    "COMPLETED",
+                    java.time.LocalDateTime.now()
+                );
+                Long logId = riskAssessmentRepository.saveLog(riskLog);
+
+                // Save the risk assessment details from orchestration
+                RiskAssessment riskAssessment = new RiskAssessment(
+                    null, // assessmentID will be auto-generated
+                    logId,
+                    "PRECHECK-" + clientId,
+                    convertRiskRatingToScore(orchResponse.getRiskRating()),
+                    orchResponse.getRiskRating(),
+                    orchResponse.getRiskRating(),
+                    "KYC_ORCHESTRATION_PRECHECK",
+                    "Automated precheck from KYC orchestration service",
+                    java.time.LocalDateTime.now()
+                );
+                riskAssessmentRepository.saveAssessment(riskAssessment);
+            } catch (Exception e) {
+                logger.warn("Failed to persist precheck results to risk assessment history", e);
+                // Continue anyway - this is not a blocking error
+            }
 
             userAuditService.log(username, "ONBOARDING_KYC_ORCHESTRATION",
                 "KYC orchestration completed for client: " + clientId + " - Status: " + orchResponse.getKycStatus());
@@ -193,5 +231,20 @@ public class ProspectController {
         }
 
         return request;
+    }
+
+    /**
+     * Convert risk rating to numerical score for storage.
+     * Maps semantic risk levels to numerical scores.
+     */
+    private int convertRiskRatingToScore(String riskRating) {
+        if (riskRating == null) return 0;
+        return switch (riskRating.toUpperCase()) {
+            case "LOW" -> 25;
+            case "MEDIUM" -> 50;
+            case "HIGH" -> 75;
+            case "UNKNOWN" -> 0;
+            default -> 0;
+        };
     }
 }
