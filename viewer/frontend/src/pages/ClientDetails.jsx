@@ -371,6 +371,47 @@ const ClientDetails = () => {
 
                     {activeTab === 'compliance' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                            {/* KYC Precheck Results */}
+                            {(client.screeningResult || client.riskRating) && (
+                                <section className="glass-section" style={{ padding: '1.5rem', background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.05) 0%, rgba(0, 242, 254, 0.02) 100%)' }}>
+                                    <h3 style={{ margin: '0 0 1.5rem 0', color: 'var(--accent-primary)' }}>KYC Precheck Results</h3>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                                        {client.screeningResult && (
+                                            <div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>Screening Result</div>
+                                                <div style={{
+                                                    fontSize: '1.3rem',
+                                                    fontWeight: 'bold',
+                                                    color: client.screeningResult === 'Hit' ? '#ff4d4f' : '#52c41a',
+                                                    padding: '1rem',
+                                                    background: client.screeningResult === 'Hit' ? 'rgba(255, 77, 79, 0.1)' : 'rgba(82, 196, 26, 0.1)',
+                                                    borderRadius: '8px',
+                                                    border: `1px solid ${client.screeningResult === 'Hit' ? '#ff4d4f' : '#52c41a'}`
+                                                }}>
+                                                    {client.screeningResult === 'Hit' ? '⚠️ HIT' : '✅ NO HIT'}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {client.riskRating && (
+                                            <div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>Risk Rating</div>
+                                                <div style={{
+                                                    fontSize: '1.3rem',
+                                                    fontWeight: 'bold',
+                                                    color: client.riskRating === 'HIGH' ? '#ff4d4f' : client.riskRating === 'MEDIUM' ? '#faad14' : '#52c41a',
+                                                    padding: '1rem',
+                                                    background: client.riskRating === 'HIGH' ? 'rgba(255, 77, 79, 0.1)' : client.riskRating === 'MEDIUM' ? 'rgba(250, 173, 20, 0.1)' : 'rgba(82, 196, 26, 0.1)',
+                                                    borderRadius: '8px',
+                                                    border: `1px solid ${client.riskRating === 'HIGH' ? '#ff4d4f' : client.riskRating === 'MEDIUM' ? '#faad14' : '#52c41a'}`
+                                                }}>
+                                                    {client.riskRating}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                            )}
+
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                                 {/* Risk Pulse Widget */}
                                 <section className="glass-section" style={{ boxSizing: 'border-box', height: '100%' }}>
