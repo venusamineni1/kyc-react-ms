@@ -19,7 +19,6 @@
         <module>screening-service</module>
         <module>document-service</module>
         <module>viewer</module>
-        <module>kyc-orchestration</module>
     </modules>
 
     <build>

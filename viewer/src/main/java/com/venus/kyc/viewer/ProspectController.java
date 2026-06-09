@@ -2,6 +2,7 @@ package com.venus.kyc.viewer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.venus.kyc.viewer.client.KycOrchestrationClient;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -10,6 +11,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -20,22 +23,19 @@ public class ProspectController {
 
     private final ClientRepository clientRepository;
     private final UserAuditService userAuditService;
-    private final com.venus.kyc.viewer.screening.ScreeningService screeningService;
-    private final com.venus.kyc.viewer.risk.RiskAssessmentService riskService;
+    private final KycOrchestrationClient kycOrchestrationClient;
     private final CaseService caseService;
     private final DocumentService documentService;
     private final ObjectMapper objectMapper;
 
     public ProspectController(ClientRepository clientRepository,
                               UserAuditService userAuditService,
-                              com.venus.kyc.viewer.screening.ScreeningService screeningService,
-                              com.venus.kyc.viewer.risk.RiskAssessmentService riskService,
+                              KycOrchestrationClient kycOrchestrationClient,
                               CaseService caseService,
                               DocumentService documentService) {
         this.clientRepository = clientRepository;
         this.userAuditService = userAuditService;
-        this.screeningService = screeningService;
-        this.riskService = riskService;
+        this.kycOrchestrationClient = kycOrchestrationClient;
         this.caseService = caseService;
         this.documentService = documentService;
         this.objectMapper = new ObjectMapper();
@@ -62,8 +62,8 @@ public class ProspectController {
         try {
             Client incomingClient = objectMapper.readValue(clientJson, Client.class);
             String username = authentication != null ? authentication.getName() : "SYSTEM";
-            
-            // 1. Insert Client with status NEW
+
+            // Step 1: Insert Client
             Long clientId = clientRepository.insertClient(incomingClient);
             if (incomingClient.addresses() != null) {
                 for (com.venus.kyc.viewer.Address addr : incomingClient.addresses()) {
@@ -72,32 +72,33 @@ public class ProspectController {
             }
             userAuditService.log(username, "ONBOARDING_NEW", "Created new prospect with ID: " + clientId);
 
-            // 2. Trigger Screening
-            clientRepository.updateClientStatus(clientId, "SCREENING_IN_PROGRESS");
-            userAuditService.log(username, "ONBOARDING_SCREENING", "Screening in progress for client: " + clientId);
-            var screeningResponse = screeningService.initiateScreening(clientId);
-            boolean isHit = screeningResponse.result() != null && screeningResponse.result().equalsIgnoreCase("Hot");
+            // Step 2: Call KYC Orchestration Service
+            // The orchestration service handles screening and risk assessment in parallel,
+            // with proper PII encryption, audit trail, and soft-fail strategies
+            KycOrchestrationClient.KycPrecheckRequest orchRequest = buildOrchestrationRequest(clientId, incomingClient);
+            KycOrchestrationClient.KycPrecheckResponse orchResponse = kycOrchestrationClient.initiatePrecheck(orchRequest);
 
-            // 3. Trigger Risk
-            clientRepository.updateClientStatus(clientId, "RISK_EVALUATION_IN_PROGRESS");
-            userAuditService.log(username, "ONBOARDING_RISK", "Risk evaluation in progress for client: " + clientId);
-            var riskResponse = riskService.evaluateRiskForClient(clientId);
-            
-            boolean isHighRisk = false;
-            if (riskResponse != null && riskResponse.clientRiskRatingResponse() != null && !riskResponse.clientRiskRatingResponse().isEmpty()) {
-                var riskItem = riskResponse.clientRiskRatingResponse().get(0);
-                if (riskItem.overallRiskAssessment() != null) {
-                    isHighRisk = "HIGH".equalsIgnoreCase(riskItem.overallRiskAssessment().overallRiskLevel());
+            userAuditService.log(username, "ONBOARDING_KYC_ORCHESTRATION",
+                "KYC orchestration completed for client: " + clientId + " - Status: " + orchResponse.getKycStatus());
+
+            // Step 3: Handle Orchestration Outcome
+            if ("APPROVED".equalsIgnoreCase(orchResponse.getKycStatus())) {
+                // Auto-approved: no screening hit and risk is not HIGH
+                clientRepository.updateClientStatus(clientId, "APPROVED");
+                userAuditService.log(username, "ONBOARDING_APPROVED",
+                    "Client " + clientId + " auto-approved (Screening: " + orchResponse.getScreeningResult() + ", Risk: " + orchResponse.getRiskRating() + ")");
+            } else if ("ON_HOLD".equalsIgnoreCase(orchResponse.getKycStatus())) {
+                // Screening hit OR high risk: create case for manual review
+                String reason = "Screening Hit / High Risk - Manual Review Required";
+                if ("Hit".equalsIgnoreCase(orchResponse.getScreeningResult())) {
+                    reason = "Screening Hit (" + String.join(", ", orchResponse.getHitContext()) + ") - Manual Review Required";
                 }
-            }
-
-            // 4. Evaluate Decision
-            if (isHit || isHighRisk) {
-                Long caseId = caseService.createCase(clientId, "New Client Onboarding - High Risk / Screening Hit", "SYSTEM");
+                Long caseId = caseService.createCase(clientId, reason, "SYSTEM");
                 clientRepository.updateClientStatus(clientId, "IN_REVIEW");
-                userAuditService.log(username, "ONBOARDING_CASE_CREATED", "Case " + caseId + " created for client: " + clientId + " (Hit: " + isHit + ", High Risk: " + isHighRisk + ")");
-                
-                // Upload documents to Case
+                userAuditService.log(username, "ONBOARDING_CASE_CREATED",
+                    "Case " + caseId + " created for client: " + clientId + " - " + reason);
+
+                // Step 4: Upload documents to Case (if provided)
                 if (documents != null && !documents.isEmpty()) {
                     for (int i = 0; i < documents.size(); i++) {
                         MultipartFile file = documents.get(i);
@@ -110,9 +111,6 @@ public class ProspectController {
                         }
                     }
                 }
-            } else {
-                clientRepository.updateClientStatus(clientId, "APPROVED");
-                userAuditService.log(username, "ONBOARDING_APPROVED", "Client " + clientId + " auto-approved (No Hit, Low/Medium Risk)");
             }
 
             Client savedClient = clientRepository.findById(clientId).orElseThrow();
@@ -122,5 +120,51 @@ public class ProspectController {
             logger.error("Error onboarding prospect", e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    /**
+     * Builds KYC orchestration request from client details.
+     * Maps viewer Client entity to KycPrecheckRequest for orchestration service.
+     */
+    private KycOrchestrationClient.KycPrecheckRequest buildOrchestrationRequest(
+            Long clientId, Client client) {
+
+        KycOrchestrationClient.KycPrecheckRequest request = new KycOrchestrationClient.KycPrecheckRequest()
+            .setUniqueClientID("CLIENT-" + clientId)
+            .setFirstName(client.firstName())
+            .setLastName(client.lastName())
+            .setBusinessLine("EIS")  // Default to EIS; can be parameterized if needed
+            .setPrimaryCitizenship(client.citizenship1())
+            .setSecondCitizenship(client.citizenship2());
+
+        // Optional fields
+        if (client.dateOfBirth() != null) {
+            request.setDob(client.dateOfBirth().toString());
+        }
+        if (client.cityOfBirth() != null) {
+            request.setCityOfBirth(client.cityOfBirth());
+        }
+        if (client.countryOfBirth() != null) {
+            request.setCountryOfBirth(client.countryOfBirth());
+        }
+        if (client.countryOfTax() != null) {
+            request.setCountryOfResidence(client.countryOfTax());
+        }
+        if (client.occupation() != null) {
+            request.setOccupation(client.occupation());
+        }
+
+        // Addresses
+        if (client.addresses() != null && !client.addresses().isEmpty()) {
+            com.venus.kyc.viewer.Address addr = client.addresses().get(0);
+            KycOrchestrationClient.ResidentialAddress resAddr = new KycOrchestrationClient.ResidentialAddress();
+            if (addr.addressLine1() != null) resAddr.setAddressLine1(addr.addressLine1());
+            if (addr.addressLine2() != null) resAddr.setAddressLine2(addr.addressLine2());
+            if (addr.city() != null) resAddr.setCity(addr.city());
+            if (addr.zip() != null) resAddr.setZip(addr.zip());
+            request.setResidentialAddress(resAddr);
+        }
+
+        return request;
     }
 }
