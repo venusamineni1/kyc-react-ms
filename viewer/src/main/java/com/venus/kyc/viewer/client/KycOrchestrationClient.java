@@ -28,6 +28,9 @@ public class KycOrchestrationClient {
     @Value("${orchestration.service.url:http://localhost:8084}")
     private String orchestrationServiceUrl;
 
+    @Value("${internal.api.key:dev-internal-kyc-key-change-in-prod}")
+    private String internalApiKey;
+
     public KycOrchestrationClient(RestClient restClient) {
         this.restClient = restClient;
     }
@@ -47,6 +50,7 @@ public class KycOrchestrationClient {
             KycPrecheckResponse response = restClient.post()
                     .uri(url)
                     .contentType(MediaType.APPLICATION_JSON)
+                    .header("X-Internal-Api-Key", internalApiKey)
                     .body(request)
                     .retrieve()
                     .body(KycPrecheckResponse.class);
