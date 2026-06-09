@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS Clients (
     CRSStatus VARCHAR(50),
     PlaceOfBirth VARCHAR(100),
     CityOfBirth VARCHAR(100),
-    CountryOfBirth VARCHAR(100)
+    CountryOfBirth VARCHAR(100),
+    ScreeningResult VARCHAR(50),
+    RiskRating VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS ClientAddresses (
