@@ -78,9 +78,6 @@ public class ProspectController {
             KycOrchestrationClient.KycPrecheckRequest orchRequest = buildOrchestrationRequest(clientId, incomingClient);
             KycOrchestrationClient.KycPrecheckResponse orchResponse = kycOrchestrationClient.initiatePrecheck(orchRequest);
 
-            // Store screening and risk results from orchestration response
-            clientRepository.updateScreeningAndRisk(clientId, orchResponse.getScreeningResult(), orchResponse.getRiskRating());
-
             userAuditService.log(username, "ONBOARDING_KYC_ORCHESTRATION",
                 "KYC orchestration completed for client: " + clientId + " - Status: " + orchResponse.getKycStatus());
 
