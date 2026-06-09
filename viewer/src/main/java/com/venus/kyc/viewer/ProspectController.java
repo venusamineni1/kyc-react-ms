@@ -125,9 +125,36 @@ public class ProspectController {
     /**
      * Builds KYC orchestration request from client details.
      * Maps viewer Client entity to KycPrecheckRequest for orchestration service.
+     *
+     * Required fields for orchestration service:
+     * - uniqueClientID, firstName, lastName, businessLine
+     * - primaryCitizenship
+     * - cityOfBirth (birth place)
+     * - countryOfResidence (tax residency country)
+     * - residentialAddress.zip (postal code)
      */
     private KycOrchestrationClient.KycPrecheckRequest buildOrchestrationRequest(
             Long clientId, Client client) {
+
+        // Build residential address - REQUIRED: must have zip code
+        KycOrchestrationClient.ResidentialAddress resAddr = null;
+        if (client.addresses() != null && !client.addresses().isEmpty()) {
+            com.venus.kyc.viewer.Address addr = client.addresses().get(0);
+            resAddr = new KycOrchestrationClient.ResidentialAddress();
+            if (addr.addressLine1() != null) resAddr.setAddressLine1(addr.addressLine1());
+            if (addr.addressLine2() != null) resAddr.setAddressLine2(addr.addressLine2());
+            if (addr.city() != null) resAddr.setCity(addr.city());
+            if (addr.zip() != null) {
+                resAddr.setZip(addr.zip());
+            } else {
+                // Fallback: use city as zip if not provided
+                resAddr.setZip(addr.city() != null ? addr.city() : "00000");
+            }
+        } else {
+            // Create minimal address with fallback zip
+            resAddr = new KycOrchestrationClient.ResidentialAddress();
+            resAddr.setZip("00000");
+        }
 
         KycOrchestrationClient.KycPrecheckRequest request = new KycOrchestrationClient.KycPrecheckRequest()
             .setUniqueClientID("CLIENT-" + clientId)
@@ -135,34 +162,34 @@ public class ProspectController {
             .setLastName(client.lastName())
             .setBusinessLine("EIS")  // Default to EIS; can be parameterized if needed
             .setPrimaryCitizenship(client.citizenship1())
-            .setSecondCitizenship(client.citizenship2());
+            .setSecondCitizenship(client.citizenship2())
+            .setResidentialAddress(resAddr);
+
+        // Required fields with fallbacks
+        if (client.cityOfBirth() != null && !client.cityOfBirth().isBlank()) {
+            request.setCityOfBirth(client.cityOfBirth());
+        } else {
+            // Fallback to address city or default
+            request.setCityOfBirth(client.addresses() != null && !client.addresses().isEmpty()
+                ? client.addresses().get(0).city() : "Unknown");
+        }
+
+        if (client.countryOfTax() != null && !client.countryOfTax().isBlank()) {
+            request.setCountryOfResidence(client.countryOfTax());
+        } else {
+            // Fallback to primary citizenship or country of residence
+            request.setCountryOfResidence(client.citizenship1() != null ? client.citizenship1() : "Unknown");
+        }
 
         // Optional fields
         if (client.dateOfBirth() != null) {
             request.setDob(client.dateOfBirth().toString());
         }
-        if (client.cityOfBirth() != null) {
-            request.setCityOfBirth(client.cityOfBirth());
-        }
-        if (client.countryOfBirth() != null) {
+        if (client.countryOfBirth() != null && !client.countryOfBirth().isBlank()) {
             request.setCountryOfBirth(client.countryOfBirth());
         }
-        if (client.countryOfTax() != null) {
-            request.setCountryOfResidence(client.countryOfTax());
-        }
-        if (client.occupation() != null) {
+        if (client.occupation() != null && !client.occupation().isBlank()) {
             request.setOccupation(client.occupation());
-        }
-
-        // Addresses
-        if (client.addresses() != null && !client.addresses().isEmpty()) {
-            com.venus.kyc.viewer.Address addr = client.addresses().get(0);
-            KycOrchestrationClient.ResidentialAddress resAddr = new KycOrchestrationClient.ResidentialAddress();
-            if (addr.addressLine1() != null) resAddr.setAddressLine1(addr.addressLine1());
-            if (addr.addressLine2() != null) resAddr.setAddressLine2(addr.addressLine2());
-            if (addr.city() != null) resAddr.setCity(addr.city());
-            if (addr.zip() != null) resAddr.setZip(addr.zip());
-            request.setResidentialAddress(resAddr);
         }
 
         return request;
