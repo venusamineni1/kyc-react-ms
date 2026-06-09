@@ -26,6 +26,8 @@ public record Client(
         String placeOfBirth,
         String cityOfBirth,
         String countryOfBirth,
+        String screeningResult,
+        String riskRating,
         java.util.List<Address> addresses,
         java.util.List<Identifier> identifiers,
         java.util.List<RelatedParty> relatedParties,

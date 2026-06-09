@@ -219,6 +219,8 @@ public class ClientController {
                 client.placeOfBirth(),
                 client.cityOfBirth(),
                 client.countryOfBirth(),
+                client.screeningResult(),
+                client.riskRating(),
                 null, // Masked addresses
                 null, // Masked identifiers
                 null, // Masked related parties
