@@ -4,6 +4,7 @@ import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { clientService } from '../services/clientService';
 import { caseService } from '../services/caseService';
 import { riskService } from '../services/riskService';
+import { screeningService } from '../services/screeningService';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import { useAuth } from '../contexts/AuthContext';
@@ -65,6 +66,7 @@ const ClientDetails = () => {
     // Records
     const [cases, setCases] = useState([]);
     const [riskHistory, setRiskHistory] = useState([]);
+    const [screeningHistory, setScreeningHistory] = useState([]);
     const [materialChanges, setMaterialChanges] = useState([]);
     const [audits, setAudits] = useState([]);
 
@@ -99,15 +101,17 @@ const ClientDetails = () => {
             setClient(clientData);
 
             // Parallel fetches
-            const [casesData, riskData, changesData, auditData] = await Promise.all([
+            const [casesData, riskData, screeningData, changesData, auditData] = await Promise.all([
                 caseService.getCasesByClient(id).catch(() => []),
                 riskService.getRiskHistory(id).catch(() => []),
+                screeningService.getHistory(id).catch(() => []),
                 clientService.getClientChanges(id).catch(() => []),
                 import('../services/apiClient').then(m => m.default.get('/admin/audits')).catch(() => [])
             ]);
 
             setCases(casesData);
             setRiskHistory(riskData);
+            setScreeningHistory(screeningData);
             if (riskData && riskData.length > 0 && riskData[0].assessmentID) {
                 riskService.getAssessmentDetails(riskData[0].assessmentID)
                     .then(d => setLatestRiskDetails(d || []))
@@ -159,6 +163,7 @@ const ClientDetails = () => {
     if (!client) return <div className="error-container"><p className="error">Client record not found</p></div>;
 
     const latestRisk = riskHistory[0];
+    const latestScreening = screeningHistory[0];
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -372,39 +377,39 @@ const ClientDetails = () => {
                     {activeTab === 'compliance' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                             {/* KYC Precheck Results */}
-                            {(client.screeningResult || client.riskRating) && (
+                            {(latestScreening || latestRisk) && (
                                 <section className="glass-section" style={{ padding: '1.5rem', background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.05) 0%, rgba(0, 242, 254, 0.02) 100%)' }}>
                                     <h3 style={{ margin: '0 0 1.5rem 0', color: 'var(--accent-primary)' }}>KYC Precheck Results</h3>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                                        {client.screeningResult && (
+                                        {latestScreening && (
                                             <div>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>Screening Result</div>
                                                 <div style={{
                                                     fontSize: '1.3rem',
                                                     fontWeight: 'bold',
-                                                    color: client.screeningResult === 'Hit' ? '#ff4d4f' : '#52c41a',
+                                                    color: latestScreening.overallStatus === 'HIT' ? '#ff4d4f' : '#52c41a',
                                                     padding: '1rem',
-                                                    background: client.screeningResult === 'Hit' ? 'rgba(255, 77, 79, 0.1)' : 'rgba(82, 196, 26, 0.1)',
+                                                    background: latestScreening.overallStatus === 'HIT' ? 'rgba(255, 77, 79, 0.1)' : 'rgba(82, 196, 26, 0.1)',
                                                     borderRadius: '8px',
-                                                    border: `1px solid ${client.screeningResult === 'Hit' ? '#ff4d4f' : '#52c41a'}`
+                                                    border: `1px solid ${latestScreening.overallStatus === 'HIT' ? '#ff4d4f' : '#52c41a'}`
                                                 }}>
-                                                    {client.screeningResult === 'Hit' ? '⚠️ HIT' : '✅ NO HIT'}
+                                                    {latestScreening.overallStatus === 'HIT' ? '⚠️ HIT' : '✅ NO HIT'}
                                                 </div>
                                             </div>
                                         )}
-                                        {client.riskRating && (
+                                        {latestRisk && (
                                             <div>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>Risk Rating</div>
                                                 <div style={{
                                                     fontSize: '1.3rem',
                                                     fontWeight: 'bold',
-                                                    color: client.riskRating === 'HIGH' ? '#ff4d4f' : client.riskRating === 'MEDIUM' ? '#faad14' : '#52c41a',
+                                                    color: latestRisk.overallRiskLevel === 'HIGH' ? '#ff4d4f' : latestRisk.overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a',
                                                     padding: '1rem',
-                                                    background: client.riskRating === 'HIGH' ? 'rgba(255, 77, 79, 0.1)' : client.riskRating === 'MEDIUM' ? 'rgba(250, 173, 20, 0.1)' : 'rgba(82, 196, 26, 0.1)',
+                                                    background: latestRisk.overallRiskLevel === 'HIGH' ? 'rgba(255, 77, 79, 0.1)' : latestRisk.overallRiskLevel === 'MEDIUM' ? 'rgba(250, 173, 20, 0.1)' : 'rgba(82, 196, 26, 0.1)',
                                                     borderRadius: '8px',
-                                                    border: `1px solid ${client.riskRating === 'HIGH' ? '#ff4d4f' : client.riskRating === 'MEDIUM' ? '#faad14' : '#52c41a'}`
+                                                    border: `1px solid ${latestRisk.overallRiskLevel === 'HIGH' ? '#ff4d4f' : latestRisk.overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'}`
                                                 }}>
-                                                    {client.riskRating}
+                                                    {latestRisk.overallRiskLevel}
                                                 </div>
                                             </div>
                                         )}
