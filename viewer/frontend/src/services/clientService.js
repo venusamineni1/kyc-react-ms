@@ -11,7 +11,7 @@ export const clientService = {
     },
 
     getClientDetails: async (id) => {
-        return apiClient.get(`${API_BASE_URL}/${id}`);
+        return apiClient.get(`${API_BASE_URL}/${id}/details`);
     },
 
     exportClients: async (startDate, endDate) => {

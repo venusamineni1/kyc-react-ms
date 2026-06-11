@@ -67,6 +67,7 @@ const ClientDetails = () => {
     const [cases, setCases] = useState([]);
     const [riskHistory, setRiskHistory] = useState([]);
     const [screeningHistory, setScreeningHistory] = useState([]);
+    const [screeningDetails, setScreeningDetails] = useState([]);
     const [materialChanges, setMaterialChanges] = useState([]);
     const [audits, setAudits] = useState([]);
 
@@ -97,26 +98,31 @@ const ClientDetails = () => {
     const fetchDetails = async () => {
         setLoading(true);
         try {
-            const clientData = await clientService.getClientDetails(id);
+            const detailsData = await clientService.getClientDetails(id);
+            // Handle both old format (direct client) and new format (client + assessments)
+            const clientData = detailsData.client || detailsData;
             setClient(clientData);
 
-            // Parallel fetches
-            const [casesData, riskData, screeningData, changesData, auditData] = await Promise.all([
+            // If we got assessment data from the details endpoint, use it
+            if (detailsData.latestScreening) {
+                setScreeningHistory([detailsData.latestScreening]);
+            }
+            if (detailsData.screeningResults) {
+                setScreeningDetails(detailsData.screeningResults);
+            }
+            if (detailsData.latestRiskAssessment) {
+                setRiskHistory([detailsData.latestRiskAssessment]);
+                setLatestRiskDetails(detailsData.riskAssessmentDetails || [detailsData.latestRiskAssessment]);
+            }
+
+            // Parallel fetches for remaining data
+            const [casesData, changesData, auditData] = await Promise.all([
                 caseService.getCasesByClient(id).catch(() => []),
-                riskService.getRiskHistory(id).catch(() => []),
-                screeningService.getHistory(id).catch(() => []),
                 clientService.getClientChanges(id).catch(() => []),
                 import('../services/apiClient').then(m => m.default.get('/admin/audits')).catch(() => [])
             ]);
 
             setCases(casesData);
-            setRiskHistory(riskData);
-            setScreeningHistory(screeningData);
-            if (riskData && riskData.length > 0 && riskData[0].assessmentID) {
-                riskService.getAssessmentDetails(riskData[0].assessmentID)
-                    .then(d => setLatestRiskDetails(d || []))
-                    .catch(() => setLatestRiskDetails([]));
-            }
             setMaterialChanges(changesData);
             setAudits(auditData ? auditData.filter(a => a.details && a.details.includes(String(id))) : []);
         } catch (err) {
@@ -376,47 +382,6 @@ const ClientDetails = () => {
 
                     {activeTab === 'compliance' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                            {/* KYC Precheck Results */}
-                            {(latestScreening || latestRisk) && (
-                                <section className="glass-section" style={{ padding: '1.5rem', background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.05) 0%, rgba(0, 242, 254, 0.02) 100%)' }}>
-                                    <h3 style={{ margin: '0 0 1.5rem 0', color: 'var(--accent-primary)' }}>KYC Precheck Results</h3>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                                        {latestScreening && (
-                                            <div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>Screening Result</div>
-                                                <div style={{
-                                                    fontSize: '1.3rem',
-                                                    fontWeight: 'bold',
-                                                    color: latestScreening.overallStatus === 'HIT' ? '#ff4d4f' : '#52c41a',
-                                                    padding: '1rem',
-                                                    background: latestScreening.overallStatus === 'HIT' ? 'rgba(255, 77, 79, 0.1)' : 'rgba(82, 196, 26, 0.1)',
-                                                    borderRadius: '8px',
-                                                    border: `1px solid ${latestScreening.overallStatus === 'HIT' ? '#ff4d4f' : '#52c41a'}`
-                                                }}>
-                                                    {latestScreening.overallStatus === 'HIT' ? '⚠️ HIT' : '✅ NO HIT'}
-                                                </div>
-                                            </div>
-                                        )}
-                                        {latestRisk && (
-                                            <div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>Risk Rating</div>
-                                                <div style={{
-                                                    fontSize: '1.3rem',
-                                                    fontWeight: 'bold',
-                                                    color: latestRisk.overallRiskLevel === 'HIGH' ? '#ff4d4f' : latestRisk.overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a',
-                                                    padding: '1rem',
-                                                    background: latestRisk.overallRiskLevel === 'HIGH' ? 'rgba(255, 77, 79, 0.1)' : latestRisk.overallRiskLevel === 'MEDIUM' ? 'rgba(250, 173, 20, 0.1)' : 'rgba(82, 196, 26, 0.1)',
-                                                    borderRadius: '8px',
-                                                    border: `1px solid ${latestRisk.overallRiskLevel === 'HIGH' ? '#ff4d4f' : latestRisk.overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a'}`
-                                                }}>
-                                                    {latestRisk.overallRiskLevel}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </section>
-                            )}
-
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                                 {/* Risk Pulse Widget */}
                                 <section className="glass-section" style={{ boxSizing: 'border-box', height: '100%' }}>
@@ -494,7 +459,7 @@ const ClientDetails = () => {
                                     })() : <p style={{ padding: '1rem 0', textAlign: 'center', color: '#666', fontSize: '0.85rem' }}>No risk assessments available for this client.</p>}
                                 </section>
 
-                                <ScreeningPanel clientId={id} clientData={client} hasPermission={hasPermission('MANAGE_SCREENING')} />
+                                <ScreeningPanel clientId={id} clientData={client} hasPermission={hasPermission('MANAGE_SCREENING')} latestScreening={latestScreening} screeningResults={screeningDetails} />
                             </div>
 
                             <Section title="Tax & Financial Declarations">

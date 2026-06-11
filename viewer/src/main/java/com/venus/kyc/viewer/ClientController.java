@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.venus.kyc.viewer.screening.ScreeningResult;
+import com.venus.kyc.viewer.risk.RiskAssessmentDetail;
 
 import java.util.List;
 
@@ -91,6 +93,38 @@ public class ClientController {
                 .map(client -> {
                     logger.info("DEBUG Authorities: {}", authentication.getAuthorities());
                     return isAdmin(authentication) ? client : maskSensitiveData(client);
+                })
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @Operation(summary = "Get client details with latest screening and risk results", description = "Returns comprehensive client details including the latest KYC precheck screening and risk assessment results")
+    @GetMapping("/{id}/details")
+    public ResponseEntity<ClientDetailsDTO> getClientDetails(@Parameter(description = "Client ID") @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication) {
+        logger.info("Getting client details with screening/risk for clientId={}", id);
+        userAuditService.log(authentication.getName(), "VIEW_CLIENT_DETAILS", "Viewed Client Details ID: " + id);
+        return clientRepository.findById(id)
+                .map(client -> {
+                    logger.info("Found client={}, fetching latest screening/risk", id);
+                    // Get latest screening and its results
+                    var screening = screeningService.getLatestScreening(id);
+                    logger.info("Latest screening for clientId={}: {}", id, screening);
+
+                    List<ScreeningResult> screeningResults = screening != null ? screeningService.getScreeningResults(screening.logID()) : List.of();
+                    logger.info("Screening results for logId={}: {}", screening != null ? screening.logID() : null, screeningResults);
+
+                    // Get latest risk assessment and its details
+                    var riskAssessment = riskService.getLatestRiskAssessment(id);
+                    logger.info("Latest risk for clientId={}: {}", id, riskAssessment);
+
+                    List<RiskAssessmentDetail> riskDetails = riskAssessment != null ? riskService.getRiskAssessmentDetails(riskAssessment.assessmentID()) : List.of();
+                    logger.info("Risk details for assessmentId={}: {}", riskAssessment != null ? riskAssessment.assessmentID() : null, riskDetails);
+
+                    Client maskedClient = isAdmin(authentication) ? client : maskSensitiveData(client);
+                    ClientDetailsDTO dto = new ClientDetailsDTO(maskedClient, screening, screeningResults, riskAssessment, riskDetails);
+                    logger.info("Returning ClientDetailsDTO with screening={} risk={}", screening, riskAssessment);
+                    return dto;
                 })
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

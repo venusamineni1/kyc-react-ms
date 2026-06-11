@@ -6,6 +6,7 @@ import com.venus.kyc.viewer.client.KycOrchestrationClient;
 import com.venus.kyc.viewer.risk.RiskAssessmentRepository;
 import com.venus.kyc.viewer.risk.RiskAssessmentLog;
 import com.venus.kyc.viewer.risk.RiskAssessment;
+import com.venus.kyc.viewer.screening.ScreeningRepository;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -30,6 +31,7 @@ public class ProspectController {
     private final CaseService caseService;
     private final DocumentService documentService;
     private final RiskAssessmentRepository riskAssessmentRepository;
+    private final ScreeningRepository screeningRepository;
     private final ObjectMapper objectMapper;
 
     public ProspectController(ClientRepository clientRepository,
@@ -37,13 +39,15 @@ public class ProspectController {
                               KycOrchestrationClient kycOrchestrationClient,
                               CaseService caseService,
                               DocumentService documentService,
-                              RiskAssessmentRepository riskAssessmentRepository) {
+                              RiskAssessmentRepository riskAssessmentRepository,
+                              ScreeningRepository screeningRepository) {
         this.clientRepository = clientRepository;
         this.userAuditService = userAuditService;
         this.kycOrchestrationClient = kycOrchestrationClient;
         this.caseService = caseService;
         this.documentService = documentService;
         this.riskAssessmentRepository = riskAssessmentRepository;
+        this.screeningRepository = screeningRepository;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
     }
@@ -84,11 +88,41 @@ public class ProspectController {
             KycOrchestrationClient.KycPrecheckRequest orchRequest = buildOrchestrationRequest(clientId, incomingClient);
             KycOrchestrationClient.KycPrecheckResponse orchResponse = kycOrchestrationClient.initiatePrecheck(orchRequest);
 
-            // Store precheck results as first entry in risk assessment history
+            // Store precheck results as first entry in screening and risk assessment history
             try {
                 String orchRequestJson = objectMapper.writeValueAsString(orchRequest);
                 String orchResponseJson = objectMapper.writeValueAsString(orchResponse);
 
+                logger.info("Saving precheck results for clientId={}: screening={}, risk={}",
+                    clientId, orchResponse.getScreeningResult(), orchResponse.getRiskRating());
+
+                // Save screening results
+                Long screeningLogId = screeningRepository.saveLog(
+                    clientId,
+                    orchRequestJson,
+                    orchResponseJson,
+                    orchResponse.getScreeningResult(),
+                    orchResponse.getScreeningRequestId()
+                );
+                logger.info("Saved screening log with id={}", screeningLogId);
+
+                // Save screening result details for each context
+                String[] contexts = {"PEP", "ADM", "INT", "SAN"};
+                String hitContextStr = orchResponse.getHitContext() != null ? String.join(", ", orchResponse.getHitContext()) : "";
+                for (String context : contexts) {
+                    boolean isHit = orchResponse.getHitContext() != null && orchResponse.getHitContext().contains(context);
+                    String status = isHit ? "HIT" : "NO_HIT";
+                    String alertMessage = isHit ? hitContextStr : null;
+                    screeningRepository.saveResult(
+                        screeningLogId,
+                        context,
+                        status,
+                        alertMessage
+                    );
+                }
+                logger.info("Saved screening result details for all contexts");
+
+                // Save risk assessment results
                 RiskAssessmentLog riskLog = new RiskAssessmentLog(
                     null, // logID will be auto-generated
                     orchRequestJson,
@@ -97,6 +131,7 @@ public class ProspectController {
                     java.time.LocalDateTime.now()
                 );
                 Long logId = riskAssessmentRepository.saveLog(riskLog);
+                logger.info("Saved risk assessment log with id={}", logId);
 
                 // Save the risk assessment details from orchestration
                 RiskAssessment riskAssessment = new RiskAssessment(
@@ -111,8 +146,9 @@ public class ProspectController {
                     java.time.LocalDateTime.now()
                 );
                 riskAssessmentRepository.saveAssessment(riskAssessment);
+                logger.info("Saved risk assessment details");
             } catch (Exception e) {
-                logger.warn("Failed to persist precheck results to risk assessment history", e);
+                logger.warn("Failed to persist precheck results to screening/risk assessment history", e);
                 // Continue anyway - this is not a blocking error
             }
 

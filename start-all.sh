@@ -1,94 +1,170 @@
 #!/bin/bash
 
+# Fixed startup script for KYC Microservices Stack
+# Handles service startup with proper timeouts and logging
+
+set -e
+
 # Colors
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT_DIR"
 
-echo -e "${GREEN}Starting KYC Microservices Stack...${NC}"
+# Configuration
+STARTUP_TIMEOUT=120  # seconds to wait for each service to start
+EUREKA_WAIT=10       # extra time to wait for Eureka after it starts
+
+echo -e "${GREEN}=== KYC Microservices Stack Startup ===${NC}"
+echo "Root directory: $ROOT_DIR"
+echo ""
+
+# Kill any existing services on our ports to ensure clean start
+cleanup_ports() {
+    echo -e "${YELLOW}Cleaning up any existing processes...${NC}"
+    for port in 8761 8084 8081 8082 8085 8086 8083 8080; do
+        lsof -ti:$port 2>/dev/null | xargs kill -9 2>/dev/null || true
+    done
+    sleep 2
+}
 
 check_port() {
     local port=$1
-    # 1. Try lsof (macOS/Linux)
-    if command -v lsof >/dev/null 2>&1; then
-        lsof -i :$port >/dev/null 2>&1
-        return $?
-    # 2. Try nc (netcat)
-    elif command -v nc >/dev/null 2>&1; then
-        nc -z localhost $port >/dev/null 2>&1
-        return $?
-    # 3. Fallback to bash built-in (Windows Git Bash)
-    else
-        (echo > /dev/tcp/localhost/$port) >/dev/null 2>&1
-        return $?
-    fi
+    lsof -i :$port >/dev/null 2>&1
+    return $?
 }
 
 wait_for_port() {
-    port=$1
-    service=$2
-    echo "Waiting for $service to start on port $port..."
-    while ! check_port $port; do
-      sleep 1
+    local port=$1
+    local service=$2
+    local timeout=$3
+    local elapsed=0
+
+    echo -e "${YELLOW}  Waiting for $service (port $port)...${NC}"
+
+    while ! check_port $port && [ $elapsed -lt $timeout ]; do
+        sleep 2
+        elapsed=$((elapsed + 2))
+        echo -n "."
     done
-    echo -e "${GREEN}$service is UP!${NC}"
+
+    if check_port $port; then
+        echo -e "\n${GREEN}  ✓ $service is running on port $port${NC}"
+        return 0
+    else
+        echo -e "\n${RED}  ✗ $service failed to start on port $port${NC}"
+        return 1
+    fi
 }
 
 start_service() {
     local port=$1
     local name=$2
     local module=$3
-    local log=$4
+    local log_file="$ROOT_DIR/logs/${module}.log"
+
+    mkdir -p "$ROOT_DIR/logs"
 
     if check_port $port; then
-        echo "$name is already running on port $port."
+        echo -e "${YELLOW}$name already running on port $port${NC}"
+        return 0
+    fi
+
+    echo -e "\n${GREEN}Starting: $name${NC}"
+
+    # Start service in background, redirecting output to log file
+    "$ROOT_DIR/gradlew" -p "$ROOT_DIR" :${module}:bootRun > "$log_file" 2>&1 &
+    local pid=$!
+    echo "  Process ID: $pid"
+    echo "  Log file: $log_file"
+
+    # Wait for service to start
+    if wait_for_port $port "$name" $STARTUP_TIMEOUT; then
+        return 0
     else
-        echo "Starting $name..."
-        nohup "$ROOT_DIR/gradlew" -p "$ROOT_DIR" :${module}:bootRun > "$ROOT_DIR/$log" 2>&1 &
-        wait_for_port $port "$name"
+        echo -e "${RED}  Failed to start. Last 20 lines of log:${NC}"
+        tail -20 "$log_file"
+        return 1
     fi
 }
 
-# Start in dependency order
-start_service 8761 "Service Registry" service-registry  registry.log
-start_service 8084 "Auth Service"     auth-service      auth.log
-start_service 8081 "Risk Service"     risk-service      risk.log
-start_service 8082 "Screening Service" screening-service screening.log
-start_service 8085 "Document Service" document-service  document.log
-start_service 8086 "Orchestration"    kyc-orchestration orchestration.log
-start_service 8083 "Viewer Service"   viewer            viewer.log
-start_service 8080 "API Gateway"      api-gateway       gateway.log
+# Main startup sequence
+echo -e "${YELLOW}Step 1: Cleaning up old processes${NC}"
+cleanup_ports
 
-# Frontend
+echo -e "${YELLOW}Step 2: Starting Eureka Service Registry (CRITICAL)${NC}"
+start_service 8761 "Service Registry" "service-registry" || exit 1
+sleep $EUREKA_WAIT  # Extra wait for Eureka to be fully ready
+
+echo -e "${YELLOW}Step 3: Starting core services${NC}"
+start_service 8084 "Auth Service"        "auth-service"      || true
+sleep 3
+start_service 8081 "Risk Service"        "risk-service"      || true
+sleep 3
+start_service 8082 "Screening Service"   "screening-service" || true
+sleep 3
+start_service 8085 "Document Service"    "document-service"  || true
+sleep 3
+start_service 8086 "KYC Orchestration"   "kyc-orchestration" || true
+sleep 3
+
+echo -e "${YELLOW}Step 4: Starting UI backend services${NC}"
+start_service 8083 "Viewer Service"      "viewer"            || true
+sleep 3
+start_service 8080 "API Gateway"         "api-gateway"       || true
+sleep 3
+
+# Frontend (optional)
+echo -e "${YELLOW}Step 5: Starting Frontend${NC}"
 if check_port 5173; then
-    echo "Frontend is already running on port 5173."
+    echo -e "${YELLOW}Frontend already running on port 5173${NC}"
 else
-    echo "Starting Frontend..."
-
-    # Resolve npm — works whether node is in PATH directly or via NVM
     if ! command -v npm &>/dev/null; then
         export NVM_DIR="$HOME/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
     fi
 
     if ! command -v npm &>/dev/null; then
-        echo "WARNING: npm not found — skipping frontend. Install Node.js or NVM first."
+        echo -e "${RED}WARNING: npm not found — skipping frontend${NC}"
     else
-        # Install dependencies if node_modules is missing
+        echo -e "${GREEN}Starting frontend...${NC}"
+        mkdir -p "$ROOT_DIR/logs"
+
+        # Install dependencies if needed
         if [ ! -d "$ROOT_DIR/viewer/frontend/node_modules" ]; then
-            echo "Installing frontend dependencies..."
-            npm --prefix "$ROOT_DIR/viewer/frontend" install
+            echo "  Installing dependencies..."
+            npm --prefix "$ROOT_DIR/viewer/frontend" install > "$ROOT_DIR/logs/frontend-install.log" 2>&1
         fi
 
-        nohup npm --prefix "$ROOT_DIR/viewer/frontend" run dev \
-            > "$ROOT_DIR/frontend.log" 2>&1 &
+        npm --prefix "$ROOT_DIR/viewer/frontend" run dev > "$ROOT_DIR/logs/frontend.log" 2>&1 &
+        sleep 5
 
-        wait_for_port 5173 "Frontend"
+        if wait_for_port 5173 "Frontend" $STARTUP_TIMEOUT; then
+            echo -e "${GREEN}Frontend started${NC}"
+        fi
     fi
 fi
 
-echo -e "${GREEN}All systems operational! Logs are in the root directory.${NC}"
-echo "Frontend: http://localhost:5173"
-echo "Gateway:  http://localhost:8080"
-echo "Registry: http://localhost:8761"
+# Summary
+echo ""
+echo -e "${GREEN}=== Startup Complete ===${NC}"
+echo ""
+echo "📍 Access your application:"
+echo "   Frontend:      ${GREEN}http://localhost:5173${NC}"
+echo "   API Gateway:   ${GREEN}http://localhost:8080${NC}"
+echo "   Eureka:        ${GREEN}http://localhost:8761${NC}"
+echo ""
+echo "📚 Service Documentation:"
+echo "   Viewer:        ${GREEN}http://localhost:8083/swagger-ui.html${NC}"
+echo "   Orchestration: ${GREEN}http://localhost:8086/swagger-ui.html${NC}"
+echo "   Screening:     ${GREEN}http://localhost:8082/swagger-ui.html${NC}"
+echo "   Risk:          ${GREEN}http://localhost:8081/swagger-ui.html${NC}"
+echo ""
+echo "📋 Service logs available in: ${GREEN}$ROOT_DIR/logs/${NC}"
+echo ""
+echo -e "${YELLOW}To stop services: killall java${NC}"
+echo -e "${YELLOW}To view logs: tail -f logs/*.log${NC}"
+echo ""

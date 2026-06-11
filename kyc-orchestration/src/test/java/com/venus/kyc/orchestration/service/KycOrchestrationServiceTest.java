@@ -1,7 +1,7 @@
 package com.venus.kyc.orchestration.service;
 
-import com.venus.kyc.orchestration.client.RiskClient;
-import com.venus.kyc.orchestration.client.ScreeningClient;
+import com.venus.kyc.orchestration.client.RiskClientInterface;
+import com.venus.kyc.orchestration.client.ScreeningClientInterface;
 import com.venus.kyc.orchestration.client.ViewerClient;
 import com.venus.kyc.orchestration.domain.KycTransactionAudit;
 import com.venus.kyc.orchestration.domain.enums.KycStatus;
@@ -33,8 +33,8 @@ import static org.mockito.Mockito.*;
 class KycOrchestrationServiceTest {
 
     @Mock ViewerClient viewerClient;
-    @Mock ScreeningClient screeningClient;
-    @Mock RiskClient riskClient;
+    @Mock ScreeningClientInterface screeningClient;
+    @Mock RiskClientInterface riskClient;
     @Mock KycAuditService kycAuditService;
     @Mock KycTransactionAuditRepository auditRepository;
     @Mock WebhookNotificationService webhookNotificationService;
@@ -62,16 +62,16 @@ class KycOrchestrationServiceTest {
         return audit;
     }
 
-    private ScreeningClient.ScreeningResult buildScreeningResult(String hit) {
-        ScreeningClient.ScreeningResult result = new ScreeningClient.ScreeningResult();
+    private ScreeningClientInterface.ScreeningResult buildScreeningResult(String hit) {
+        ScreeningClientInterface.ScreeningResult result = new ScreeningClientInterface.ScreeningResult();
         result.setHit(hit);
         result.setHitContext(List.of("PEP"));
         result.setScreeningRequestId("scr-001");
         return result;
     }
 
-    private RiskClient.RiskResult buildRiskResult(String rating) {
-        RiskClient.RiskResult result = new RiskClient.RiskResult();
+    private RiskClientInterface.RiskResult buildRiskResult(String rating) {
+        RiskClientInterface.RiskResult result = new RiskClientInterface.RiskResult();
         result.setRiskRating(rating);
         result.setRiskRequestId("rsk-001");
         return result;

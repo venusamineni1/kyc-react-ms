@@ -9,6 +9,5 @@ public record ScreeningLog(
         String responsePayload,
         String overallStatus,
         String externalRequestID,
-        LocalDateTime createdAt,
-        Long nrtsProcessId) {
+        LocalDateTime createdAt) {
 }

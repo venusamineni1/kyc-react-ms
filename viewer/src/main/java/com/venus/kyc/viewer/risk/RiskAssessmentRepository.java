@@ -79,16 +79,35 @@ public class RiskAssessmentRepository {
     }
 
     public List<RiskAssessment> findAssessmentsByRecordId(String recordId) {
-        return jdbcClient.sql("SELECT * FROM RiskAssessments WHERE RecordID = :recordID ORDER BY CreatedAt DESC")
+        return jdbcClient.sql("SELECT AssessmentID, LogID, RecordID, OverallRiskScore, InitialRiskLevel, OverallRiskLevel, TypeOfLogicApplied, SmeRiskAssessment, CreatedAt FROM RiskAssessments WHERE RecordID = :recordID ORDER BY CreatedAt DESC")
                 .param("recordID", recordId)
-                .query(RiskAssessment.class)
+                .query((rs, rowNum) -> new RiskAssessment(
+                        rs.getLong("AssessmentID"),
+                        rs.getLong("LogID"),
+                        rs.getString("RecordID"),
+                        rs.getInt("OverallRiskScore"),
+                        rs.getString("InitialRiskLevel"),
+                        rs.getString("OverallRiskLevel"),
+                        rs.getString("TypeOfLogicApplied"),
+                        rs.getString("SmeRiskAssessment"),
+                        rs.getObject("CreatedAt", java.time.LocalDateTime.class)
+                ))
                 .list();
     }
 
     public List<RiskAssessmentDetail> findDetailsByAssessmentId(Long assessmentId) {
-        return jdbcClient.sql("SELECT * FROM RiskAssessmentDetails WHERE AssessmentID = :assessmentId")
+        return jdbcClient.sql("SELECT DetailID, AssessmentID, RiskType, ElementName, ElementValue, RiskScore, Flag, LocalRuleApplied FROM RiskAssessmentDetails WHERE AssessmentID = :assessmentId")
                 .param("assessmentId", assessmentId)
-                .query(RiskAssessmentDetail.class)
+                .query((rs, rowNum) -> new RiskAssessmentDetail(
+                        rs.getLong("DetailID"),
+                        rs.getLong("AssessmentID"),
+                        rs.getString("RiskType"),
+                        rs.getString("ElementName"),
+                        rs.getString("ElementValue"),
+                        rs.getInt("RiskScore"),
+                        rs.getString("Flag"),
+                        rs.getString("LocalRuleApplied")
+                ))
                 .list();
     }
 }

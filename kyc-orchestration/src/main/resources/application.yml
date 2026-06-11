@@ -1,21 +1,35 @@
 server:
   port: 8086
 
+internal:
+  api:
+    key: ${INTERNAL_API_KEY:dev-internal-kyc-key-change-in-prod}
+
+orchestration:
+  screening:
+    mock-enabled: ${SCREENING_MOCK:true}
+  risk:
+    mock-enabled: ${RISK_MOCK:true}
+
 spring:
   application:
     name: kyc-orchestration
   datasource:
-    url: jdbc:h2:mem:kycorchestrationdb
-    driverClassName: org.h2.Driver
-    username: sa
-    password: password
+    url: ${DB_URL:jdbc:h2:mem:kycorchestrationdb}
+    driverClassName: ${DB_DRIVER:org.h2.Driver}
+    username: ${DB_USER:sa}
+    password: ${DB_PASSWORD:password}
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none          # schema owned by schema.sql — never let Hibernate modify tables
+  sql:
+    init:
+      mode: always            # run schema.sql on every startup (H2 in-memory safe)
+      schema-locations: classpath:schema.sql
   h2:
     console:
-      enabled: true
+      enabled: ${H2_CONSOLE:true}
 
 hashids:
   # Override via HASHIDS_SALT env var in production — never commit the real value

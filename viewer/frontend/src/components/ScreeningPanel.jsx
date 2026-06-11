@@ -98,7 +98,7 @@ const ScreeningCard = ({ title, context, result, onRun }) => {
     );
 };
 
-const ScreeningPanel = ({ clientId, clientData, hasPermission }) => {
+const ScreeningPanel = ({ clientId, clientData, hasPermission, latestScreening, screeningResults }) => {
     const { notify } = useNotification();
     const [status, setStatus] = useState('NOT_RUN'); // NOT_RUN, IN_PROGRESS, HIT, NO_HIT
     const [results, setResults] = useState([]); // [{contextType, status, alertMessage}]
@@ -130,6 +130,38 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission }) => {
     useEffect(() => {
         const loadInitialStatus = async () => {
             try {
+                // If latestScreening from props is available, display it first
+                if (latestScreening && screeningResults && screeningResults.length > 0) {
+                    // Use actual screening results from the API
+                    setResults(screeningResults);
+                    const anyHit = screeningResults.some(r => r.status === 'HIT');
+                    setStatus(anyHit ? 'HIT' : 'NO_HIT');
+                    return;
+                }
+
+                if (latestScreening) {
+                    // Fallback: if no detailed results, show based on overall status
+                    const overallStatus = latestScreening.overallStatus;
+                    if (overallStatus === 'HIT') {
+                        setResults([
+                            { contextType: 'PEP', status: 'HIT', alertMessage: 'Alert detected in precheck' },
+                            { contextType: 'ADM', status: 'HIT', alertMessage: 'Alert detected in precheck' },
+                            { contextType: 'INT', status: 'HIT', alertMessage: 'Alert detected in precheck' },
+                            { contextType: 'SAN', status: 'HIT', alertMessage: 'Alert detected in precheck' }
+                        ]);
+                        setStatus('HIT');
+                    } else {
+                        setResults([
+                            { contextType: 'PEP', status: 'NO_HIT' },
+                            { contextType: 'ADM', status: 'NO_HIT' },
+                            { contextType: 'INT', status: 'NO_HIT' },
+                            { contextType: 'SAN', status: 'NO_HIT' }
+                        ]);
+                        setStatus('NO_HIT');
+                    }
+                    return;
+                }
+
                 const log = await screeningService.getHistory(clientId);
                 setHistory(log);
 
@@ -172,7 +204,7 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission }) => {
         if (clientId) {
             loadInitialStatus();
         }
-    }, [clientId]);
+    }, [clientId, latestScreening, screeningResults]);
 
     const fetchHistory = async () => {
         try {

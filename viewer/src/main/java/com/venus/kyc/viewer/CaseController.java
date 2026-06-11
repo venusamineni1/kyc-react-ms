@@ -22,14 +22,20 @@ public class CaseController {
     private final EventService eventService;
     private final UserAuditService userAuditService;
     private final DocumentService documentService;
+    private final com.venus.kyc.viewer.screening.ScreeningService screeningService;
+    private final com.venus.kyc.viewer.risk.RiskAssessmentService riskService;
 
     public CaseController(CaseRepository caseRepository, CaseService caseService,
-            EventService eventService, UserAuditService userAuditService, DocumentService documentService) {
+            EventService eventService, UserAuditService userAuditService, DocumentService documentService,
+            com.venus.kyc.viewer.screening.ScreeningService screeningService,
+            com.venus.kyc.viewer.risk.RiskAssessmentService riskService) {
         this.caseRepository = caseRepository;
         this.caseService = caseService;
         this.eventService = eventService;
         this.userAuditService = userAuditService;
         this.documentService = documentService;
+        this.screeningService = screeningService;
+        this.riskService = riskService;
     }
 
     private String getUserRole(Authentication authentication) {
@@ -49,9 +55,17 @@ public class CaseController {
 
     @Operation(summary = "Get case by ID", description = "Returns detailed information for a specific case and logs the view action")
     @GetMapping("/{id}")
-    public Case getCase(@Parameter(description = "Case ID") @PathVariable Long id, Authentication authentication) {
+    public CaseDetailsDTO getCase(@Parameter(description = "Case ID") @PathVariable Long id, Authentication authentication) {
         userAuditService.log(authentication.getName(), "VIEW_CASE", "Viewed Case ID: " + id);
-        return caseRepository.findById(id).orElseThrow();
+        Case c = caseRepository.findById(id).orElseThrow();
+
+        // Fetch screening and risk data from the associated client
+        var screening = screeningService.getLatestScreening(c.clientID());
+        List<com.venus.kyc.viewer.screening.ScreeningResult> screeningResults = screening != null ? screeningService.getScreeningResults(screening.logID()) : List.of();
+        var riskAssessment = riskService.getLatestRiskAssessment(c.clientID());
+        List<com.venus.kyc.viewer.risk.RiskAssessmentDetail> riskDetails = riskAssessment != null ? riskService.getRiskAssessmentDetails(riskAssessment.assessmentID()) : List.of();
+
+        return new CaseDetailsDTO(c, screening, screeningResults, riskAssessment, riskDetails);
     }
 
     @Operation(summary = "Get cases by client", description = "Returns all cases associated with a specific client")

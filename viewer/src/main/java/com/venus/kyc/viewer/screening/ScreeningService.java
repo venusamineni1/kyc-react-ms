@@ -19,14 +19,17 @@ public class ScreeningService {
     private final UserAuditService userAuditService;
     private final RestClient restClient;
     private final String screeningServiceUrl;
+    private final ScreeningRepository screeningRepository;
 
     public ScreeningService(ClientRepository clientRepository, UserAuditService userAuditService,
             @Value("${screening.service.url}") String screeningServiceUrl,
             @Value("${internal.api.key}") String internalApiKey,
-            RestClient.Builder restClientBuilder) {
+            RestClient.Builder restClientBuilder,
+            ScreeningRepository screeningRepository) {
         this.clientRepository = clientRepository;
         this.userAuditService = userAuditService;
         this.screeningServiceUrl = screeningServiceUrl;
+        this.screeningRepository = screeningRepository;
         this.restClient = restClientBuilder
                 .defaultHeader("X-Internal-Api-Key", internalApiKey)
                 .build();
@@ -132,5 +135,13 @@ public class ScreeningService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate test XML", e);
         }
+    }
+
+    public ScreeningLog getLatestScreening(Long clientId) {
+        return screeningRepository.getLatestScreeningLog(clientId);
+    }
+
+    public List<ScreeningResult> getScreeningResults(Long logId) {
+        return screeningRepository.getResultsByLogId(logId);
     }
 }

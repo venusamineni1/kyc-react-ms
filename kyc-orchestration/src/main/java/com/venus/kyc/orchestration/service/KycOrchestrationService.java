@@ -1,7 +1,7 @@
 package com.venus.kyc.orchestration.service;
 
-import com.venus.kyc.orchestration.client.RiskClient;
-import com.venus.kyc.orchestration.client.ScreeningClient;
+import com.venus.kyc.orchestration.client.RiskClientInterface;
+import com.venus.kyc.orchestration.client.ScreeningClientInterface;
 import com.venus.kyc.orchestration.client.ViewerClient;
 import com.venus.kyc.orchestration.domain.KycTransactionAudit;
 import com.venus.kyc.orchestration.domain.enums.KycStatus;
@@ -33,8 +33,8 @@ public class KycOrchestrationService {
             List.of(KycStatus.APPROVED, KycStatus.COMPLETED);
 
     private final ViewerClient viewerClient;
-    private final ScreeningClient screeningClient;
-    private final RiskClient riskClient;
+    private final ScreeningClientInterface screeningClient;
+    private final RiskClientInterface riskClient;
     private final KycAuditService kycAuditService;
     private final KycTransactionAuditRepository auditRepository;
     private final WebhookNotificationService webhookNotificationService;
@@ -42,8 +42,8 @@ public class KycOrchestrationService {
     private final Hashids hashids;
 
     public KycOrchestrationService(ViewerClient viewerClient,
-                                   ScreeningClient screeningClient,
-                                   RiskClient riskClient,
+                                   ScreeningClientInterface screeningClient,
+                                   RiskClientInterface riskClient,
                                    KycAuditService kycAuditService,
                                    KycTransactionAuditRepository auditRepository,
                                    WebhookNotificationService webhookNotificationService,
@@ -124,19 +124,19 @@ public class KycOrchestrationService {
         });
 
         // ScreeningClient (NLS/NRTS) — fired off in parallel
-        CompletableFuture<ScreeningClient.ScreeningResult> screeningFuture = CompletableFuture.supplyAsync(
+        CompletableFuture<ScreeningClientInterface.ScreeningResult> screeningFuture = CompletableFuture.supplyAsync(
                 () -> screeningClient.initiateScreening(request), kycOrchestrationExecutor);
 
         // 3. Await screening result before risk (sequential dependency per KYC-I-16)
         LocalDateTime screeningStartAt = LocalDateTime.now();
-        ScreeningClient.ScreeningResult screeningResult = screeningFuture.join();
+        ScreeningClientInterface.ScreeningResult screeningResult = screeningFuture.join();
         LocalDateTime screeningEndAt = LocalDateTime.now();
 
         log.info("Screening complete for client={}: hit={}", request.getUniqueClientID(), screeningResult.getHit());
 
         // 4. Invoke CRRE risk rating immediately after screening (KYC-F-06)
         LocalDateTime riskStartAt = LocalDateTime.now();
-        RiskClient.RiskResult riskResult = riskClient.calculateRisk(screeningResult);
+        RiskClientInterface.RiskResult riskResult = riskClient.calculateRisk(screeningResult);
         LocalDateTime riskEndAt = LocalDateTime.now();
 
         log.info("Risk rating complete for client={}: rating={}", request.getUniqueClientID(), riskResult.getRiskRating());

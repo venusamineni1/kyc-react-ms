@@ -27,18 +27,21 @@ public class RiskAssessmentService {
     private final ClientRepository clientRepository;
     private final UserAuditService userAuditService;
     private final String riskServiceUrl;
+    private final RiskAssessmentRepository riskAssessmentRepository;
 
     public RiskAssessmentService(
             CaseRepository caseRepository, EventService eventService, ClientRepository clientRepository,
             UserAuditService userAuditService,
             @org.springframework.beans.factory.annotation.Value("${risk.service.url}") String riskServiceUrl,
             @org.springframework.beans.factory.annotation.Value("${internal.api.key}") String internalApiKey,
-            RestClient.Builder restClientBuilder) {
+            RestClient.Builder restClientBuilder,
+            RiskAssessmentRepository riskAssessmentRepository) {
         this.caseRepository = caseRepository;
         this.eventService = eventService;
         this.clientRepository = clientRepository;
         this.userAuditService = userAuditService;
         this.riskServiceUrl = riskServiceUrl;
+        this.riskAssessmentRepository = riskAssessmentRepository;
         this.restClient = restClientBuilder
                 .defaultHeader("X-Internal-Api-Key", internalApiKey)
                 .build();
@@ -261,5 +264,15 @@ public class RiskAssessmentService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate test JSON", e);
         }
+    }
+
+    public com.venus.kyc.viewer.risk.RiskAssessment getLatestRiskAssessment(Long clientId) {
+        // Get the latest risk assessment for this client using the PRECHECK record ID pattern
+        List<RiskAssessment> assessments = riskAssessmentRepository.findAssessmentsByRecordId("PRECHECK-" + clientId);
+        return assessments.isEmpty() ? null : assessments.get(0);
+    }
+
+    public List<RiskAssessmentDetail> getRiskAssessmentDetails(Long assessmentId) {
+        return riskAssessmentRepository.findDetailsByAssessmentId(assessmentId);
     }
 }

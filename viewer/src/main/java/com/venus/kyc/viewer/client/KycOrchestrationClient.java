@@ -145,6 +145,8 @@ public class KycOrchestrationClient {
         private java.util.List<String> hitContext;
         private String riskRating;  // "LOW", "MEDIUM", "HIGH", "UNKNOWN"
         private String userId;
+        private String screeningRequestId;  // Screening request ID from orchestration
+        private String riskRequestId;  // Risk request ID from orchestration
 
         // Getters
         public String getKycId() { return kycId; }
@@ -153,6 +155,8 @@ public class KycOrchestrationClient {
         public java.util.List<String> getHitContext() { return hitContext; }
         public String getRiskRating() { return riskRating; }
         public String getUserId() { return userId; }
+        public String getScreeningRequestId() { return screeningRequestId; }
+        public String getRiskRequestId() { return riskRequestId; }
 
         // Setters
         public KycPrecheckResponse setKycId(String v) { this.kycId = v; return this; }
@@ -161,6 +165,8 @@ public class KycOrchestrationClient {
         public KycPrecheckResponse setHitContext(java.util.List<String> v) { this.hitContext = v; return this; }
         public KycPrecheckResponse setRiskRating(String v) { this.riskRating = v; return this; }
         public KycPrecheckResponse setUserId(String v) { this.userId = v; return this; }
+        public KycPrecheckResponse setScreeningRequestId(String v) { this.screeningRequestId = v; return this; }
+        public KycPrecheckResponse setRiskRequestId(String v) { this.riskRequestId = v; return this; }
     }
 
     /**
