@@ -156,12 +156,15 @@ public class ProspectController {
                 "KYC orchestration completed for client: " + clientId + " - Status: " + orchResponse.getKycStatus());
 
             // Step 3: Handle Orchestration Outcome
-            if ("APPROVED".equalsIgnoreCase(orchResponse.getKycStatus())) {
+            // Check if there are any screening hits that should trigger manual review
+            boolean hasScreeningHits = orchResponse.getHitContext() != null && !orchResponse.getHitContext().isEmpty();
+
+            if ("APPROVED".equalsIgnoreCase(orchResponse.getKycStatus()) && !hasScreeningHits) {
                 // Auto-approved: no screening hit and risk is not HIGH
                 clientRepository.updateClientStatus(clientId, "APPROVED");
                 userAuditService.log(username, "ONBOARDING_APPROVED",
                     "Client " + clientId + " auto-approved (Screening: " + orchResponse.getScreeningResult() + ", Risk: " + orchResponse.getRiskRating() + ")");
-            } else if ("ON_HOLD".equalsIgnoreCase(orchResponse.getKycStatus())) {
+            } else if ("ON_HOLD".equalsIgnoreCase(orchResponse.getKycStatus()) || hasScreeningHits) {
                 // Screening hit OR high risk: create case for manual review
                 String reason = "Screening Hit / High Risk - Manual Review Required";
                 if ("Hit".equalsIgnoreCase(orchResponse.getScreeningResult())) {
