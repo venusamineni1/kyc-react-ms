@@ -33,6 +33,7 @@ const CaseDetails = () => {
     const [timeline, setTimeline] = useState([]);
     const [riskHistory, setRiskHistory] = useState([]);
     const [riskDetails, setRiskDetails] = useState([]);
+    const [screeningResults, setScreeningResults] = useState([]);
     const [myTasks, setMyTasks] = useState([]);
     const [activeTab, setActiveTab] = useState('flow');
     const [clientData, setClientData] = useState(null);
@@ -87,16 +88,23 @@ const CaseDetails = () => {
     const loadCaseData = async () => {
         if (!kycCase) setLoading(true);
         try {
-            const [caseData, commentsData, docsData, eventsData] = await Promise.all([
+            const [caseDetailsDTO, commentsData, docsData, eventsData] = await Promise.all([
                 caseService.getCaseDetails(id),
                 caseService.getCaseComments(id),
                 caseService.getCaseDocuments(id),
                 caseService.getCaseEvents(id)
             ]);
+            // Extract the actual Case object from CaseDetailsDTO
+            const caseData = caseDetailsDTO.caseData || caseDetailsDTO;
             setKycCase(caseData);
             setComments(commentsData || []);
             setDocs(docsData || []);
             setEvents(eventsData || []);
+
+            // Extract screening results from CaseDetailsDTO if available
+            if (caseDetailsDTO.screeningResults) {
+                setScreeningResults(caseDetailsDTO.screeningResults);
+            }
 
             // Fetch related cases and client details after getting case details
             if (caseData.clientID) {
@@ -764,7 +772,7 @@ const CaseDetails = () => {
 
                         <section className="glass-section">
                             <h3 style={{ marginBottom: '0.75rem' }}>Screening Verdicts</h3>
-                            <ScreeningPanel clientId={kycCase.clientID} clientData={clientData} hasPermission={true} />
+                            <ScreeningPanel clientId={kycCase.clientID} clientData={clientData} hasPermission={true} screeningResults={screeningResults} />
                         </section>
 
                     </div>
