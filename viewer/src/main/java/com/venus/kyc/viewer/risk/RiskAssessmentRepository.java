@@ -95,6 +95,43 @@ public class RiskAssessmentRepository {
                 .list();
     }
 
+    public List<RiskAssessment> findAllByClientId(String clientId) {
+        return jdbcClient.sql("SELECT AssessmentID, LogID, RecordID, OverallRiskScore, InitialRiskLevel, OverallRiskLevel, TypeOfLogicApplied, SmeRiskAssessment, CreatedAt FROM RiskAssessments WHERE RecordID = :recordId OR RecordID = :precheckRecordId ORDER BY CreatedAt DESC")
+                .param("recordId", clientId)
+                .param("precheckRecordId", "PRECHECK-" + clientId)
+                .query((rs, rowNum) -> new RiskAssessment(
+                        rs.getLong("AssessmentID"),
+                        rs.getLong("LogID"),
+                        rs.getString("RecordID"),
+                        rs.getInt("OverallRiskScore"),
+                        rs.getString("InitialRiskLevel"),
+                        rs.getString("OverallRiskLevel"),
+                        rs.getString("TypeOfLogicApplied"),
+                        rs.getString("SmeRiskAssessment"),
+                        rs.getObject("CreatedAt", java.time.LocalDateTime.class)
+                ))
+                .list();
+    }
+
+    public RiskAssessment findLatestByClientId(Long clientId) {
+        return jdbcClient.sql("SELECT AssessmentID, LogID, RecordID, OverallRiskScore, InitialRiskLevel, OverallRiskLevel, TypeOfLogicApplied, SmeRiskAssessment, CreatedAt FROM RiskAssessments WHERE RecordID = :recordId OR RecordID = :precheckRecordId ORDER BY CreatedAt DESC LIMIT 1")
+                .param("recordId", String.valueOf(clientId))
+                .param("precheckRecordId", "PRECHECK-" + clientId)
+                .query((rs, rowNum) -> new RiskAssessment(
+                        rs.getLong("AssessmentID"),
+                        rs.getLong("LogID"),
+                        rs.getString("RecordID"),
+                        rs.getInt("OverallRiskScore"),
+                        rs.getString("InitialRiskLevel"),
+                        rs.getString("OverallRiskLevel"),
+                        rs.getString("TypeOfLogicApplied"),
+                        rs.getString("SmeRiskAssessment"),
+                        rs.getObject("CreatedAt", java.time.LocalDateTime.class)
+                ))
+                .optional()
+                .orElse(null);
+    }
+
     public List<RiskAssessmentDetail> findDetailsByAssessmentId(Long assessmentId) {
         return jdbcClient.sql("SELECT DetailID, AssessmentID, RiskType, ElementName, ElementValue, RiskScore, Flag, LocalRuleApplied FROM RiskAssessmentDetails WHERE AssessmentID = :assessmentId")
                 .param("assessmentId", assessmentId)

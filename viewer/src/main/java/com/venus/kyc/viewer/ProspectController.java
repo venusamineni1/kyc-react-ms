@@ -96,15 +96,16 @@ public class ProspectController {
                 logger.info("Saving precheck results for clientId={}: screening={}, risk={}",
                     clientId, orchResponse.getScreeningResult(), orchResponse.getRiskRating());
 
-                // Save screening results
+                // Save screening results with source type indicating pre-check
                 Long screeningLogId = screeningRepository.saveLog(
                     clientId,
                     orchRequestJson,
                     orchResponseJson,
                     orchResponse.getScreeningResult(),
-                    orchResponse.getScreeningRequestId()
+                    orchResponse.getScreeningRequestId(),
+                    "KYC_ORCHESTRATION_PRECHECK"
                 );
-                logger.info("Saved screening log with id={}", screeningLogId);
+                logger.info("Saved screening log with id={} from KYC orchestration precheck", screeningLogId);
 
                 // Save screening result details for each context
                 String[] contexts = {"PEP", "ADM", "INT", "SAN"};
@@ -138,7 +139,7 @@ public class ProspectController {
                     null, // assessmentID will be auto-generated
                     logId,
                     "PRECHECK-" + clientId,
-                    convertRiskRatingToScore(orchResponse.getRiskRating()),
+                    orchResponse.getRiskScore() != null ? orchResponse.getRiskScore() : convertRiskRatingToScore(orchResponse.getRiskRating()),
                     orchResponse.getRiskRating(),
                     orchResponse.getRiskRating(),
                     "KYC_ORCHESTRATION_PRECHECK",

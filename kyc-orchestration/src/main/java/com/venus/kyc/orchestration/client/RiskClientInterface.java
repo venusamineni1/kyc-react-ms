@@ -13,5 +13,6 @@ public interface RiskClientInterface {
     class RiskResult {
         private String riskRequestId;
         private String riskRating;
+        private Integer riskScore;
     }
 }

@@ -263,6 +263,9 @@ public class CaseService {
             cmmnTaskService.complete(tasks.get(0).getId());
         }
 
+        // Update case status to reflect the new stage
+        caseRepository.updateStatus(caseId, targetRole, null);
+
         // Audit logging
         caseRepository.addComment(caseId, userId,
                 "ESCALATE: Escalated to " + targetRole + (reason != null ? " (" + reason + ")" : ""), "SYSTEM");
@@ -278,7 +281,7 @@ public class CaseService {
     private void validateEscalationPath(String fromStage, String toStage) {
         boolean valid = switch (fromStage) {
             case "KYC_ANALYST" -> "ACO".equals(toStage) || "AFC".equals(toStage);
-            case "KYC_REVIEWER" -> "ACO".equals(toStage);
+            case "REVIEWER" -> "ACO".equals(toStage);
             case "ACO" -> "AFC".equals(toStage);
             default -> false;
         };
@@ -336,8 +339,6 @@ public class CaseService {
             return;
         }
 
-        cmmnTaskService.complete(task.getId());
-
         // Determine routing based on action
         String taskKey = task.getTaskDefinitionKey();
         String nextStatus;
@@ -371,12 +372,15 @@ public class CaseService {
                     yield "PROCESSING";
                 }
             };
-
-            // Set routing variables to trigger conditional sentries
-            if (!routingVars.isEmpty()) {
-                cmmnRuntimeService.setVariables(caseInstanceId, routingVars);
-            }
         }
+
+        // Set routing variables BEFORE completing the task so conditional sentries
+        // evaluate the new nextStage value when this plan item exits
+        if (!routingVars.isEmpty()) {
+            cmmnRuntimeService.setVariables(caseInstanceId, routingVars);
+        }
+
+        cmmnTaskService.complete(task.getId());
 
         caseRepository.updateStatus(caseId, nextStatus, null);
 

@@ -135,8 +135,10 @@ public class KycOrchestrationService {
         log.info("Screening complete for client={}: hit={}", request.getUniqueClientID(), screeningResult.getHit());
 
         // 4. Invoke CRRE risk rating immediately after screening (KYC-F-06)
+        // Build proper risk request from KycPrecheckRequest (matching manual risk format)
         LocalDateTime riskStartAt = LocalDateTime.now();
-        RiskClientInterface.RiskResult riskResult = riskClient.calculateRisk(screeningResult);
+        Object riskRequest = buildRiskRequest(request);
+        RiskClientInterface.RiskResult riskResult = riskClient.calculateRisk(riskRequest);
         LocalDateTime riskEndAt = LocalDateTime.now();
 
         log.info("Risk rating complete for client={}: rating={}", request.getUniqueClientID(), riskResult.getRiskRating());
@@ -180,6 +182,7 @@ public class KycOrchestrationService {
                 .screeningResult(screeningResult.getHit())
                 .hitContext(screeningResult.getHitContext())
                 .riskRating(riskResult.getRiskRating())
+                .riskScore(riskResult.getRiskScore())
                 .userId(userId)
                 .screeningRequestId(screeningResult.getScreeningRequestId())
                 .riskRequestId(riskResult.getRiskRequestId())
@@ -260,5 +263,43 @@ public class KycOrchestrationService {
             log.warn("Unrecognised risk rating value '{}', defaulting to UNKNOWN", value);
             return RiskRating.UNKNOWN;
         }
+    }
+
+    private java.util.Map<String, Object> buildRiskRequest(KycPrecheckRequest request) {
+        java.util.Map<String, Object> body = new java.util.HashMap<>();
+
+        java.util.Map<String, Object> header = new java.util.HashMap<>();
+        header.put("callerSystem", "173471-1");
+        header.put("channelID", "DWS");
+        header.put("versionID", "2.0");
+        header.put("requestID", "sys-" + System.currentTimeMillis());
+        header.put("timestamp", java.time.LocalDateTime.now().toString());
+        body.put("header", header);
+
+        java.util.Map<String, Object> clientDetails = new java.util.HashMap<>();
+        clientDetails.put("recordID", request.getUniqueClientID());
+        clientDetails.put("countryOfTax", request.getPrimaryCitizenship() != null ? request.getPrimaryCitizenship() : "DE");
+
+        java.util.Map<String, Object> addressType = new java.util.HashMap<>();
+        addressType.put("domicile", request.getCountryOfResidence() != null ? request.getCountryOfResidence() : "DE");
+
+        java.util.Map<String, Object> partyAccount = new java.util.HashMap<>();
+        partyAccount.put("countries", java.util.List.of(request.getPrimaryCitizenship() != null ? request.getPrimaryCitizenship() : "DE"));
+        partyAccount.put("sourceOfFundsCountries", java.util.List.of("DE"));
+        partyAccount.put("address", addressType);
+
+        java.util.Map<String, Object> geoRisk = new java.util.HashMap<>();
+        geoRisk.put("partyAccounts", java.util.List.of(partyAccount));
+
+        java.util.Map<String, Object> item = new java.util.HashMap<>();
+        item.put("clientDetails", clientDetails);
+        item.put("entityRisk", new java.util.HashMap<>());
+        item.put("industryRisk", new java.util.HashMap<>());
+        item.put("geoRisk", geoRisk);
+        item.put("productRisk", java.util.List.of(new java.util.HashMap<>()));
+        item.put("channel", new java.util.HashMap<>());
+
+        body.put("clientRiskRatingRequest", java.util.List.of(item));
+        return body;
     }
 }

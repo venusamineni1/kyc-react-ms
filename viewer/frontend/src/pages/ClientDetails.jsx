@@ -435,8 +435,13 @@ const ClientDetails = () => {
                                                     </div>
                                                     <div>
                                                         <div style={{ fontSize: '1rem', fontWeight: 'bold', textTransform: 'uppercase', color: levelColor }}>{latestRisk.overallRiskLevel} RISK</div>
-                                                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '0.2rem' }}>
+                                                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '0.2rem', display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                             Last assessed {new Date(latestRisk.createdAt).toLocaleDateString()}
+                                                            {latestRisk.typeOfLogicApplied && (
+                                                                <span style={{ fontSize: '0.7rem', background: latestRisk.typeOfLogicApplied === 'KYC_ORCHESTRATION_PRECHECK' ? 'rgba(100, 200, 255, 0.2)' : 'rgba(200, 200, 200, 0.2)', color: latestRisk.typeOfLogicApplied === 'KYC_ORCHESTRATION_PRECHECK' ? '#64c8ff' : '#bbb', padding: '2px 6px', borderRadius: '3px' }}>
+                                                                    {latestRisk.typeOfLogicApplied === 'KYC_ORCHESTRATION_PRECHECK' ? 'Pre-check' : latestRisk.typeOfLogicApplied}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>

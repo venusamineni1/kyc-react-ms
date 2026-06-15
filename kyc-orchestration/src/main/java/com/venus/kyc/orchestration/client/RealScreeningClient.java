@@ -34,12 +34,31 @@ public class RealScreeningClient implements ScreeningClientInterface {
         HttpEntity<KycPrecheckRequest> entity = new HttpEntity<>(request, headers);
 
         try {
-            ScreeningResult result = restTemplate.postForObject(
+            // Call screening-service and get its response format
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> serviceResponse = restTemplate.postForObject(
                 "http://screening-service/api/internal/screening/initiate",
                 entity,
-                ScreeningResult.class
+                java.util.Map.class
             );
-            log.info("Screening result received: hit={}", result.getHit());
+
+            // Transform to orchestration format
+            ScreeningResult result = new ScreeningResult();
+
+            // Map result field: "Hot" → "Hit", "No-Hit" → "NoHit"
+            String serviceResult = (String) serviceResponse.get("result");
+            result.setHit("Hot".equals(serviceResult) ? "Hit" : "NoHit");
+
+            // Map alert contexts to hit context
+            @SuppressWarnings("unchecked")
+            java.util.List<String> alertContexts = (java.util.List<String>) serviceResponse.get("alertContexts");
+            result.setHitContext(alertContexts != null ? alertContexts : java.util.List.of());
+
+            // Use processId as the request ID
+            Object processId = serviceResponse.get("processId");
+            result.setScreeningRequestId(processId != null ? processId.toString() : "no-hit-" + System.currentTimeMillis());
+
+            log.info("Screening result transformed: hit={}, contexts={}", result.getHit(), result.getHitContext());
             return result;
         } catch (Exception e) {
             log.error("Failed to call screening service: {}", e.getMessage());

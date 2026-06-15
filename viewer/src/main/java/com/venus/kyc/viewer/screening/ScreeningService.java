@@ -58,12 +58,61 @@ public class ScreeningService {
         String url = this.screeningServiceUrl + "/initiate";
 
         try {
-            return restClient.post()
+            ScreeningDTOs.InitiateScreeningResponse response = restClient.post()
                     .uri(url)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
                     .retrieve()
                     .body(ScreeningDTOs.InitiateScreeningResponse.class);
+
+            // Save screening log to viewer database with sourceType=MANUAL
+            if (response != null) {
+                // Save the actual screening result (Hit or No-Hit), not the orchestration status
+                String screeningResult = "Hot".equals(response.result()) ? "Hit" : "No-Hit";
+                String externalRequestID = response.processId() != null
+                    ? String.valueOf(response.processId())
+                    : "NO_HIT_" + System.currentTimeMillis();
+
+                try {
+                    String contextsJson = response.alertContexts() != null
+                        ? String.valueOf(response.alertContexts())
+                        : "[]";
+
+                    Long logId = screeningRepository.saveLog(
+                        clientId,
+                        "{}",  // request payload
+                        "{\"result\": \"" + response.result() + "\", \"alertContexts\": " + contextsJson + "}",  // response payload
+                        screeningResult,  // Save the actual screening result
+                        externalRequestID,
+                        "MANUAL"
+                    );
+
+                    // Save screening results for each context
+                    @SuppressWarnings("unchecked")
+                    java.util.List<String> contexts = (java.util.List<String>) (java.util.List<?>) response.alertContexts();
+                    if (contexts != null && !contexts.isEmpty()) {
+                        for (String context : contexts) {
+                            screeningRepository.saveResult(logId, context, "HIT", context + " alert");
+                        }
+                        // Mark non-alerted contexts as NO_HIT
+                        for (String context : java.util.List.of("PEP", "ADM", "INT", "SAN")) {
+                            if (!contexts.contains(context)) {
+                                screeningRepository.saveResult(logId, context, "NO_HIT", null);
+                            }
+                        }
+                    } else {
+                        // No alerts - mark all contexts as NO_HIT
+                        for (String context : java.util.List.of("PEP", "ADM", "INT", "SAN")) {
+                            screeningRepository.saveResult(logId, context, "NO_HIT", null);
+                        }
+                    }
+                } catch (Exception e) {
+                    // Log but don't fail - screening result was still obtained
+                    org.slf4j.LoggerFactory.getLogger(this.getClass()).warn("Failed to save screening log: {}", e.getMessage());
+                }
+            }
+
+            return response;
         } catch (Exception e) {
             throw new RuntimeException("Failed to call Screening Service", e);
         }
@@ -82,16 +131,8 @@ public class ScreeningService {
     }
 
     public List<ScreeningLog> getHistory(Long clientId) {
-        String url = this.screeningServiceUrl + "/history/" + clientId;
-        try {
-            return restClient.get()
-                    .uri(url)
-                    .retrieve()
-                    .body(new org.springframework.core.ParameterizedTypeReference<List<ScreeningLog>>() {
-                    });
-        } catch (Exception e) {
-            return Collections.emptyList();
-        }
+        // Query viewer's local database instead of screening-service
+        return screeningRepository.getHistory(clientId);
     }
 
     // Batch Screening Proxy Methods

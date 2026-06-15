@@ -7,9 +7,9 @@ internal:
 
 orchestration:
   screening:
-    mock-enabled: ${SCREENING_MOCK:true}
+    mock-enabled: ${SCREENING_MOCK:false}
   risk:
-    mock-enabled: ${RISK_MOCK:true}
+    mock-enabled: ${RISK_MOCK:false}
 
 spring:
   application:

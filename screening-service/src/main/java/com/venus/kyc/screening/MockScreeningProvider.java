@@ -37,8 +37,9 @@ public class MockScreeningProvider implements ScreeningProvider {
     @Override
     public ScreeningDTOs.InitiateScreeningResponse initiate(ScreeningDTOs.ScreeningInternalRequest request) {
         String name = (request.firstName() + " " + request.lastName()).toLowerCase();
+        // Deterministic: Use hash of name to decide hit (consistent results for same client)
         boolean shouldHit = name.contains("osama") || name.contains("pablo") || name.contains("putin")
-                || random.nextInt(100) < 10;
+                || (Math.abs(name.hashCode()) % 100) < 10;
 
         if (!shouldHit) {
             return new ScreeningDTOs.InitiateScreeningResponse(

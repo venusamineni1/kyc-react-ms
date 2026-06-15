@@ -23,6 +23,7 @@ public class MockRiskClient implements RiskClientInterface {
         RiskResult result = new RiskResult();
         result.setRiskRequestId(UUID.randomUUID().toString());
         result.setRiskRating("LOW");
+        result.setRiskScore(1);
         return result;
     }
 }

@@ -48,6 +48,10 @@ public class KycPrecheckResponse {
             allowableValues = {"LOW", "MEDIUM", "HIGH", "UNKNOWN"})
     private String riskRating;
 
+    @Schema(description = "Numeric overall risk score returned by the CRRE risk engine (typically 1-100).",
+            example = "1")
+    private Integer riskScore;
+
     // -------------------------------------------------------------------------
     // Traceability IDs
     // -------------------------------------------------------------------------

@@ -9,5 +9,6 @@ public record ScreeningLog(
         String responsePayload,
         String overallStatus,
         String externalRequestID,
+        String sourceType,
         LocalDateTime createdAt) {
 }

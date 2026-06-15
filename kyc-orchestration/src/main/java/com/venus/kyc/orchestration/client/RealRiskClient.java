@@ -33,16 +33,95 @@ public class RealRiskClient implements RiskClientInterface {
         HttpEntity<Object> entity = new HttpEntity<>(riskPayload, headers);
 
         try {
-            RiskResult result = restTemplate.postForObject(
+            // Call risk-service and get its response
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> serviceResponse = restTemplate.postForObject(
                 "http://risk-service/api/internal/risk/calculate",
                 entity,
-                RiskResult.class
+                java.util.Map.class
             );
-            log.info("Risk result received: rating={}", result.getRiskRating());
+
+            // Transform to orchestration format
+            RiskResult result = new RiskResult();
+
+            // Extract risk rating from response
+            // Service returns complex structure; extract the rating if present
+            String riskRating = extractRiskRating(serviceResponse);
+            result.setRiskRating(riskRating != null ? riskRating : "LOW");
+            result.setRiskScore(extractRiskScore(serviceResponse));
+
+            // Use a generated request ID
+            result.setRiskRequestId(java.util.UUID.randomUUID().toString());
+
+            log.info("Risk result transformed: rating={} score={}", result.getRiskRating(), result.getRiskScore());
             return result;
         } catch (Exception e) {
             log.error("Failed to call risk service: {}", e.getMessage());
             throw new RuntimeException("Risk service call failed: " + e.getMessage(), e);
         }
+    }
+
+    private String extractRiskRating(java.util.Map<String, Object> response) {
+        java.util.Map<String, Object> overallRiskAssessment = extractOverallRiskAssessment(response);
+        if (overallRiskAssessment != null) {
+            Object overallLevel = overallRiskAssessment.get("overallRiskLevel");
+            if (overallLevel != null) {
+                return overallLevel.toString().toUpperCase();
+            }
+        }
+
+        if (response == null) {
+            return null;
+        }
+
+        // Fallback: look for top-level riskRating/riskLevel fields
+        Object ratingObj = response.get("riskRating");
+        if (ratingObj != null) {
+            return ratingObj.toString().toUpperCase();
+        }
+
+        Object levelObj = response.get("riskLevel");
+        if (levelObj != null) {
+            return levelObj.toString().toUpperCase();
+        }
+
+        return null;
+    }
+
+    private Integer extractRiskScore(java.util.Map<String, Object> response) {
+        java.util.Map<String, Object> overallRiskAssessment = extractOverallRiskAssessment(response);
+        if (overallRiskAssessment != null) {
+            Object scoreObj = overallRiskAssessment.get("overallRiskScore");
+            if (scoreObj instanceof Number number) {
+                return number.intValue();
+            }
+        }
+
+        if (response != null) {
+            Object scoreObj = response.get("overallRiskScore");
+            if (scoreObj instanceof Number number) {
+                return number.intValue();
+            }
+        }
+
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private java.util.Map<String, Object> extractOverallRiskAssessment(java.util.Map<String, Object> response) {
+        if (response == null) {
+            return null;
+        }
+
+        Object clientRiskRatingResponse = response.get("clientRiskRatingResponse");
+        if (clientRiskRatingResponse instanceof java.util.List<?> list && !list.isEmpty()
+                && list.get(0) instanceof java.util.Map<?, ?> firstItem) {
+            Object overallRiskAssessment = firstItem.get("overallRiskAssessment");
+            if (overallRiskAssessment instanceof java.util.Map<?, ?> overall) {
+                return (java.util.Map<String, Object>) overall;
+            }
+        }
+
+        return null;
     }
 }

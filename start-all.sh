@@ -75,8 +75,19 @@ start_service() {
 
     echo -e "\n${GREEN}Starting: $name${NC}"
 
-    # Start service in background, redirecting output to log file
-    "$ROOT_DIR/gradlew" -p "$ROOT_DIR" :${module}:bootRun > "$log_file" 2>&1 &
+    # Start service using pre-built JAR file if it exists, otherwise use gradle
+    local jar_file="$ROOT_DIR/${module}/build/libs/app.jar"
+    if [ ! -f "$jar_file" ]; then
+        jar_file="$ROOT_DIR/${module}/build/libs/${module}-0.0.1-SNAPSHOT.jar"
+    fi
+
+    if [ -f "$jar_file" ]; then
+        echo "  Using pre-built JAR: $jar_file"
+        java -jar "$jar_file" > "$log_file" 2>&1 &
+    else
+        echo "  Building with Gradle..."
+        "$ROOT_DIR/gradlew" -p "$ROOT_DIR" :${module}:bootRun > "$log_file" 2>&1 &
+    fi
     local pid=$!
     echo "  Process ID: $pid"
     echo "  Log file: $log_file"

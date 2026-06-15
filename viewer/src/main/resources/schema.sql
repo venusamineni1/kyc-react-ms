@@ -258,6 +258,7 @@ CREATE TABLE IF NOT EXISTS ScreeningLogs (
     ResponsePayload CLOB,
     OverallStatus VARCHAR(50),
     ExternalRequestID VARCHAR(100),
+    SourceType VARCHAR(50) DEFAULT 'MANUAL',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ClientID) REFERENCES Clients(ClientID)
 );

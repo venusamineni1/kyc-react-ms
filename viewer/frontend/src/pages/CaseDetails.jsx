@@ -34,6 +34,7 @@ const CaseDetails = () => {
     const [riskHistory, setRiskHistory] = useState([]);
     const [riskDetails, setRiskDetails] = useState([]);
     const [screeningResults, setScreeningResults] = useState([]);
+    const [latestScreening, setLatestScreening] = useState(null);
     const [myTasks, setMyTasks] = useState([]);
     const [activeTab, setActiveTab] = useState('flow');
     const [clientData, setClientData] = useState(null);
@@ -105,6 +106,17 @@ const CaseDetails = () => {
             if (caseDetailsDTO.screeningResults) {
                 setScreeningResults(caseDetailsDTO.screeningResults);
             }
+            if (caseDetailsDTO.latestScreening) {
+                setLatestScreening(caseDetailsDTO.latestScreening);
+            }
+
+            // Extract risk assessment from CaseDetailsDTO if available
+            if (caseDetailsDTO.latestRiskAssessment) {
+                setRiskHistory([caseDetailsDTO.latestRiskAssessment]);
+            }
+            if (caseDetailsDTO.riskAssessmentDetails) {
+                setRiskDetails(caseDetailsDTO.riskAssessmentDetails);
+            }
 
             // Fetch related cases and client details after getting case details
             if (caseData.clientID) {
@@ -119,18 +131,20 @@ const CaseDetails = () => {
                 const related = await caseService.getCasesByClient(caseData.clientID);
                 setRelatedCases(related.filter(c => c.caseID !== parseInt(id)));
 
-                // Fetch Risk History
-                try {
-                    const riskData = await riskService.getRiskHistory(caseData.clientID);
-                    setRiskHistory(riskData);
-                    if (riskData && riskData.length > 0 && riskData[0].assessmentID) {
-                        try {
-                            const details = await riskService.getAssessmentDetails(riskData[0].assessmentID);
-                            setRiskDetails(details || []);
-                        } catch { setRiskDetails([]); }
+                // Only fetch Risk History if not already provided in DTO
+                if (!caseDetailsDTO.latestRiskAssessment) {
+                    try {
+                        const riskData = await riskService.getRiskHistory(caseData.clientID);
+                        setRiskHistory(riskData);
+                        if (riskData && riskData.length > 0 && riskData[0].assessmentID) {
+                            try {
+                                const details = await riskService.getAssessmentDetails(riskData[0].assessmentID);
+                                setRiskDetails(details || []);
+                            } catch { setRiskDetails([]); }
+                        }
+                    } catch (rErr) {
+                        console.error("Failed to fetch risk history", rErr);
                     }
-                } catch (rErr) {
-                    console.error("Failed to fetch risk history", rErr);
                 }
             }
 
@@ -344,9 +358,9 @@ const CaseDetails = () => {
     // Determine which workflow actions are available for the current user on this case
     const isActiveParticipant = kycCase && (kycCase.assignedTo === user?.username || myTasks.length > 0);
     const isAnalystStage   = kycCase?.status === 'KYC_ANALYST';
-    const isReviewerStage  = kycCase?.status === 'REVIEWER_REVIEW';
-    const isAfcStage       = kycCase?.status === 'AFC_REVIEW';
-    const isAcoStage       = kycCase?.status === 'ACO_REVIEW';
+    const isReviewerStage  = kycCase?.status === 'REVIEWER';
+    const isAfcStage       = kycCase?.status === 'AFC';
+    const isAcoStage       = kycCase?.status === 'ACO';
     const isActiveStage    = isAnalystStage || isReviewerStage || isAfcStage || isAcoStage;
     const canSubmit    = isActiveParticipant && isActiveStage && !isAcoStage;
     const canRework    = isActiveParticipant && (isReviewerStage || isAfcStage || isAcoStage);
@@ -357,9 +371,9 @@ const CaseDetails = () => {
         const statusToRoleMap = {
             'PROCESSING': 'KYC_ANALYST',
             'KYC_ANALYST': 'KYC_ANALYST',
-            'REVIEWER_REVIEW': 'KYC_REVIEWER',
-            'AFC_REVIEW': 'AFC_REVIEWER',
-            'ACO_REVIEW': 'ACO_REVIEWER'
+            'REVIEWER': 'KYC_REVIEWER',
+            'AFC': 'AFC_REVIEWER',
+            'ACO': 'ACO_REVIEWER'
         };
 
         const role = statusToRoleMap[kycCase.status];
@@ -387,7 +401,7 @@ const CaseDetails = () => {
     );
     if (!kycCase) return <p className="error">Case not found</p>;
 
-    const workflowSteps = ['KYC_ANALYST', 'REVIEWER_REVIEW', 'AFC_REVIEW', 'ACO_REVIEW', 'APPROVED'];
+    const workflowSteps = ['KYC_ANALYST', 'REVIEWER', 'AFC', 'ACO', 'APPROVED'];
 
     return (
         <div className="case-details-page">
@@ -741,8 +755,13 @@ const CaseDetails = () => {
                                             </div>
                                             <div>
                                                 <div style={{ fontSize: '1rem', fontWeight: 'bold', textTransform: 'uppercase', color: levelColor }}>{latest.overallRiskLevel} RISK</div>
-                                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '0.2rem' }}>
+                                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '0.2rem', display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                     Last assessed {new Date(latest.calculationDate || latest.createdAt).toLocaleDateString()}
+                                                    {latest.typeOfLogicApplied && (
+                                                        <span style={{ fontSize: '0.7rem', background: latest.typeOfLogicApplied === 'KYC_ORCHESTRATION_PRECHECK' ? 'rgba(100, 200, 255, 0.2)' : 'rgba(200, 200, 200, 0.2)', color: latest.typeOfLogicApplied === 'KYC_ORCHESTRATION_PRECHECK' ? '#64c8ff' : '#bbb', padding: '2px 6px', borderRadius: '3px' }}>
+                                                            {latest.typeOfLogicApplied === 'KYC_ORCHESTRATION_PRECHECK' ? 'Pre-check' : latest.typeOfLogicApplied}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -772,7 +791,7 @@ const CaseDetails = () => {
 
                         <section className="glass-section">
                             <h3 style={{ marginBottom: '0.75rem' }}>Screening Verdicts</h3>
-                            <ScreeningPanel clientId={kycCase.clientID} clientData={clientData} hasPermission={true} screeningResults={screeningResults} />
+                            <ScreeningPanel clientId={kycCase.clientID} clientData={clientData} hasPermission={true} latestScreening={latestScreening} screeningResults={screeningResults} />
                         </section>
 
                     </div>

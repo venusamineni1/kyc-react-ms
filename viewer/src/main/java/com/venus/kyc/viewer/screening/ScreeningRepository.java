@@ -18,14 +18,19 @@ public class ScreeningRepository {
     }
 
     public Long saveLog(Long clientId, String requestPayload, String responsePayload, String overallStatus, String externalRequestID) {
+        return saveLog(clientId, requestPayload, responsePayload, overallStatus, externalRequestID, "MANUAL");
+    }
+
+    public Long saveLog(Long clientId, String requestPayload, String responsePayload, String overallStatus, String externalRequestID, String sourceType) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcClient.sql(
-                "INSERT INTO ScreeningLogs (ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, CreatedAt) VALUES (:clientID, :requestPayload, :responsePayload, :overallStatus, :externalRequestID, :createdAt)")
+                "INSERT INTO ScreeningLogs (ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, SourceType, CreatedAt) VALUES (:clientID, :requestPayload, :responsePayload, :overallStatus, :externalRequestID, :sourceType, :createdAt)")
                 .param("clientID", clientId)
                 .param("requestPayload", requestPayload)
                 .param("responsePayload", responsePayload)
                 .param("overallStatus", overallStatus)
                 .param("externalRequestID", externalRequestID)
+                .param("sourceType", sourceType)
                 .param("createdAt", LocalDateTime.now())
                 .update(keyHolder);
         return ((Number) keyHolder.getKeys().get("LOGID")).longValue();
@@ -45,7 +50,7 @@ public class ScreeningRepository {
 
     public ScreeningLog getLatestScreeningLog(Long clientId) {
         return jdbcClient.sql(
-                "SELECT LogID, ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, CreatedAt FROM ScreeningLogs WHERE ClientID = :clientID ORDER BY CreatedAt DESC LIMIT 1")
+                "SELECT LogID, ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, SourceType, CreatedAt FROM ScreeningLogs WHERE ClientID = :clientID ORDER BY CreatedAt DESC LIMIT 1")
                 .param("clientID", clientId)
                 .query((rs, rowNum) -> new ScreeningLog(
                         rs.getLong("LogID"),
@@ -54,6 +59,7 @@ public class ScreeningRepository {
                         rs.getString("ResponsePayload"),
                         rs.getString("OverallStatus"),
                         rs.getString("ExternalRequestID"),
+                        rs.getString("SourceType"),
                         rs.getObject("CreatedAt", java.time.LocalDateTime.class)
                 ))
                 .optional()
@@ -62,7 +68,7 @@ public class ScreeningRepository {
 
     public List<ScreeningLog> getHistory(Long clientId) {
         return jdbcClient.sql(
-                "SELECT LogID, ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, CreatedAt FROM ScreeningLogs WHERE ClientID = :clientID ORDER BY CreatedAt DESC")
+                "SELECT LogID, ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, SourceType, CreatedAt FROM ScreeningLogs WHERE ClientID = :clientID ORDER BY CreatedAt DESC")
                 .param("clientID", clientId)
                 .query((rs, rowNum) -> new ScreeningLog(
                         rs.getLong("LogID"),
@@ -71,6 +77,7 @@ public class ScreeningRepository {
                         rs.getString("ResponsePayload"),
                         rs.getString("OverallStatus"),
                         rs.getString("ExternalRequestID"),
+                        rs.getString("SourceType"),
                         rs.getObject("CreatedAt", java.time.LocalDateTime.class)
                 ))
                 .list();

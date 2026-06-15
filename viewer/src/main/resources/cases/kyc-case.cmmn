@@ -18,14 +18,17 @@
                 <entryCriterion id="ec_reviewer" sentryRef="sentry_escalationToReviewer"/>
             </planItem>
 
-            <!-- ACO Reviewer: Activates when analyst/reviewer completes AND nextStage == 'ACO' -->
+            <!-- ACO Reviewer: Activates when analyst OR reviewer completes AND nextStage == 'ACO' -->
             <planItem id="pi_acoReview" name="ACO Review" definitionRef="ht_acoReview">
-                <entryCriterion id="ec_aco" sentryRef="sentry_escalationToACO"/>
+                <entryCriterion id="ec_aco_fromAnalyst" sentryRef="sentry_escalationToACO_fromAnalyst"/>
+                <entryCriterion id="ec_aco_fromReviewer" sentryRef="sentry_escalationToACO_fromReviewer"/>
             </planItem>
 
-            <!-- AFC Reviewer: Activates when analyst/reviewer/aco completes AND nextStage == 'AFC' -->
+            <!-- AFC Reviewer: Activates when analyst OR reviewer OR aco completes AND nextStage == 'AFC' -->
             <planItem id="pi_afcStandardReview" name="AFC Review" definitionRef="ht_afcStandardReview">
-                <entryCriterion id="ec_afcStandard" sentryRef="sentry_escalationToAFC"/>
+                <entryCriterion id="ec_afc_fromAnalyst" sentryRef="sentry_escalationToAFC_fromAnalyst"/>
+                <entryCriterion id="ec_afc_fromReviewer" sentryRef="sentry_escalationToAFC_fromReviewer"/>
+                <entryCriterion id="ec_afc_fromACO" sentryRef="sentry_escalationToAFC_fromACO"/>
             </planItem>
 
             <!-- Discretionary Plan Items -->
@@ -56,11 +59,18 @@
                 </ifPart>
             </sentry>
 
-            <!-- Analyst/Reviewer → ACO: Activates when analyst/reviewer completes AND nextStage == 'ACO' -->
-            <sentry id="sentry_escalationToACO">
+            <!-- Analyst → ACO: Activates when analyst completes AND nextStage == 'ACO' -->
+            <sentry id="sentry_escalationToACO_fromAnalyst">
                 <planItemOnPart id="onPart_escalationToACO_1" sourceRef="pi_analystReview">
                     <standardEvent>complete</standardEvent>
                 </planItemOnPart>
+                <ifPart>
+                    <condition><![CDATA[${nextStage == 'ACO'}]]></condition>
+                </ifPart>
+            </sentry>
+
+            <!-- Reviewer → ACO: Activates when reviewer completes AND nextStage == 'ACO' -->
+            <sentry id="sentry_escalationToACO_fromReviewer">
                 <planItemOnPart id="onPart_escalationToACO_2" sourceRef="pi_reviewerReview">
                     <standardEvent>complete</standardEvent>
                 </planItemOnPart>
@@ -69,14 +79,28 @@
                 </ifPart>
             </sentry>
 
-            <!-- Analyst/Reviewer/ACO → AFC: Activates when any stage completes AND nextStage == 'AFC' -->
-            <sentry id="sentry_escalationToAFC">
+            <!-- Analyst → AFC: Activates when analyst completes AND nextStage == 'AFC' -->
+            <sentry id="sentry_escalationToAFC_fromAnalyst">
                 <planItemOnPart id="onPart_escalationToAFC_1" sourceRef="pi_analystReview">
                     <standardEvent>complete</standardEvent>
                 </planItemOnPart>
+                <ifPart>
+                    <condition><![CDATA[${nextStage == 'AFC'}]]></condition>
+                </ifPart>
+            </sentry>
+
+            <!-- Reviewer → AFC: Activates when reviewer completes AND nextStage == 'AFC' -->
+            <sentry id="sentry_escalationToAFC_fromReviewer">
                 <planItemOnPart id="onPart_escalationToAFC_2" sourceRef="pi_reviewerReview">
                     <standardEvent>complete</standardEvent>
                 </planItemOnPart>
+                <ifPart>
+                    <condition><![CDATA[${nextStage == 'AFC'}]]></condition>
+                </ifPart>
+            </sentry>
+
+            <!-- ACO → AFC: Activates when ACO completes AND nextStage == 'AFC' -->
+            <sentry id="sentry_escalationToAFC_fromACO">
                 <planItemOnPart id="onPart_escalationToAFC_3" sourceRef="pi_acoReview">
                     <standardEvent>complete</standardEvent>
                 </planItemOnPart>

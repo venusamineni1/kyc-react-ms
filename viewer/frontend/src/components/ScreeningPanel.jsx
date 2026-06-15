@@ -282,7 +282,9 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission, latestScreening, 
             }
 
             // Handle Hot results (need polling)
-            const requestId = res.reqId || res.requestId || res.processId;
+            // Note: status lookups are keyed by processId, not reqId - reqId is only
+            // useful for the alert-details endpoint.
+            const requestId = res.processId || res.requestId || res.reqId;
             setCurrentRequestId(requestId);
             setStatus('IN_PROGRESS');
             setResults([
@@ -442,8 +444,15 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission, latestScreening, 
                                 <div key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '12px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div>
                                         <div style={{ fontSize: '0.9rem' }}><strong>Date:</strong> {new Date(h.createdAt || Date.now()).toLocaleString()}</div>
-                                        <div style={{ color: h.overallStatus === 'COMPLETED' || h.overallStatus === 'CLEAR' || h.overallStatus === 'NO_HIT' ? '#52c41a' : '#faad14', margin: '4px 0', fontWeight: '500' }}>
-                                            <strong>Status:</strong> {h.overallStatus}
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '4px 0' }}>
+                                            <span style={{ color: h.overallStatus === 'COMPLETED' || h.overallStatus === 'CLEAR' || h.overallStatus === 'NO_HIT' ? '#52c41a' : '#faad14', fontWeight: '500' }}>
+                                                <strong>Status:</strong> {h.overallStatus}
+                                            </span>
+                                            {h.sourceType && (
+                                                <span style={{ fontSize: '0.75rem', background: h.sourceType === 'KYC_ORCHESTRATION_PRECHECK' ? 'rgba(100, 200, 255, 0.2)' : 'rgba(200, 200, 200, 0.2)', color: h.sourceType === 'KYC_ORCHESTRATION_PRECHECK' ? '#64c8ff' : '#bbb', padding: '2px 6px', borderRadius: '3px' }}>
+                                                    {h.sourceType === 'KYC_ORCHESTRATION_PRECHECK' ? 'Pre-check' : 'Manual'}
+                                                </span>
+                                            )}
                                         </div>
                                         <div style={{ fontSize: '0.75rem', color: '#888' }}>ID: {h.externalRequestID || h.externalRequestId}</div>
                                     </div>
