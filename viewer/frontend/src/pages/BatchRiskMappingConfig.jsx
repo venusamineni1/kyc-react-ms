@@ -221,7 +221,7 @@ const BatchRiskMappingConfig = () => {
                                                 <div className="field-info" style={{ marginBottom: '0.75rem' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                                                         <div className="field-label" style={{ fontWeight: 600, fontSize: '0.95rem' }}>{tp.label}</div>
-                                                        <span className="path-badge" style={{ fontSize: '0.65em', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', fontFamily: 'monospace' }}>{tp.path}</span>
+                                                        <span className="path-badge" style={{ fontSize: '0.7rem', padding: '3px 8px', background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.35)', color: '#a5b4fc', borderRadius: '4px', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{tp.path}</span>
                                                     </div>
                                                     <div className="field-desc" style={{ fontSize: '0.8rem', opacity: 0.7, lineHeight: '1.3' }}>{tp.description}</div>
                                                 </div>

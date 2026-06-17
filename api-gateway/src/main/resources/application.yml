@@ -1,6 +1,10 @@
 server:
   port: ${PORT:8080}
 
+internal:
+  api:
+    key: ${INTERNAL_API_KEY:dev-internal-kyc-key-change-in-prod}
+
 spring:
   application:
     name: api-gateway
@@ -17,10 +21,13 @@ spring:
             - Path=/api/risk/**
           filters:
             - RewritePath=/api/risk/(?<remaining>.*), /api/internal/risk/${remaining}
+            - AddRequestHeader=X-Internal-Api-Key, ${internal.api.key:dev-internal-kyc-key-change-in-prod}
         - id: screening-service-batch
           uri: lb://screening-service
           predicates:
             - Path=/api/internal/screening/**
+          filters:
+            - AddRequestHeader=X-Internal-Api-Key, ${internal.api.key:dev-internal-kyc-key-change-in-prod}
         - id: auth-service-login
           uri: lb://auth-service
           predicates:
