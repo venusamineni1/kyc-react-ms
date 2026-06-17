@@ -69,6 +69,11 @@ const CaseDetails = () => {
     const [selectedAssignee, setSelectedAssignee] = useState('');
     const [assigning, setAssigning] = useState(false);
     const [runningRisk, setRunningRisk] = useState(false);
+    const [showRiskHistoryModal, setShowRiskHistoryModal] = useState(false);
+    const [fullRiskHistory, setFullRiskHistory] = useState([]);
+    const [riskHistoryLoading, setRiskHistoryLoading] = useState(false);
+    const [selectedAssessment, setSelectedAssessment] = useState(null);
+    const [assessmentDetails, setAssessmentDetails] = useState([]);
  
     // Task Completion States
     const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
@@ -114,7 +119,7 @@ const CaseDetails = () => {
             if (caseDetailsDTO.latestRiskAssessment) {
                 setRiskHistory([caseDetailsDTO.latestRiskAssessment]);
             }
-            if (caseDetailsDTO.riskAssessmentDetails) {
+            if (caseDetailsDTO.riskAssessmentDetails && caseDetailsDTO.riskAssessmentDetails.length > 0) {
                 setRiskDetails(caseDetailsDTO.riskAssessmentDetails);
             }
 
@@ -131,20 +136,20 @@ const CaseDetails = () => {
                 const related = await caseService.getCasesByClient(caseData.clientID);
                 setRelatedCases(related.filter(c => c.caseID !== parseInt(id)));
 
-                // Only fetch Risk History if not already provided in DTO
-                if (!caseDetailsDTO.latestRiskAssessment) {
-                    try {
-                        const riskData = await riskService.getRiskHistory(caseData.clientID);
+                // Fetch risk history and pillar details
+                try {
+                    const riskData = await riskService.getRiskHistory(caseData.clientID);
+                    if (riskData && riskData.length > 0) {
                         setRiskHistory(riskData);
-                        if (riskData && riskData.length > 0 && riskData[0].assessmentID) {
+                        if (riskData[0].assessmentID) {
                             try {
                                 const details = await riskService.getAssessmentDetails(riskData[0].assessmentID);
                                 setRiskDetails(details || []);
                             } catch { setRiskDetails([]); }
                         }
-                    } catch (rErr) {
-                        console.error("Failed to fetch risk history", rErr);
                     }
+                } catch (rErr) {
+                    console.error("Failed to fetch risk history", rErr);
                 }
             }
 
@@ -305,6 +310,21 @@ const CaseDetails = () => {
             notify('Risk Calculation Failed: ' + err.message, 'error');
         } finally {
             setRunningRisk(false);
+        }
+    };
+
+    const handleOpenRiskHistory = async () => {
+        setShowRiskHistoryModal(true);
+        if (fullRiskHistory.length === 0) {
+            setRiskHistoryLoading(true);
+            try {
+                const data = await riskService.getRiskHistory(kycCase.clientID);
+                setFullRiskHistory(data || []);
+            } catch {
+                setFullRiskHistory([]);
+            } finally {
+                setRiskHistoryLoading(false);
+            }
         }
     };
 
@@ -485,77 +505,114 @@ const CaseDetails = () => {
                             </section>
                         )}
 
-                        {/* Decision Panel */}
-                        <section className="glass-section" style={{ borderLeft: '4px solid var(--primary-color)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <h3>Decision Support</h3>
-                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                    {/* Assignment Controls — only shown to the role that owns this stage */}
-                                    {canAssign && (
-                                        <>
-                                            {kycCase.assignedTo !== user.username && (
-                                                <Button variant="secondary" onClick={() => handleAssign(user.username)} disabled={assigning}>Assign to Me</Button>
-                                            )}
-                                            <Button variant="secondary" onClick={handleOpenAssignModal} disabled={assigning}>Assign To...</Button>
-                                        </>
-                                    )}
-
-                                    {/* Analyst: Submit + Cancel */}
-                                    {canSubmit && isAnalystStage && (
-                                        <Button onClick={() => handleTransition('SUBMIT')} disabled={transitioning}
-                                            style={{ backgroundColor: '#3b82f6', color: '#fff' }}>
-                                            Submit to Reviewer
-                                        </Button>
-                                    )}
-                                    {canCancel && (
-                                        <Button onClick={() => setIsCancelModalOpen(true)} disabled={transitioning}
-                                            style={{ backgroundColor: '#6b7280', color: '#fff' }}>
-                                            Cancel Case
-                                        </Button>
-                                    )}
-
-                                    {/* Reviewer / AFC: Submit to next stage */}
-                                    {canSubmit && isReviewerStage && (
-                                        <Button onClick={() => handleTransition('SUBMIT')} disabled={transitioning}
-                                            style={{ backgroundColor: '#3b82f6', color: '#fff' }}>
-                                            Submit to AFC
-                                        </Button>
-                                    )}
-                                    {canSubmit && isAfcStage && (
-                                        <Button onClick={() => handleTransition('SUBMIT')} disabled={transitioning}
-                                            style={{ backgroundColor: '#3b82f6', color: '#fff' }}>
-                                            Submit to ACO
-                                        </Button>
-                                    )}
-
-                                    {/* Rework (Reviewer / AFC / ACO) */}
-                                    {canRework && (
-                                        <Button onClick={() => setIsReworkModalOpen(true)} disabled={transitioning}
-                                            style={{ backgroundColor: '#f59e0b', color: '#fff' }}>
-                                            Rework
-                                        </Button>
-                                    )}
-
-                                    {/* Finalize (Reviewer / AFC / ACO) */}
-                                    {canFinalize && (
-                                        <Button onClick={() => setIsFinalizeModalOpen(true)} disabled={transitioning}
-                                            style={{ backgroundColor: '#22c55e', color: '#fff' }}>
-                                            Finalize
-                                        </Button>
-                                    )}
-                                </div>
+                        {/* Workflow History & Decision — two-column combined panel */}
+                        <section className="glass-section hd-panel">
+                            {/* Header */}
+                            <div className="hd-header">
+                                <h3 className="hd-title">Workflow History &amp; Decision</h3>
+                                <span className="hd-badge">{comments.length} {comments.length === 1 ? 'entry' : 'entries'}</span>
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <label style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>
-                                    {isAnalystStage ? 'Submission Notes' : 'Decision Comment (Required for Finalize)'}
-                                </label>
-                                <textarea
-                                    value={commentInput}
-                                    onChange={(e) => setCommentInput(e.target.value)}
-                                    placeholder="Provide detailed rationale for your decision..."
-                                    className="decision-textarea"
-                                />
+                            <div className="hd-grid">
+                                {/* ── Left: Audit trail ── */}
+                                <div className="hd-left">
+                                    <p className="hd-col-label">Audit Trail</p>
+                                    <div className="hd-trail">
+                                        {comments.length === 0 ? (
+                                            <div className="hd-empty">No audit entries yet.</div>
+                                        ) : comments.map((c, i) => {
+                                            const author = c.userID || c.userId || 'System';
+                                            const isSystem = author.toLowerCase() === 'system';
+                                            const initials = isSystem ? 'SY' : author.slice(0, 2).toUpperCase();
+                                            return (
+                                                <div key={i} className="trail-entry">
+                                                    <div className="trail-spine">
+                                                        <div className={`trail-avatar ${isSystem ? 'trail-avatar--system' : 'trail-avatar--user'}`}>{initials}</div>
+                                                        {i < comments.length - 1 && <div className="trail-line" />}
+                                                    </div>
+                                                    <div className="trail-body">
+                                                        <div className="trail-meta">
+                                                            <strong className="trail-author">{author}</strong>
+                                                            <span className="trail-time">{new Date(c.commentDate || c.time).toLocaleString()}</span>
+                                                        </div>
+                                                        <p className="trail-text">{c.commentText || c.message}</p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* vertical rule */}
+                                <div aria-hidden="true" className="hd-vr" />
+
+                                {/* ── Right: Decision ── */}
+                                <div className="hd-right">
+                                    <p className="hd-col-label">Decision</p>
+
+                                    {/* Assignee row */}
+                                    <div className="hd-assignee-row">
+                                        <div className="hd-assignee-info">
+                                            <span className="hd-assignee-label">Assigned to</span>
+                                            <span className="hd-assignee-value">
+                                                {kycCase.assignedTo
+                                                    ? <><span className="hd-assignee-dot" />{kycCase.assignedTo}</>
+                                                    : <span className="hd-assignee-none">Unassigned</span>}
+                                            </span>
+                                        </div>
+                                        {canAssign && (
+                                            <div className="hd-assignee-btns">
+                                                {kycCase.assignedTo !== user.username && (
+                                                    <button className="hd-btn-ghost" onClick={() => handleAssign(user.username)} disabled={assigning}>Assign to Me</button>
+                                                )}
+                                                <button className="hd-btn-ghost" onClick={handleOpenAssignModal} disabled={assigning}>Change</button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Comment */}
+                                    <div className="hd-field">
+                                        <label className="hd-field-label">
+                                            {isAnalystStage ? 'Submission Notes' : 'Decision Comment'}
+                                            {!isAnalystStage && <span className="hd-field-hint"> · required to finalize</span>}
+                                        </label>
+                                        <textarea
+                                            value={commentInput}
+                                            onChange={(e) => setCommentInput(e.target.value)}
+                                            placeholder="Provide detailed rationale for your decision..."
+                                            className="decision-textarea"
+                                            rows={5}
+                                        />
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="hd-actions">
+                                        {canSubmit && isAnalystStage && (
+                                            <Button onClick={() => handleTransition('SUBMIT')} disabled={transitioning}
+                                                style={{ backgroundColor: '#3b82f6', color: '#fff' }}>Submit to Reviewer</Button>
+                                        )}
+                                        {canCancel && (
+                                            <Button onClick={() => setIsCancelModalOpen(true)} disabled={transitioning}
+                                                style={{ backgroundColor: '#6b7280', color: '#fff' }}>Cancel Case</Button>
+                                        )}
+                                        {canSubmit && isReviewerStage && (
+                                            <Button onClick={() => handleTransition('SUBMIT')} disabled={transitioning}
+                                                style={{ backgroundColor: '#3b82f6', color: '#fff' }}>Submit to AFC</Button>
+                                        )}
+                                        {canSubmit && isAfcStage && (
+                                            <Button onClick={() => handleTransition('SUBMIT')} disabled={transitioning}
+                                                style={{ backgroundColor: '#3b82f6', color: '#fff' }}>Submit to ACO</Button>
+                                        )}
+                                        {canRework && (
+                                            <Button onClick={() => setIsReworkModalOpen(true)} disabled={transitioning}
+                                                style={{ backgroundColor: '#f59e0b', color: '#fff' }}>Rework</Button>
+                                        )}
+                                        {canFinalize && (
+                                            <Button onClick={() => setIsFinalizeModalOpen(true)} disabled={transitioning}
+                                                style={{ backgroundColor: '#22c55e', color: '#fff' }}>Finalize</Button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </section>
 
@@ -702,22 +759,6 @@ const CaseDetails = () => {
                             </table>
                         </section>
 
-                        {/* Recent Comments */}
-                        <section className="glass-section">
-                            <h3>Workflow Audit Trail</h3>
-                            <div className="comments-list">
-                                {comments.map((c, i) => (
-                                    <div key={i} className="comment-bubble">
-                                        <div className="comment-meta">
-                                            <strong>{c.userID || c.userId}</strong>
-                                            <span>{new Date(c.commentDate || c.time).toLocaleString()}</span>
-                                        </div>
-                                        <p className="comment-text">{c.commentText || c.message}</p>
-                                    </div>
-                                ))}
-                                {comments.length === 0 && <p style={{ color: '#666', fontStyle: 'italic' }}>No audit comments recorded.</p>}
-                            </div>
-                        </section>
                     </div>
                 )}
 
@@ -726,22 +767,25 @@ const CaseDetails = () => {
                         <section className="glass-section">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                 <h3 style={{ margin: 0 }}>Client Risk Pulse</h3>
-                                <button
-                                    onClick={handleRecalculateRisk}
-                                    className={`btn-icon ${runningRisk ? 'spinning' : ''}`}
-                                    title="Recalculate Risk"
-                                    disabled={runningRisk}
-                                    style={{
-                                        background: 'rgba(255,255,255,0.1)',
-                                        border: '1px solid rgba(255,255,255,0.2)',
-                                        borderRadius: '4px',
-                                        padding: '4px 8px',
-                                        cursor: 'pointer',
-                                        color: 'white'
-                                    }}
-                                >
-                                    🔄
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                    <button onClick={handleOpenRiskHistory} className="btn-icon" title="History">🕒</button>
+                                    <button
+                                        onClick={handleRecalculateRisk}
+                                        className={`btn-icon ${runningRisk ? 'spinning' : ''}`}
+                                        title="Recalculate Risk"
+                                        disabled={runningRisk}
+                                        style={{
+                                            background: 'rgba(255,255,255,0.1)',
+                                            border: '1px solid rgba(255,255,255,0.2)',
+                                            borderRadius: '4px',
+                                            padding: '4px 8px',
+                                            cursor: 'pointer',
+                                            color: 'white'
+                                        }}
+                                    >
+                                        🔄
+                                    </button>
+                                </div>
                             </div>
 
                             {riskHistory.length > 0 ? (() => {
@@ -1026,6 +1070,81 @@ const CaseDetails = () => {
                 </div>
             </Modal>
 
+            {/* Risk History Modal */}
+            <Modal
+                isOpen={showRiskHistoryModal}
+                onClose={() => { setShowRiskHistoryModal(false); setSelectedAssessment(null); setAssessmentDetails([]); }}
+                title="Assessment Intelligence"
+                maxWidth="900px"
+            >
+                {selectedAssessment ? (
+                    <div>
+                        <Button variant="secondary" onClick={() => { setSelectedAssessment(null); setAssessmentDetails([]); }} style={{ marginBottom: '1.5rem' }}>← Back to Timeline</Button>
+                        <div className="glass-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', padding: '1.5rem', marginBottom: '2rem' }}>
+                            <div><div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.3rem' }}>Overall Score</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{selectedAssessment.overallRiskScore ?? '—'}</div></div>
+                            <div><div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.3rem' }}>Level</div><div style={{ fontWeight: 700, fontSize: '1.1rem', color: selectedAssessment.overallRiskLevel === 'HIGH' ? '#ff4d4f' : selectedAssessment.overallRiskLevel === 'MEDIUM' ? '#faad14' : '#52c41a' }}>{selectedAssessment.overallRiskLevel || '—'}</div></div>
+                            <div><div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.3rem' }}>Initial Level</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{selectedAssessment.initialRiskLevel || '—'}</div></div>
+                            <div><div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.3rem' }}>Methodology</div><div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{selectedAssessment.typeOfLogicApplied === 'KYC_ORCHESTRATION_PRECHECK' ? 'Pre-check' : (selectedAssessment.typeOfLogicApplied || '—')}</div></div>
+                        </div>
+                        <h4 style={{ color: 'var(--accent-primary)', marginBottom: '1rem' }}>Risk Factor Breakdown</h4>
+                        {assessmentDetails.length === 0 ? (
+                            <div className="rh-empty">No factor breakdown available.</div>
+                        ) : (
+                            <table>
+                                <thead>
+                                    <tr><th>Type</th><th>Element</th><th>Evidence</th><th>Score</th></tr>
+                                </thead>
+                                <tbody>
+                                    {assessmentDetails.map((d, i) => (
+                                        <tr key={i}>
+                                            <td>{d.riskType}</td>
+                                            <td><strong>{d.elementName}</strong></td>
+                                            <td>{d.elementValue}</td>
+                                            <td style={{ fontWeight: 'bold' }}>{d.riskScore}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                ) : (
+                    <div className="rh-modal">
+                        {riskHistoryLoading ? (
+                            <div className="rh-loading">Loading history...</div>
+                        ) : fullRiskHistory.length === 0 ? (
+                            <div className="rh-empty">No risk assessments found for this client.</div>
+                        ) : (
+                            <table>
+                                <thead>
+                                    <tr><th>Timestamp</th><th>Score</th><th>Level</th><th>Method</th><th>Action</th></tr>
+                                </thead>
+                                <tbody>
+                                    {fullRiskHistory.map((h, i) => (
+                                        <tr key={h.assessmentID || i}>
+                                            <td>{new Date(h.calculationDate || h.createdAt).toLocaleString()}</td>
+                                            <td style={{ fontWeight: 'bold' }}>{h.overallRiskScore ?? '—'}</td>
+                                            <td>
+                                                <span className={`status-badge ${h.overallRiskLevel === 'HIGH' ? 'rejected' : 'active'}`}>
+                                                    {h.overallRiskLevel || '—'}
+                                                </span>
+                                            </td>
+                                            <td>{h.typeOfLogicApplied === 'KYC_ORCHESTRATION_PRECHECK' ? 'Pre-check' : (h.typeOfLogicApplied || '—')}</td>
+                                            <td>
+                                                <Button variant="secondary" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }} onClick={async () => {
+                                                    const details = await riskService.getAssessmentDetails(h.assessmentID);
+                                                    setAssessmentDetails(details || []);
+                                                    setSelectedAssessment(h);
+                                                }}>Analyze</Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                )}
+            </Modal>
+
             <style>{`
                 .case-id-badge {
                     background: rgba(255,255,255,0.05);
@@ -1092,14 +1211,17 @@ const CaseDetails = () => {
                 .step-connector { height: 2px; background: var(--glass-border); flex: 1; margin: 0 10px; margin-top: -25px; }
                 .decision-textarea {
                     width: 100%;
-                    min-height: 120px;
+                    flex: 1;
+                    min-height: 100px;
                     background: rgba(0,0,0,0.2);
                     border: 1px solid var(--glass-border);
                     border-radius: 8px;
                     color: #fff;
-                    padding: 1rem;
+                    padding: 0.75rem 1rem;
                     font-family: inherit;
+                    font-size: 0.875rem;
                     resize: vertical;
+                    box-sizing: border-box;
                 }
                 .comment-bubble {
                     background: rgba(255,255,255,0.02);
@@ -1133,6 +1255,111 @@ const CaseDetails = () => {
                 .btn-glass { background: rgba(255,255,255,0.05); color: #fff; text-decoration: none; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--glass-border); font-size: 0.9rem; transition: all 0.2s; }
                 .btn-glass:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
                 .modern-select, .modern-input { width: 100%; padding: 0.75rem; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; }
+
+                /* ── Workflow History & Decision panel ── */
+                .hd-panel { padding: 0 !important; overflow: hidden; }
+                .hd-header {
+                    display: flex; align-items: center; gap: 0.75rem;
+                    padding: 1rem 1.5rem;
+                    border-bottom: 1px solid var(--glass-border);
+                    background: rgba(255,255,255,0.02);
+                }
+                .hd-title { font-size: 1rem; font-weight: 700; color: var(--text-color); margin: 0; }
+                .hd-badge {
+                    font-size: 0.72rem; font-weight: 600;
+                    background: rgba(99,102,241,0.15); color: #818cf8;
+                    border: 1px solid rgba(99,102,241,0.3);
+                    padding: 2px 9px; border-radius: 999px;
+                }
+                .hd-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1px 1fr;
+                    align-items: stretch;
+                    min-height: 420px;
+                }
+                .hd-left {
+                    padding: 1.25rem 1.5rem;
+                    display: flex; flex-direction: column;
+                    overflow: hidden;
+                }
+                .hd-right {
+                    padding: 1.25rem 1.5rem;
+                    display: flex; flex-direction: column; gap: 1rem;
+                }
+                .hd-vr { background: var(--glass-border); width: 1px; align-self: stretch; }
+                @media (max-width: 768px) {
+                    .hd-grid { grid-template-columns: 1fr; }
+                    .hd-vr { display: none; }
+                    .hd-left, .hd-right { padding: 1rem 1.25rem; }
+                }
+                .hd-col-label {
+                    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em;
+                    text-transform: uppercase; color: var(--text-secondary);
+                    margin: 0 0 0.9rem 0;
+                }
+
+                /* Audit trail */
+                .hd-trail { flex: 1; overflow-y: auto; padding-right: 0.5rem; }
+                .hd-trail::-webkit-scrollbar { width: 3px; }
+                .hd-trail::-webkit-scrollbar-track { background: transparent; }
+                .hd-trail::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+                .hd-empty { padding: 2rem 1rem; color: #6b7280; font-size: 0.85rem; font-style: italic; text-align: center; }
+                .trail-entry { display: flex; gap: 0.75rem; }
+                .trail-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+                .trail-avatar {
+                    width: 30px; height: 30px; border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 0.65rem; font-weight: 700; color: #fff; flex-shrink: 0;
+                }
+                .trail-avatar--system { background: #374151; }
+                .trail-avatar--user   { background: #1d4ed8; }
+                .trail-line { width: 1px; flex: 1; background: var(--glass-border); margin: 3px 0; min-height: 14px; }
+                .trail-body { flex: 1; padding-bottom: 1.1rem; }
+                .trail-meta { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
+                .trail-author { font-size: 0.8rem; font-weight: 700; color: var(--text-color); }
+                .trail-time { font-size: 0.7rem; color: var(--text-secondary); }
+                .trail-text {
+                    margin: 0; font-size: 0.85rem; color: #cbd5e1; line-height: 1.5;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 6px; padding: 0.5rem 0.65rem;
+                }
+
+                /* Decision column */
+                .hd-assignee-row {
+                    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 8px; padding: 0.6rem 0.85rem;
+                }
+                .hd-assignee-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+                .hd-assignee-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-secondary); }
+                .hd-assignee-value { font-size: 0.85rem; font-weight: 600; color: var(--text-color); display: flex; align-items: center; gap: 6px; }
+                .hd-assignee-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+                .hd-assignee-none { color: #6b7280; font-weight: 400; font-style: italic; }
+                .hd-assignee-btns { display: flex; gap: 0.4rem; flex-shrink: 0; }
+                .hd-btn-ghost {
+                    background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+                    color: #94a3b8; font-size: 0.75rem; padding: 4px 10px;
+                    border-radius: 6px; cursor: pointer; transition: background 0.15s, color 0.15s;
+                    white-space: nowrap;
+                }
+                .hd-btn-ghost:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+                .hd-btn-ghost:disabled { opacity: 0.35; cursor: not-allowed; }
+                .hd-field { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
+                .hd-field-label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
+                .hd-field-hint { font-weight: 400; color: #6b7280; }
+                .hd-actions {
+                    display: flex; gap: 0.5rem; flex-wrap: wrap;
+                    padding-top: 0.75rem;
+                    border-top: 1px solid var(--glass-border);
+                    margin-top: auto;
+                }
+
+                /* Risk History modal */
+                .rh-modal { min-width: 540px; }
+                .rh-loading, .rh-empty { padding: 2rem; text-align: center; color: #6b7280; font-style: italic; }
+
             `}</style>
         </div>
     );

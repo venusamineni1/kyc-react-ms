@@ -112,7 +112,9 @@ const ClientDetails = () => {
             }
             if (detailsData.latestRiskAssessment) {
                 setRiskHistory([detailsData.latestRiskAssessment]);
-                setLatestRiskDetails(detailsData.riskAssessmentDetails || [detailsData.latestRiskAssessment]);
+                if (detailsData.riskAssessmentDetails && detailsData.riskAssessmentDetails.length > 0) {
+                    setLatestRiskDetails(detailsData.riskAssessmentDetails);
+                }
             }
 
             // Parallel fetches for remaining data
@@ -125,6 +127,18 @@ const ClientDetails = () => {
             setCases(casesData);
             setMaterialChanges(changesData);
             setAudits(auditData ? auditData.filter(a => a.details && a.details.includes(String(id))) : []);
+
+            // Always fetch latest assessment details for pillar breakdown
+            try {
+                const riskData = await riskService.getRiskHistory(id);
+                if (riskData && riskData.length > 0) {
+                    setRiskHistory(riskData);
+                    if (riskData[0].assessmentID) {
+                        const details = await riskService.getAssessmentDetails(riskData[0].assessmentID);
+                        setLatestRiskDetails(details || []);
+                    }
+                }
+            } catch { /* non-fatal */ }
         } catch (err) {
             setError(err.message);
         } finally {

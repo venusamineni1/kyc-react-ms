@@ -117,7 +117,25 @@ const Questionnaire = ({ caseId: propCaseId, readOnly: propReadOnly }) => {
                                 {saving ? 'Saving...' : 'Save Changes'}
                             </Button>
                         )}
-                        <Link to={`/cases/${caseId}`} className="back-link">Back to Case</Link>
+                        <Link
+                            to={`/cases/${caseId}`}
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                                padding: '0.45rem 1rem',
+                                background: 'rgba(255,255,255,0.07)',
+                                border: '1px solid rgba(255,255,255,0.18)',
+                                borderRadius: '8px',
+                                color: '#e2e8f0',
+                                fontSize: '0.875rem',
+                                fontWeight: 500,
+                                textDecoration: 'none',
+                                transition: 'background 0.15s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
+                        >
+                            ← Back to Case
+                        </Link>
                     </div>
                 </header>
             )}
