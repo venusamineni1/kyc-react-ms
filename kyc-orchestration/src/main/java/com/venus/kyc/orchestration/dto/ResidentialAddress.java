@@ -35,4 +35,9 @@ public class ResidentialAddress {
             requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "residentialAddress.zip is required")
     private String zip;
+
+    @Schema(description = "Date from which this residential address is valid, in YYYY-MM-DD format.",
+            example = "2020-01-15",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String validFrom;
 }

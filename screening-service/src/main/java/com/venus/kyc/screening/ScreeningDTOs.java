@@ -11,13 +11,16 @@ public class ScreeningDTOs {
             String firstName,
             String lastName,
             String dateOfBirth,
-            String citizenship,
-            /**
-             * Milliseconds to wait after submit before calling get_status.
-             * 0 = immediate (default). Configured globally via nrts.status-check-delay-ms
-             * but can be overridden per-request.
-             */
-            Long statusCheckDelayMs
+            String gender,              // "M" or "F"  → <p:G>
+            String citizenship,         // ISO alpha-2  → <p:Cntr>
+            String nationality,         // ISO alpha-2  → <p:Nat>  (null = omit element)
+            String countryOfResidence,  // ISO alpha-2  → <p:CntrRes> (null = omit element)
+            String idType,              // alphanumeric → <p:IdType>
+            String idNumber,            // alphanumeric → <p:IdNr>
+            String riskRating,          // "H","M","L"  → <p:Risk>
+            String comment,             // free text    → <p:Comment>
+            String province,            // alphanumeric → <p:Prov>
+            Long statusCheckDelayMs     // ms to wait before get_status; 0 = immediate
     ) {}
 
     // ── Endpoint 1: Initiate response ─────────────────────────────────────────

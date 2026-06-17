@@ -279,9 +279,15 @@ public class KycOrchestrationService {
         java.util.Map<String, Object> clientDetails = new java.util.HashMap<>();
         clientDetails.put("recordID", request.getUniqueClientID());
         clientDetails.put("countryOfTax", request.getPrimaryCitizenship() != null ? request.getPrimaryCitizenship() : "DE");
+        clientDetails.put("clientAdoptionCountry", request.getClientAdoptionCountry());
+        clientDetails.put("countryOfDomicile", request.getCountryOfDomicile());
+        clientDetails.put("investorVisa", request.getInvestorVisa());
 
         java.util.Map<String, Object> addressType = new java.util.HashMap<>();
         addressType.put("domicile", request.getCountryOfResidence() != null ? request.getCountryOfResidence() : "DE");
+
+        String residentialAddressValidFrom = request.getResidentialAddress() != null
+                ? request.getResidentialAddress().getValidFrom() : null;
 
         java.util.Map<String, Object> partyAccount = new java.util.HashMap<>();
         partyAccount.put("countries", java.util.List.of(request.getPrimaryCitizenship() != null ? request.getPrimaryCitizenship() : "DE"));
@@ -290,6 +296,7 @@ public class KycOrchestrationService {
 
         java.util.Map<String, Object> geoRisk = new java.util.HashMap<>();
         geoRisk.put("partyAccounts", java.util.List.of(partyAccount));
+        geoRisk.put("residentialAddressValidFrom", residentialAddressValidFrom);
 
         java.util.Map<String, Object> item = new java.util.HashMap<>();
         item.put("clientDetails", clientDetails);

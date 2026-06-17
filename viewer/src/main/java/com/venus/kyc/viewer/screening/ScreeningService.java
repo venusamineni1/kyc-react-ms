@@ -53,7 +53,16 @@ public class ScreeningService {
                 client.firstName(),
                 client.lastName(),
                 client.dateOfBirth() != null ? client.dateOfBirth().toString() : null,
-                client.citizenship1());
+                client.gender(),
+                client.citizenship1(),
+                client.citizenship2(),  // nationality
+                null,                   // countryOfResidence — not yet extracted from addresses
+                null,                   // idType
+                null,                   // idNumber
+                null,                   // riskRating
+                null,                   // comment
+                null                    // province
+        );
 
         String url = this.screeningServiceUrl + "/initiate";
 

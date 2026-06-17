@@ -253,6 +253,9 @@ public class ClientController {
                 client.placeOfBirth(),
                 client.cityOfBirth(),
                 client.countryOfBirth(),
+                client.clientAdoptionCountry(),
+                client.countryOfDomicile(),
+                client.investorVisa(),
                 null, // Masked addresses
                 null, // Masked identifiers
                 null, // Masked related parties

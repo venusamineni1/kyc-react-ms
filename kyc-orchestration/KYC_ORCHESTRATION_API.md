@@ -54,6 +54,9 @@ Content-Type: application/json
 | `countryOfBirth` | `string` | No | Country of birth (ISO 3166-1 alpha-2 recommended, e.g. `DE`). |
 | `primaryCitizenship` | `string` | **Yes** | Primary citizenship country code. |
 | `secondCitizenship` | `string` | No | Second citizenship country code, if applicable. |
+| `clientAdoptionCountry` | `string` | No | Country where the client was adopted/onboarded (ISO 3166-1 alpha-2, e.g. `DE`). Forwarded to CRRE as a risk input. |
+| `countryOfDomicile` | `string` | No | Country of domicile (ISO 3166-1 alpha-2, e.g. `CH`). May differ from country of residence. Forwarded to CRRE. |
+| `investorVisa` | `boolean` | No | `true` if the client holds an investor visa. Defaults to `false`. Forwarded to CRRE as an additional risk flag. |
 
 **Residential Address** — nested object `residentialAddress`
 
@@ -64,6 +67,7 @@ Content-Type: application/json
 | `residentialAddress.addressLine2` | `string` | No | Street address line 2. Stored **AES-GCM encrypted** at rest when present. |
 | `residentialAddress.city` | `string` | **Yes** | City. |
 | `residentialAddress.zip` | `string` | **Yes** | Postal / ZIP code. |
+| `residentialAddress.validFrom` | `string` | No | Date from which this address is valid (`YYYY-MM-DD`). Forwarded to CRRE as a geo-risk input (`residentialAddressValidFrom`). |
 | `countryOfResidence` | `string` | **Yes** | Country of residence (ISO 3166-1 alpha-2 recommended, e.g. `DE`). |
 
 **Occupation**
@@ -108,11 +112,15 @@ Content-Type: application/json
   "countryOfBirth": "DE",
   "primaryCitizenship": "DE",
   "secondCitizenship": "US",
+  "clientAdoptionCountry": "DE",
+  "countryOfDomicile": "CH",
+  "investorVisa": false,
   "residentialAddress": {
     "addressLine1": "Unter den Linden 1",
     "addressLine2": "Apt 4B",
     "city": "Berlin",
-    "zip": "10117"
+    "zip": "10117",
+    "validFrom": "2022-03-01"
   },
   "countryOfResidence": "DE",
   "occupation": "Software Engineer",
@@ -527,6 +535,19 @@ The following fields are stored **AES-128/GCM encrypted** in the database, encry
 | `dob` | Same as above |
 
 The encryption key is supplied via the `encryption.secret-key` property (must be exactly 16 bytes). In production this must come from a secrets manager or environment variable — **never commit the real key**.
+
+### CRRE Risk Input Mapping
+
+The following fields from the initiation request are forwarded to CRRE as risk inputs when KYC Orchestration builds the `CalculateRiskRequest`:
+
+| Initiation field | CRRE mapping | Location in risk request |
+|---|---|---|
+| `clientAdoptionCountry` | `clientDetails.clientAdoptionCountry` | `ClientDetails` |
+| `countryOfDomicile` | `clientDetails.countryOfDomicile` | `ClientDetails` |
+| `investorVisa` | `clientDetails.investorVisa` | `ClientDetails` |
+| `residentialAddress.validFrom` | `geoRiskType.residentialAddressValidFrom` | `GeoRiskType` |
+
+These fields are optional. When absent they are forwarded as `null` and CRRE applies its default scoring logic.
 
 ### On-Hold Decision Logic
 

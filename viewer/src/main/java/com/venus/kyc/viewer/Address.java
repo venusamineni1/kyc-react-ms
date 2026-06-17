@@ -1,5 +1,7 @@
 package com.venus.kyc.viewer;
 
+import java.time.LocalDate;
+
 public record Address(
                 Long addressID,
                 String addressType,
@@ -9,5 +11,6 @@ public record Address(
                 String zip,
                 String country,
                 String addressNumber,
-                String addressSupplement) {
+                String addressSupplement,
+                LocalDate validFrom) {
 }

@@ -9,7 +9,15 @@ public class ScreeningDTOs {
                         String firstName,
                         String lastName,
                         String dateOfBirth,
-                        String citizenship) {
+                        String gender,
+                        String citizenship,
+                        String nationality,
+                        String countryOfResidence,
+                        String idType,
+                        String idNumber,
+                        String riskRating,
+                        String comment,
+                        String province) {
         }
 
         public record InitiateScreeningResponse(

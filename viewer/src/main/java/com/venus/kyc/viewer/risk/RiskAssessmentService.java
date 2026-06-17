@@ -88,6 +88,7 @@ public class RiskAssessmentService {
         RiskDTOs.GeoRiskType geoRisk = new RiskDTOs.GeoRiskType(
                 null, // relatedParty
                 java.util.List.of(partyAccount),
+                null, // residentialAddressValidFrom
                 null, null, null, null);
 
         // Client Details

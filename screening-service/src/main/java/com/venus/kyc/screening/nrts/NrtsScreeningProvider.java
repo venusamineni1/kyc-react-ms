@@ -15,6 +15,9 @@ import java.util.stream.Collectors;
 /**
  * Real NRTS implementation of ScreeningProvider.
  * Active when nrts.mock=false.
+ *
+ * Depends on NrtsPayloadCodec (not a concrete XML/JSON class) so that a
+ * format change from XML to JSON is isolated to NrtsJsonCodec only.
  */
 @Component
 @ConditionalOnProperty(name = "nrts.mock", havingValue = "false")
@@ -24,17 +27,14 @@ public class NrtsScreeningProvider implements ScreeningProvider {
 
     private final NrtsConfig config;
     private final NrtsHttpClient httpClient;
-    private final NrtsXmlBuilder xmlBuilder;
-    private final NrtsXmlParser xmlParser;
+    private final NrtsPayloadCodec codec;
     private final NrtsJsonParser jsonParser;
 
     public NrtsScreeningProvider(NrtsConfig config, NrtsHttpClient httpClient,
-                                  NrtsXmlBuilder xmlBuilder, NrtsXmlParser xmlParser,
-                                  NrtsJsonParser jsonParser) {
+                                  NrtsPayloadCodec codec, NrtsJsonParser jsonParser) {
         this.config = config;
         this.httpClient = httpClient;
-        this.xmlBuilder = xmlBuilder;
-        this.xmlParser = xmlParser;
+        this.codec = codec;
         this.jsonParser = jsonParser;
     }
 
@@ -42,17 +42,18 @@ public class NrtsScreeningProvider implements ScreeningProvider {
 
     @Override
     public ScreeningDTOs.InitiateScreeningResponse initiate(ScreeningDTOs.ScreeningInternalRequest request) {
-        // 1. Build XML
-        String xml = xmlBuilder.buildSubmitXml(config.srcId(), request);
-        log.debug("NRTS submit XML:\n{}", xml);
+        // 1. Build format-agnostic record and serialize
+        NrtsRecord record = toNrtsRecord(request);
+        String payload = codec.serializeSubmit(config.srcId(), List.of(record));
+        log.debug("NRTS submit payload:\n{}", payload);
 
         // 2. Submit to NRTS
-        NrtsHttpClient.NrtsRawResponse submitResponse = httpClient.submit(xml);
+        NrtsHttpClient.NrtsRawResponse submitResponse = httpClient.submit(payload);
         log.info("NRTS submit HTTP {}", submitResponse.httpStatus());
 
-        NrtsXmlParser.NrtsSubmitResult submitResult = xmlParser.parseSubmitResponse(submitResponse.body());
+        NrtsPayloadCodec.SubmitResult submitResult = codec.parseSubmitResponse(submitResponse.body());
 
-        // 3. No alerts → return No-Hit immediately
+        // 3. No alerts → No-Hit
         if (!submitResult.anyAlerts()) {
             log.info("NRTS submit: No alerts for client {}", request.clientId());
             return new ScreeningDTOs.InitiateScreeningResponse("No-Hit", null, null, Collections.emptyList());
@@ -73,12 +74,10 @@ public class NrtsScreeningProvider implements ScreeningProvider {
         }
 
         Long processId = submitResult.processId();
-        NrtsXmlParser.NrtsStatusResult statusResult = xmlParser.parseStatusResponse(
-                httpClient.getStatus(processId).body()
-        );
+        NrtsPayloadCodec.StatusResult statusResult =
+                codec.parseStatusResponse(httpClient.getStatus(processId).body());
 
-        // 5. Extract first (only) client result — always 1 client per submit
-        NrtsXmlParser.NrtsClientResult client = statusResult.clients().isEmpty()
+        NrtsPayloadCodec.ClientResult client = statusResult.clients().isEmpty()
                 ? null : statusResult.clients().get(0);
 
         List<String> alertContexts = client == null ? Collections.emptyList()
@@ -96,10 +95,10 @@ public class NrtsScreeningProvider implements ScreeningProvider {
 
     @Override
     public ScreeningDTOs.ScreeningStatusResponse checkStatus(long processId) {
-        NrtsHttpClient.NrtsRawResponse raw = httpClient.getStatus(processId);
-        NrtsXmlParser.NrtsStatusResult result = xmlParser.parseStatusResponse(raw.body());
+        NrtsPayloadCodec.StatusResult result =
+                codec.parseStatusResponse(httpClient.getStatus(processId).body());
 
-        NrtsXmlParser.NrtsClientResult client = result.clients().isEmpty()
+        NrtsPayloadCodec.ClientResult client = result.clients().isEmpty()
                 ? null : result.clients().get(0);
 
         List<ScreeningDTOs.ContextResult> contextResults = client == null
@@ -132,5 +131,26 @@ public class NrtsScreeningProvider implements ScreeningProvider {
     @Override
     public ResponseEntity<byte[]> getDocument(String documentId) {
         return httpClient.getDocument(documentId);
+    }
+
+    // ── Mapping ───────────────────────────────────────────────────────────────
+
+    private NrtsRecord toNrtsRecord(ScreeningDTOs.ScreeningInternalRequest req) {
+        return new NrtsRecord(
+                req.clientId() != null ? String.valueOf(req.clientId()) : null,
+                "I",
+                req.firstName(),
+                req.lastName(),
+                req.dateOfBirth(),
+                req.gender(),
+                req.citizenship(),
+                req.nationality(),
+                req.countryOfResidence(),
+                req.idType(),
+                req.idNumber(),
+                req.riskRating(),
+                req.comment(),
+                req.province()
+        );
     }
 }

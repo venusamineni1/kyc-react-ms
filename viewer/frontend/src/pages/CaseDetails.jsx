@@ -367,6 +367,18 @@ const CaseDetails = () => {
     const canFinalize  = isActiveParticipant && (isReviewerStage || isAfcStage || isAcoStage);
     const canCancel    = isActiveParticipant && isAnalystStage;
 
+    // Assign buttons are only available to the role that owns the current stage.
+    // An analyst must not be able to assign a REVIEWER-stage case (or any other stage they don't own).
+    const stageRoleMap = {
+        'KYC_ANALYST': 'KYC_ANALYST',
+        'PROCESSING':  'KYC_ANALYST',
+        'REVIEWER':    'KYC_REVIEWER',
+        'AFC':         'AFC_REVIEWER',
+        'ACO':         'ACO_REVIEWER',
+    };
+    const isAdmin      = user?.role === 'ROLE_ADMIN';
+    const canAssign    = isActiveStage && (isAdmin || user?.role === stageRoleMap[kycCase?.status]);
+
     const handleOpenAssignModal = async () => {
         const statusToRoleMap = {
             'PROCESSING': 'KYC_ANALYST',
@@ -478,8 +490,8 @@ const CaseDetails = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                                 <h3>Decision Support</h3>
                                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                    {/* Assignment Controls */}
-                                    {isActiveStage && (
+                                    {/* Assignment Controls — only shown to the role that owns this stage */}
+                                    {canAssign && (
                                         <>
                                             {kycCase.assignedTo !== user.username && (
                                                 <Button variant="secondary" onClick={() => handleAssign(user.username)} disabled={assigning}>Assign to Me</Button>

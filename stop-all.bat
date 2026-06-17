@@ -1,36 +1,44 @@
 @echo off
 setlocal enabledelayedexpansion
 
-echo Stopping KYC Microservices Stack...
+echo === KYC Microservices Stack Shutdown ===
+echo.
 
-call :StopService 8761 "Service Registry"
-call :StopService 8080 "API Gateway"
-call :StopService 8084 "Auth Service"
-call :StopService 8081 "Risk Service"
-call :StopService 8082 "Screening Service"
-call :StopService 8085 "Document Service"
-call :StopService 8086 "Orchestration Service"
-call :StopService 8083 "Viewer Service"
+:: Stop in reverse startup order (frontend first, registry last)
+call :stop_service 5173 "Frontend"
+call :stop_service 8080 "API Gateway"
+call :stop_service 8083 "Viewer Service"
+call :stop_service 8086 "KYC Orchestration"
+call :stop_service 8085 "Document Service"
+call :stop_service 8082 "Screening Service"
+call :stop_service 8081 "Risk Service"
+call :stop_service 8084 "Auth Service"
+call :stop_service 8761 "Service Registry"
 
-REM Frontend (Port 5173)
-call :StopService 5173 "Frontend"
-
-echo All shutdown commands issued.
+echo.
+echo === Shutdown Complete ===
+echo.
 goto :eof
 
-:StopService
-set "PORT=%~1"
-set "NAME=%~2"
+:: ── :stop_service port name ───────────────────────────────────────────────────
+:stop_service
+    set _PORT=%~1
+    set _NAME=%~2
+    set _PID=
 
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%PORT%" ^| findstr "LISTENING"') do (
-    set PID=%%a
-)
+    for /f "tokens=5" %%a in ('netstat -ano ^| findstr /r ":%_PORT% " ^| findstr "LISTENING" 2^>nul') do (
+        set _PID=%%a
+    )
 
-if defined PID (
-    echo Stopping %NAME% (PID: %PID%) on port %PORT%...
-    taskkill /F /PID %PID% >nul 2>&1
-    set "PID="
-) else (
-    echo %NAME% is not running on port %PORT%.
-)
-exit /b 0
+    if defined _PID (
+        echo Stopping %_NAME% on port %_PORT% ^(PID: %_PID%^)...
+        taskkill /F /PID %_PID% >nul 2>&1
+        if !errorlevel! equ 0 (
+            echo   OK  Stopped.
+        ) else (
+            echo   WARN  taskkill returned non-zero for PID %_PID% -- may already be gone.
+        )
+    ) else (
+        echo %_NAME% is not running on port %_PORT%.
+    )
+    exit /b 0

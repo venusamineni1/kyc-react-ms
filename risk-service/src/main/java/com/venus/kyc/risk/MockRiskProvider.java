@@ -71,7 +71,7 @@ public class MockRiskProvider implements RiskProvider {
                         "occupationCode", "00101", pIndustry, null, null, "N")));
 
         RiskDTOs.GeoRiskType geo = new RiskDTOs.GeoRiskType(
-                null, null, pGeo, riskLevel, null,
+                null, null, null, pGeo, riskLevel, null,
                 List.of(
                         new RiskDTOs.RiskClassification(
                                 "countryOfNationality", "DE", pGeo, null, null, "N"),

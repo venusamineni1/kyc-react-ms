@@ -39,6 +39,8 @@ public class RiskDTOs {
                         String defenceRevenue,
                         String recordID,
                         String clientAdoptionCountry,
+                        String countryOfDomicile,
+                        Boolean investorVisa,
                         String smeAssessment,
                         String smeRiskAssessment,
                         @JsonProperty("additionalRule") List<AdditionalRule> additionalRule) {
@@ -71,6 +73,7 @@ public class RiskDTOs {
         public record GeoRiskType(
                         @JsonProperty("relatedParty") List<RelatedPartyRisk> relatedParty,
                         @JsonProperty("partyAccount") List<PartyAccountRisk> partyAccount,
+                        String residentialAddressValidFrom,
                         // Response fields
                         Integer pillarScore,
                         String pillarRiskCategory,

@@ -21,7 +21,10 @@ CREATE TABLE IF NOT EXISTS Clients (
     CRSStatus VARCHAR(50),
     PlaceOfBirth VARCHAR(100),
     CityOfBirth VARCHAR(100),
-    CountryOfBirth VARCHAR(100)
+    CountryOfBirth VARCHAR(100),
+    ClientAdoptionCountry VARCHAR(2),
+    CountryOfDomicile VARCHAR(2),
+    InvestorVisa BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS ClientAddresses (
@@ -35,6 +38,7 @@ CREATE TABLE IF NOT EXISTS ClientAddresses (
     Country VARCHAR(100),
     AddressNumber VARCHAR(50),
     AddressSupplement VARCHAR(255),
+    ValidFrom DATE,
     FOREIGN KEY (ClientID) REFERENCES Clients(ClientID)
 );
 
@@ -85,6 +89,7 @@ CREATE TABLE IF NOT EXISTS RelatedPartyAddresses (
     Country VARCHAR(100),
     AddressNumber VARCHAR(50),
     AddressSupplement VARCHAR(255),
+    ValidFrom DATE,
     FOREIGN KEY (RelatedPartyID) REFERENCES RelatedParties(RelatedPartyID)
 );
 

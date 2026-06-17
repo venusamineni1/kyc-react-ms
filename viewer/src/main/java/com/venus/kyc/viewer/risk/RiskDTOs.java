@@ -71,6 +71,7 @@ public class RiskDTOs {
     public record GeoRiskType(
             @JsonProperty("relatedParty") List<RelatedPartyRisk> relatedParty,
             @JsonProperty("partyAccount") List<PartyAccountRisk> partyAccount,
+            String residentialAddressValidFrom,
             // Response fields
             Integer pillarScore,
             String pillarRiskCategory,

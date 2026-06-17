@@ -27,6 +27,7 @@ public class ClientRepository {
                         c.language(), c.occupation(), c.countryOfTax(), c.sourceOfFundsCountry(),
                         c.fatcaStatus(), c.crsStatus(),
                         enc.decrypt(c.placeOfBirth()), enc.decrypt(c.cityOfBirth()), c.countryOfBirth(),
+                        c.clientAdoptionCountry(), c.countryOfDomicile(), c.investorVisa(),
                         c.addresses(), c.identifiers(), c.relatedParties(), c.accounts(), c.portfolios());
         }
 
@@ -45,7 +46,7 @@ public class ClientRepository {
                 int totalPages = (int) Math.ceil((double) totalElements / size);
 
                 List<Client> clients = jdbcClient.sql(
-                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients LIMIT :limit OFFSET :offset")
+                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth, ClientAdoptionCountry, CountryOfDomicile, InvestorVisa FROM Clients LIMIT :limit OFFSET :offset")
                                 .param("limit", size)
                                 .param("offset", page * size)
                                 .query((rs, rowNum) -> decrypt(new Client(
@@ -74,6 +75,9 @@ public class ClientRepository {
                                                 rs.getString("PlaceOfBirth"),
                                                 rs.getString("CityOfBirth"),
                                                 rs.getString("CountryOfBirth"),
+                                                rs.getString("ClientAdoptionCountry"),
+                                                rs.getString("CountryOfDomicile"),
+                                                rs.getObject("InvestorVisa", Boolean.class),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
@@ -99,7 +103,7 @@ public class ClientRepository {
                                 "IN_REVIEW", "APPROVED", "REJECTED");
 
                 List<Client> content = jdbcClient
-                                .sql("SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients WHERE Status IN (:statuses) ORDER BY ClientID DESC LIMIT :limit OFFSET :offset")
+                                .sql("SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth, ClientAdoptionCountry, CountryOfDomicile, InvestorVisa FROM Clients WHERE Status IN (:statuses) ORDER BY ClientID DESC LIMIT :limit OFFSET :offset")
                                 .param("limit", limit)
                                 .param("offset", offset)
                                 .param("statuses", prospectStatuses)
@@ -129,6 +133,9 @@ public class ClientRepository {
                                                 rs.getString("PlaceOfBirth"),
                                                 rs.getString("CityOfBirth"),
                                                 rs.getString("CountryOfBirth"),
+                                                rs.getString("ClientAdoptionCountry"),
+                                                rs.getString("CountryOfDomicile"),
+                                                rs.getObject("InvestorVisa", Boolean.class),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
@@ -153,7 +160,7 @@ public class ClientRepository {
 
         public Optional<Client> findById(Long id) {
                 Optional<Client> clientOpt = jdbcClient.sql(
-                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients WHERE ClientID = :id")
+                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth, ClientAdoptionCountry, CountryOfDomicile, InvestorVisa FROM Clients WHERE ClientID = :id")
                                 .param("id", id)
                                 .query((rs, rowNum) -> decrypt(new Client(
                                                 rs.getLong("ClientID"),
@@ -181,6 +188,9 @@ public class ClientRepository {
                                                 rs.getString("PlaceOfBirth"),
                                                 rs.getString("CityOfBirth"),
                                                 rs.getString("CountryOfBirth"),
+                                                rs.getString("ClientAdoptionCountry"),
+                                                rs.getString("CountryOfDomicile"),
+                                                rs.getObject("InvestorVisa", Boolean.class),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
@@ -203,7 +213,7 @@ public class ClientRepository {
         public Long insertClient(Client client) {
                 org.springframework.jdbc.support.KeyHolder keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
                 jdbcClient.sql(
-                                "INSERT INTO Clients (TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth) VALUES (:titlePrefix, :firstName, :middleName, :lastName, :titleSuffix, :citizenship1, :citizenship2, :onboardingDate, :status, :nameAtBirth, :nickName, :gender, :dateOfBirth, :language, :occupation, :countryOfTax, :sourceOfFundsCountry, :fatcaStatus, :crsStatus, :placeOfBirth, :cityOfBirth, :countryOfBirth)")
+                                "INSERT INTO Clients (TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth, ClientAdoptionCountry, CountryOfDomicile, InvestorVisa) VALUES (:titlePrefix, :firstName, :middleName, :lastName, :titleSuffix, :citizenship1, :citizenship2, :onboardingDate, :status, :nameAtBirth, :nickName, :gender, :dateOfBirth, :language, :occupation, :countryOfTax, :sourceOfFundsCountry, :fatcaStatus, :crsStatus, :placeOfBirth, :cityOfBirth, :countryOfBirth, :clientAdoptionCountry, :countryOfDomicile, :investorVisa)")
                                 .param("titlePrefix", client.titlePrefix())
                                 .param("firstName", enc.encrypt(client.firstName()))
                                 .param("middleName", enc.encrypt(client.middleName()))
@@ -226,6 +236,9 @@ public class ClientRepository {
                                 .param("placeOfBirth", enc.encrypt(client.placeOfBirth()))
                                 .param("cityOfBirth", enc.encrypt(client.cityOfBirth()))
                                 .param("countryOfBirth", client.countryOfBirth())
+                                .param("clientAdoptionCountry", client.clientAdoptionCountry())
+                                .param("countryOfDomicile", client.countryOfDomicile())
+                                .param("investorVisa", client.investorVisa())
                                 .update(keyHolder, new String[] { "ClientID" });
 
                 return keyHolder.getKey().longValue();
@@ -240,7 +253,7 @@ public class ClientRepository {
 
         public void addAddress(Long clientId, Address addr) {
                 jdbcClient.sql(
-                                "INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement) VALUES (:clientID, :addressType, :addressLine1, :addressLine2, :city, :zip, :country, :addressNumber, :addressSupplement)")
+                                "INSERT INTO ClientAddresses (ClientID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement, ValidFrom) VALUES (:clientID, :addressType, :addressLine1, :addressLine2, :city, :zip, :country, :addressNumber, :addressSupplement, :validFrom)")
                                 .param("clientID", clientId)
                                 .param("addressType", addr.addressType())
                                 .param("addressLine1", addr.addressLine1())
@@ -250,12 +263,13 @@ public class ClientRepository {
                                 .param("country", addr.country())
                                 .param("addressNumber", addr.addressNumber())
                                 .param("addressSupplement", addr.addressSupplement())
+                                .param("validFrom", addr.validFrom())
                                 .update();
         }
 
         private List<Address> fetchAddresses(Long id) {
                 return jdbcClient.sql(
-                                "SELECT AddressID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement FROM ClientAddresses WHERE ClientID = :id")
+                                "SELECT AddressID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement, ValidFrom FROM ClientAddresses WHERE ClientID = :id")
                                 .param("id", id)
                                 .query(Address.class)
                                 .list();
@@ -322,7 +336,7 @@ public class ClientRepository {
 
                 for (RelatedParty party : parties) {
                         party.addresses().addAll(jdbcClient.sql(
-                                        "SELECT AddressID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement FROM RelatedPartyAddresses WHERE RelatedPartyID = :id")
+                                        "SELECT AddressID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement, ValidFrom FROM RelatedPartyAddresses WHERE RelatedPartyID = :id")
                                         .param("id", party.relatedPartyID())
                                         .query(Address.class)
                                         .list());
@@ -400,7 +414,7 @@ public class ClientRepository {
                 if (partyOpt.isPresent()) {
                         RelatedParty party = partyOpt.get();
                         party.addresses().addAll(jdbcClient.sql(
-                                        "SELECT AddressID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement FROM RelatedPartyAddresses WHERE RelatedPartyID = :id")
+                                        "SELECT AddressID, AddressType, AddressLine1, AddressLine2, City, Zip, Country, AddressNumber, AddressSupplement, ValidFrom FROM RelatedPartyAddresses WHERE RelatedPartyID = :id")
                                         .param("id", id)
                                         .query(Address.class)
                                         .list());
@@ -434,7 +448,7 @@ public class ClientRepository {
                 // Note: LIKE search on encrypted names is not supported.
                 // Search currently returns all clients and filters in-memory.
                 List<Client> clients = jdbcClient.sql(
-                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth FROM Clients LIMIT :limit OFFSET :offset")
+                                "SELECT ClientID, TitlePrefix, FirstName, MiddleName, LastName, TitleSuffix, Citizenship1, Citizenship2, OnboardingDate, Status, NameAtBirth, NickName, Gender, DateOfBirth, Language, Occupation, CountryOfTax, SourceOfFundsCountry, FATCAStatus, CRSStatus, PlaceOfBirth, CityOfBirth, CountryOfBirth, ClientAdoptionCountry, CountryOfDomicile, InvestorVisa FROM Clients LIMIT :limit OFFSET :offset")
                                 .param("limit", size)
                                 .param("offset", page * size)
                                 .query((rs, rowNum) -> decrypt(new Client(
@@ -463,6 +477,9 @@ public class ClientRepository {
                                                 rs.getString("PlaceOfBirth"),
                                                 rs.getString("CityOfBirth"),
                                                 rs.getString("CountryOfBirth"),
+                                                rs.getString("ClientAdoptionCountry"),
+                                                rs.getString("CountryOfDomicile"),
+                                                rs.getObject("InvestorVisa", Boolean.class),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
                                                 new java.util.ArrayList<>(),
@@ -490,7 +507,7 @@ public class ClientRepository {
 
         public void updateClient(Client client) {
                 jdbcClient.sql(
-                                "UPDATE Clients SET TitlePrefix = :titlePrefix, FirstName = :firstName, MiddleName = :middleName, LastName = :lastName, TitleSuffix = :titleSuffix, Citizenship1 = :citizenship1, Citizenship2 = :citizenship2, Status = :status, NameAtBirth = :nameAtBirth, NickName = :nickName, Gender = :gender, DateOfBirth = :dateOfBirth, Language = :language, Occupation = :occupation, CountryOfTax = :countryOfTax, SourceOfFundsCountry = :sourceOfFundsCountry, FATCAStatus = :fatcaStatus, CRSStatus = :crsStatus, PlaceOfBirth = :placeOfBirth, CityOfBirth = :cityOfBirth, CountryOfBirth = :countryOfBirth WHERE ClientID = :id")
+                                "UPDATE Clients SET TitlePrefix = :titlePrefix, FirstName = :firstName, MiddleName = :middleName, LastName = :lastName, TitleSuffix = :titleSuffix, Citizenship1 = :citizenship1, Citizenship2 = :citizenship2, Status = :status, NameAtBirth = :nameAtBirth, NickName = :nickName, Gender = :gender, DateOfBirth = :dateOfBirth, Language = :language, Occupation = :occupation, CountryOfTax = :countryOfTax, SourceOfFundsCountry = :sourceOfFundsCountry, FATCAStatus = :fatcaStatus, CRSStatus = :crsStatus, PlaceOfBirth = :placeOfBirth, CityOfBirth = :cityOfBirth, CountryOfBirth = :countryOfBirth, ClientAdoptionCountry = :clientAdoptionCountry, CountryOfDomicile = :countryOfDomicile, InvestorVisa = :investorVisa WHERE ClientID = :id")
                                 .param("id", client.clientID())
                                 .param("titlePrefix", client.titlePrefix())
                                 .param("firstName", enc.encrypt(client.firstName()))
@@ -513,6 +530,9 @@ public class ClientRepository {
                                 .param("placeOfBirth", enc.encrypt(client.placeOfBirth()))
                                 .param("cityOfBirth", enc.encrypt(client.cityOfBirth()))
                                 .param("countryOfBirth", client.countryOfBirth())
+                                .param("clientAdoptionCountry", client.clientAdoptionCountry())
+                                .param("countryOfDomicile", client.countryOfDomicile())
+                                .param("investorVisa", client.investorVisa())
                                 .update();
         }
 }

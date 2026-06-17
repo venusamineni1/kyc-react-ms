@@ -85,6 +85,21 @@ public class KycPrecheckRequest {
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private String secondCitizenship;
 
+    @Schema(description = "Country where the client was adopted/onboarded, as an ISO 3166-1 alpha-2 code.",
+            example = "DE",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String clientAdoptionCountry;
+
+    @Schema(description = "Country of domicile as an ISO 3166-1 alpha-2 code.",
+            example = "DE",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String countryOfDomicile;
+
+    @Schema(description = "Indicates whether the client holds an investor visa.",
+            example = "false",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Boolean investorVisa;
+
     // -------------------------------------------------------------------------
     // Residential address
     // -------------------------------------------------------------------------
