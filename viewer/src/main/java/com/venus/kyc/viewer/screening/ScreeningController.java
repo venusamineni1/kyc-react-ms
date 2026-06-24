@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/screening")
+@RequestMapping({"/api/screening", "/api/v1/screening"})
 @Tag(name = "Viewer Screening", description = "Proxy endpoints for client screening operations including sanctions, PEP checks, and batch screening")
 public class ScreeningController {
 

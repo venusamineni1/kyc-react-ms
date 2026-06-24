@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/cases")
+@RequestMapping({"/api/cases", "/api/v1/cases"})
 @Tag(name = "Case Management", description = "Endpoints for managing KYC cases including creation, workflow transitions, task management, document handling, and case lifecycle")
 public class CaseController {
 

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/questionnaire")
+@RequestMapping({"/api/questionnaire", "/api/v1/questionnaire"})
 @Tag(name = "Questionnaire Management", description = "Endpoints for managing KYC questionnaire templates and case responses")
 public class QuestionnaireController {
 

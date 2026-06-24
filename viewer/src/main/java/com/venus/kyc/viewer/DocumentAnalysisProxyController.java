@@ -30,7 +30,7 @@ import java.util.Map;
  * (ensures the document actually belongs to the case before proxying).
  */
 @RestController
-@RequestMapping("/api/cases/{caseId}/documents/{docId}")
+@RequestMapping({"/api/cases/{caseId}/documents/{docId}", "/api/v1/cases/{caseId}/documents/{docId}"})
 @Tag(name = "Document Analysis Proxy", description = "Proxies OCR and fraud-signal requests to the document-service")
 public class DocumentAnalysisProxyController {
 
@@ -88,8 +88,8 @@ public class DocumentAnalysisProxyController {
 
     private ResponseEntity<?> proxyGet(Long docId, String endpoint) {
         // Build URL: strip the /api/documents suffix, add /api/internal/documents/{id}/{endpoint}
-        String base = documentServiceUrl.replace("/api/documents", "");
-        String url  = base + "/api/internal/documents/" + docId + "/" + endpoint;
+        String base = documentServiceUrl.replace("/api/v1/documents", "");
+        String url  = base + "/api/v1/internal/documents/" + docId + "/" + endpoint;
 
         try {
             ResponseEntity<Object> response = restTemplate.getForEntity(url, Object.class);

@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/admin/config")
+@RequestMapping({"/api/admin/config", "/api/v1/admin/config"})
 @Tag(name = "System Configuration", description = "Endpoints for retrieving system configuration and environment details")
 public class ConfigurationController {
 

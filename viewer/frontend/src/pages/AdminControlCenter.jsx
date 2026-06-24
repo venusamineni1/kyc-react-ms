@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { FiClipboard, FiRepeat, FiSettings, FiBarChart2, FiSliders, FiActivity, FiGitBranch, FiClock } from 'react-icons/fi';
 
 const AdminCard = ({ to, title, description, icon }) => (
     <Link to={to} className="glass-section dashboard-card" style={{ textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: '1rem', transition: 'transform 0.2s' }}>
@@ -37,56 +38,56 @@ const AdminControlCenter = () => {
                     to="/admin/material-configs"
                     title="Material Change Rules"
                     description="Configure which client profile updates trigger compliance review workflows."
-                    icon="📋"
+                    icon={<FiClipboard />}
                 />
 
                 <AdminCard
                     to="/admin/batch-mapping"
                     title="Screening XML Mapping"
                     description="Define how internal client data maps to external screening provider XML schemas."
-                    icon="🔄"
+                    icon={<FiRepeat />}
                 />
 
                 <AdminCard
                     to="/admin/batch-pipeline"
                     title="Screening Pipeline Config"
                     description="Schedule and monitor automated batch screening runs via SFTP."
-                    icon="⚙️"
+                    icon={<FiSettings />}
                 />
 
                 <AdminCard
                     to="/admin/risk-mapping"
                     title="Risk JSON Mapping"
                     description="Configure field mappings for automated risk assessment engine payloads."
-                    icon="📊"
+                    icon={<FiBarChart2 />}
                 />
 
                 <AdminCard
                     to="/admin/risk-pipeline"
                     title="Risk Pipeline Config"
                     description="Manage scheduled batch operations for the Risk Assessment microservice."
-                    icon="⚖️"
+                    icon={<FiSliders />}
                 />
 
                 <AdminCard
                     to="/admin/services"
                     title="System Status"
                     description="Real-time monitor for all KYC microservices (Risk, Screening, Auth, Gateway)."
-                    icon="🟢"
+                    icon={<FiActivity />}
                 />
 
                 <AdminCard
                     to="/admin/workflow"
                     title="Workflow Dashboard"
                     description="Monitor active CMMN cases and system-wide task execution metrics."
-                    icon="🌊"
+                    icon={<FiGitBranch />}
                 />
 
                 <AdminCard
                     to="/history"
                     title="Batch Execution History"
                     description="Audit logs and status reports for all completed screening and risk batch jobs."
-                    icon="📜"
+                    icon={<FiClock />}
                 />
             </div>
         </div>

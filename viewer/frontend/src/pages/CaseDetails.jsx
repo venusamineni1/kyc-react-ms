@@ -7,6 +7,8 @@ import { riskService } from '../services/riskService';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import Breadcrumbs from '../components/Breadcrumbs';
+import { FiClock, FiRefreshCw, FiFileText } from 'react-icons/fi';
 import { useNotification } from '../contexts/NotificationContext';
 import CaseTimeline from '../components/CaseTimeline';
 import CaseActions from '../components/CaseActions';
@@ -237,7 +239,7 @@ const CaseDetails = () => {
             setUploadProgress(0);
             notify('Upload failed: network error', 'error');
         };
-        xhr.open('POST', `/api/cases/${id}/documents`);
+        xhr.open('POST', `/api/v1/cases/${id}/documents`);
         if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
         xhr.send(formData);
     };
@@ -437,6 +439,13 @@ const CaseDetails = () => {
 
     return (
         <div className="case-details-page">
+            <Breadcrumbs items={[
+                { label: 'Dashboard', to: '/' },
+                { label: 'Case Management', to: '/cases' },
+                ...(kycCase.clientID ? [{ label: kycCase.clientName || 'Client', to: `/clients/${kycCase.clientID}` }] : []),
+                { label: `Case #${kycCase.caseID}` },
+            ]} />
+
             {/* Case Hero Header */}
             <div className="hero-header glass-section" style={{ marginBottom: '2rem', padding: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -768,11 +777,11 @@ const CaseDetails = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                 <h3 style={{ margin: 0 }}>Client Risk Pulse</h3>
                                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                                    <button onClick={handleOpenRiskHistory} className="btn-icon" title="History">🕒</button>
+                                    <button onClick={handleOpenRiskHistory} className="btn-icon" aria-label="View risk history"><FiClock size={14} /></button>
                                     <button
                                         onClick={handleRecalculateRisk}
                                         className={`btn-icon ${runningRisk ? 'spinning' : ''}`}
-                                        title="Recalculate Risk"
+                                        aria-label="Recalculate risk"
                                         disabled={runningRisk}
                                         style={{
                                             background: 'rgba(255,255,255,0.1)',
@@ -780,10 +789,12 @@ const CaseDetails = () => {
                                             borderRadius: '4px',
                                             padding: '4px 8px',
                                             cursor: 'pointer',
-                                            color: 'white'
+                                            color: 'white',
+                                            display: 'flex',
+                                            alignItems: 'center',
                                         }}
                                     >
-                                        🔄
+                                        <FiRefreshCw size={14} />
                                     </button>
                                 </div>
                             </div>
@@ -934,7 +945,7 @@ const CaseDetails = () => {
                             {selectedDocHistory.map(v => (
                                 <tr key={v.documentID}>
                                     <td><span className="status-badge-modern info">v{v.version || 1}</span></td>
-                                    <td><a href={`/api/cases/documents/${v.documentID}`} target="_blank" rel="noreferrer" className="doc-link">{v.documentName}</a></td>
+                                    <td><a href={`/api/v1/cases/documents/${v.documentID}`} target="_blank" rel="noreferrer" className="doc-link">{v.documentName}</a></td>
                                     <td>{v.uploadedBy}</td>
                                     <td>{new Date(v.uploadDate).toLocaleString()}</td>
                                 </tr>
@@ -1027,7 +1038,9 @@ const CaseDetails = () => {
             <Modal
                 isOpen={isViewerModalOpen}
                 onClose={() => setIsViewerModalOpen(false)}
-                title={viewerModalDoc ? `📄 ${viewerModalDoc.documentName}` : 'Document Viewer'}
+                title={viewerModalDoc
+                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}><FiFileText /> {viewerModalDoc.documentName}</span>
+                    : 'Document Viewer'}
                 maxWidth="95vw"
                 closeOnOutsideClick={false}
             >

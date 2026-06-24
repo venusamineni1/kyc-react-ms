@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/audits")
+@RequestMapping({"/api/admin/audits", "/api/v1/admin/audits"})
 @Tag(name = "User Audit", description = "Endpoints for retrieving user activity audit logs")
 public class UserAuditController {
 

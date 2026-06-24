@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/internal/screening/batch")
+@RequestMapping({"/api/internal/screening/batch", "/api/v1/internal/screening/batch"})
 @Tag(name = "Batch Screening Processing", description = "Endpoints for batch screening operations including XML generation, checksum, encryption, and SFTP upload")
 public class BatchScreeningController {
 

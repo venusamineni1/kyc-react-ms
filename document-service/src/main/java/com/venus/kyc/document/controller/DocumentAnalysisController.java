@@ -23,7 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
  * Base path: /api/internal/documents
  */
 @RestController
-@RequestMapping("/api/internal/documents")
+@RequestMapping({"/api/internal/documents", "/api/v1/internal/documents"})
 @Tag(name = "Document Analysis", description = "OCR and fraud signal analysis for uploaded documents")
 public class DocumentAnalysisController {
 

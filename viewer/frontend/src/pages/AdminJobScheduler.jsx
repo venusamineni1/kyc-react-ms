@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { jobSchedulerService } from '../services/jobSchedulerService';
 import { clientService } from '../services/clientService';
 import Button from '../components/Button';
+import { FiRepeat, FiDownload, FiXCircle, FiClock, FiCheckCircle, FiInbox, FiX, FiSearch, FiClipboard, FiPlay } from 'react-icons/fi';
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
@@ -46,10 +47,10 @@ const stateBadge = (state) => {
 };
 
 const TABS = [
-    { id: 'recurring', label: 'Recurring Jobs',  icon: '🔁' },
-    { id: 'queue',     label: 'Queue',            icon: '📥' },
-    { id: 'failed',    label: 'Failed',           icon: '❌' },
-    { id: 'history',   label: 'History',           icon: '📜' },
+    { id: 'recurring', label: 'Recurring Jobs',  icon: <FiRepeat /> },
+    { id: 'queue',     label: 'Queue',            icon: <FiDownload /> },
+    { id: 'failed',    label: 'Failed',           icon: <FiXCircle /> },
+    { id: 'history',   label: 'History',           icon: <FiClock /> },
 ];
 
 /* ── Main component ───────────────────────────────────────────── */
@@ -402,7 +403,7 @@ const AdminJobScheduler = () => {
                             <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading...</div>
                         ) : jobs.items?.length === 0 ? (
                             <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{activeTab === 'failed' ? '✅' : '📭'}</div>
+                                <div style={{ fontSize: '2rem', marginBottom: '0.5rem', display: 'flex', justifyContent: 'center' }}>{activeTab === 'failed' ? <FiCheckCircle /> : <FiInbox />}</div>
                                 No {activeTab === 'failed' ? 'failed' : activeTab === 'queue' ? 'enqueued' : 'completed'} jobs.
                             </div>
                         ) : (
@@ -478,7 +479,7 @@ const AdminJobScheduler = () => {
                         {/* Modal header */}
                         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 style={{ margin: 0 }}>Create Ad-Hoc Job</h3>
-                            <button onClick={closeJobModal} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1 }}>✕</button>
+                            <button onClick={closeJobModal} aria-label="Close" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1, display: 'flex' }}><FiX /></button>
                         </div>
 
                         {/* Success banner */}
@@ -492,7 +493,7 @@ const AdminJobScheduler = () => {
                         {jobModalError && (
                             <div style={{ margin: '1rem 1.25rem 0', padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span>{jobModalError}</span>
-                                <button onClick={() => setJobModalError(null)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontWeight: 700, marginLeft: '0.5rem' }}>✕</button>
+                                <button onClick={() => setJobModalError(null)} aria-label="Dismiss error" style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontWeight: 700, marginLeft: '0.5rem', display: 'flex' }}><FiX /></button>
                             </div>
                         )}
 
@@ -501,8 +502,8 @@ const AdminJobScheduler = () => {
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Job Type</div>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                 {[
-                                    { id: 'batch-screening', label: '🔍 Screening Batch' },
-                                    { id: 'periodic-review', label: '📋 Periodic Review' },
+                                    { id: 'batch-screening', label: <><FiSearch style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Screening Batch</> },
+                                    { id: 'periodic-review', label: <><FiClipboard style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Periodic Review</> },
                                 ].map(jt => (
                                     <button key={jt.id} onClick={() => setJobType(jt.id)} style={{
                                         padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem',
@@ -521,7 +522,7 @@ const AdminJobScheduler = () => {
                         <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Run</div>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                {[{ id: 'now', label: '▶ Immediately' }, { id: 'later', label: '🕐 Schedule for Later' }].map(opt => (
+                                {[{ id: 'now', label: <><FiPlay style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Immediately</> }, { id: 'later', label: <><FiClock style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Schedule for Later</> }].map(opt => (
                                     <button key={opt.id} onClick={() => { setScheduleType(opt.id); setJobModalError(null); }} style={{
                                         padding: '0.4rem 0.85rem', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.82rem',
                                         border: scheduleType === opt.id ? '1px solid var(--primary-color)' : '1px solid var(--glass-border)',

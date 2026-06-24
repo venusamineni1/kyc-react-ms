@@ -5,6 +5,7 @@ import Pagination from '../components/Pagination';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import { useNotification } from '../contexts/NotificationContext';
+import { FiAlertTriangle } from 'react-icons/fi';
 
 const ProspectDirectory = () => {
     const { notify } = useNotification();
@@ -155,7 +156,7 @@ const ProspectDirectory = () => {
                             ) : error ? (
                                 <tr>
                                     <td colSpan="5" style={{ padding: '4rem', textAlign: 'center', color: '#ef4444' }}>
-                                        ⚠️ Error: {error}
+                                        <FiAlertTriangle style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Error: {error}
                                     </td>
                                 </tr>
                             ) : prospects.length === 0 ? (

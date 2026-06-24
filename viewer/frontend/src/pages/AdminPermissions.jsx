@@ -3,6 +3,7 @@ import Button from '../components/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import apiClient from '../services/apiClient';
+import { FiShield } from 'react-icons/fi';
 
 const AdminPermissions = () => {
     const { hasPermission } = useAuth();
@@ -91,7 +92,7 @@ const AdminPermissions = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                     <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        🛡️
+                                        <FiShield />
                                     </div>
                                     <h3 style={{ margin: 0, fontSize: '1.25rem' }}>{role.replace('_', ' ')}</h3>
                                 </div>

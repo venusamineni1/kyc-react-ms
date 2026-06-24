@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { screeningService } from '../services/screeningService';
 import { useNotification } from '../contexts/NotificationContext';
-import { FiUser, FiGlobe, FiAlertTriangle, FiShield, FiClock, FiPlay, FiSearch } from 'react-icons/fi';
+import { FiUser, FiGlobe, FiAlertTriangle, FiShield, FiClock, FiPlay, FiSearch, FiCheck } from 'react-icons/fi';
 
 const ScreeningCard = ({ title, context, result, onRun }) => {
     const isHit = result.status === 'HIT';
@@ -91,7 +91,7 @@ const ScreeningCard = ({ title, context, result, onRun }) => {
                     maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap', flexShrink: 0, cursor: 'help',
                 }}>
-                    ⚠ {result.alertMessage}
+                    <FiAlertTriangle style={{ verticalAlign: 'middle', marginRight: '3px' }} /> {result.alertMessage}
                 </span>
             )}
         </div>
@@ -522,7 +522,7 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission, latestScreening, 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                         {(analyzeResult.results || []).filter(r => r.status === 'NO_HIT' || r.status === 'CLEAR').map((match, i) => (
                                             <div key={i} style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', fontSize: '0.85rem' }}>
-                                                ✅ {match.contextType} Screened: Clear
+                                                <FiCheck style={{ verticalAlign: 'middle', marginRight: '3px' }} /> {match.contextType} Screened: Clear
                                             </div>
                                         ))}
                                     </div>

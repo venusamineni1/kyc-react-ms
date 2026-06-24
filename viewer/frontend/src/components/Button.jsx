@@ -1,8 +1,14 @@
 import React from 'react';
 
+const VARIANT_CLASSES = {
+    secondary: 'btn-secondary',
+    danger: 'btn-danger',
+    ghost: 'btn-ghost',
+};
+
 const Button = ({ children, onClick, type = 'button', variant = 'primary', className = '', ...props }) => {
     const baseClass = 'btn';
-    const variantClass = variant === 'secondary' ? 'btn-secondary' : '';
+    const variantClass = VARIANT_CLASSES[variant] || '';
 
     return (
         <button

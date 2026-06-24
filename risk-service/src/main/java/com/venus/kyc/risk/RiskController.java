@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/internal/risk")
+@RequestMapping({"/api/internal/risk", "/api/v1/internal/risk"})
 @Tag(name = "Risk Assessment", description = "Endpoints for calculating client risk ratings using entity, industry, geo, product, and channel risk pillars")
 public class RiskController {
 

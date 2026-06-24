@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/adhoc-tasks")
+@RequestMapping({"/api/adhoc-tasks", "/api/v1/adhoc-tasks"})
 @Tag(name = "Ad-Hoc Tasks", description = "Endpoints for creating, managing, and completing ad-hoc tasks assigned between users")
 public class AdHocTaskController {
 

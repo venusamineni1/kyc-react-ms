@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { caseService } from '../services/caseService';
 import Button from '../components/Button';
-
-/* Truncate long text for display */
-const truncate = (str, max = 60) =>
-    str && str.length > max ? str.slice(0, max).trimEnd() + '…' : str;
+import { FiClipboard, FiZap, FiMail, FiRefreshCw, FiCheckCircle } from 'react-icons/fi';
 
 /* Case status → colour mapping */
 const STATUS_COLORS = {
@@ -31,6 +28,16 @@ const TaskInbox = () => {
     const [reassignUser, setReassignUser] = useState('');
     const [allUsers, setAllUsers] = useState([]);
     const [reassigning, setReassigning] = useState(false);
+
+    // Task descriptions can be long (audit-relevant request text); track which rows are expanded to full text.
+    const [expandedTasks, setExpandedTasks] = useState(new Set());
+    const toggleExpanded = (taskId) => {
+        setExpandedTasks(prev => {
+            const next = new Set(prev);
+            next.has(taskId) ? next.delete(taskId) : next.add(taskId);
+            return next;
+        });
+    };
 
     useEffect(() => { loadTasks(); }, []);
 
@@ -95,13 +102,13 @@ const TaskInbox = () => {
                 {/* Summary cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
                     {[
-                        { label: 'Total Tasks',      value: tasks.length,          color: '#3b82f6', icon: '📋' },
-                        { label: 'Workflow Cases',   value: workflowTasks.length,  color: '#10b981', icon: '⚡' },
-                        { label: 'Ad-Hoc Requests',  value: adHocTasks.length,     color: '#f59e0b', icon: '✉️' },
+                        { label: 'Total Tasks',      value: tasks.length,          color: '#3b82f6', Icon: FiClipboard },
+                        { label: 'Workflow Cases',   value: workflowTasks.length,  color: '#10b981', Icon: FiZap },
+                        { label: 'Ad-Hoc Requests',  value: adHocTasks.length,     color: '#f59e0b', Icon: FiMail },
                     ].map((s, i) => (
                         <div key={i} className="glass-section" style={{ padding: '1.25rem 1.5rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: `4px solid ${s.color}` }}>
-                            <div style={{ fontSize: '1.75rem', background: 'rgba(255,255,255,0.05)', width: '46px', height: '46px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                {s.icon}
+                            <div style={{ fontSize: '1.4rem', color: s.color, background: 'rgba(255,255,255,0.05)', width: '46px', height: '46px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <s.Icon />
                             </div>
                             <div>
                                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
@@ -116,8 +123,8 @@ const TaskInbox = () => {
             <div className="glass-section" style={{ padding: 0 }}>
                 <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ margin: 0 }}>Pending Actions</h3>
-                    <button onClick={loadTasks} title="Refresh" style={{ background: 'none', border: '1px solid var(--glass-border)', borderRadius: '6px', color: 'var(--text-secondary)', padding: '4px 10px', cursor: 'pointer', fontSize: '0.8rem' }}>
-                        ↻ Refresh
+                    <button onClick={loadTasks} aria-label="Refresh tasks" style={{ background: 'none', border: '1px solid var(--glass-border)', borderRadius: '6px', color: 'var(--text-secondary)', padding: '4px 10px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <FiRefreshCw size={13} /> Refresh
                     </button>
                 </div>
 
@@ -129,7 +136,7 @@ const TaskInbox = () => {
                     <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>{error}</div>
                 ) : tasks.length === 0 ? (
                     <div style={{ padding: '4rem', textAlign: 'center', color: '#64748b' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem', display: 'flex', justifyContent: 'center', color: 'var(--success-color)' }}><FiCheckCircle /></div>
                         <h3>All Clear!</h3>
                         <p>No tasks assigned to you or your groups at this time.</p>
                     </div>
@@ -154,16 +161,36 @@ const TaskInbox = () => {
                                         <tr key={task.taskId} className="table-row-hover" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
 
                                             {/* ── Task name + description ── */}
-                                            <td style={{ padding: '1rem 1.25rem', maxWidth: '220px' }}>
-                                                <div style={{ fontWeight: 600, color: 'var(--text-color)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            <td style={{ padding: '1rem 1.25rem', maxWidth: '260px' }}>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-color)' }}>
                                                     {task.name}
                                                 </div>
-                                                {(task.description || task.requestText) && (
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                                                        title={task.description || task.requestText}>
-                                                        {truncate(task.description || task.requestText, 55)}
-                                                    </div>
-                                                )}
+                                                {(task.description || task.requestText) && (() => {
+                                                    const fullText = task.description || task.requestText;
+                                                    const isExpanded = expandedTasks.has(task.taskId);
+                                                    return (
+                                                        <div
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onClick={() => toggleExpanded(task.taskId)}
+                                                            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleExpanded(task.taskId)}
+                                                            aria-expanded={isExpanded}
+                                                            aria-label={isExpanded ? 'Collapse task description' : 'Expand full task description'}
+                                                            style={{
+                                                                fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem',
+                                                                cursor: 'pointer', display: isExpanded ? 'block' : 'flex', gap: '0.3rem',
+                                                                whiteSpace: isExpanded ? 'normal' : 'nowrap',
+                                                            }}
+                                                        >
+                                                            <span style={{ overflow: isExpanded ? 'visible' : 'hidden', textOverflow: 'ellipsis', whiteSpace: isExpanded ? 'normal' : 'nowrap' }}>
+                                                                {fullText}
+                                                            </span>
+                                                            {!isExpanded && fullText.length > 55 && (
+                                                                <span style={{ color: 'var(--primary-color)', flexShrink: 0 }}>more</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                                 <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.15rem', fontFamily: 'monospace' }}>
                                                     #{String(task.taskId ?? '').slice(0, 10)}
                                                 </div>

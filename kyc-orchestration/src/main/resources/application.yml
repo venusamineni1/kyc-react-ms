@@ -10,6 +10,25 @@ orchestration:
     mock-enabled: ${SCREENING_MOCK:false}
   risk:
     mock-enabled: ${RISK_MOCK:false}
+  http:
+    connect-timeout-ms: ${ORCHESTRATION_HTTP_CONNECT_TIMEOUT_MS:3000}
+    read-timeout-ms: ${ORCHESTRATION_HTTP_READ_TIMEOUT_MS:5000}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      riskService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+      screeningService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
 
 spring:
   application:

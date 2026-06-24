@@ -16,7 +16,7 @@ import com.venus.kyc.viewer.risk.RiskAssessmentDetail;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/clients")
+@RequestMapping({"/api/clients", "/api/v1/clients"})
 @Tag(name = "Client Management", description = "Endpoints for managing clients, material changes, related parties, and triggering risk/screening workflows")
 public class ClientController {
 

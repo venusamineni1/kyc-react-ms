@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/internal/screening")
+@RequestMapping({"/api/internal/screening", "/api/v1/internal/screening"})
 @Tag(name = "Client Screening", description = "NRTS-backed endpoints for initiating and monitoring client sanctions/PEP screenings")
 public class ScreeningController {
 

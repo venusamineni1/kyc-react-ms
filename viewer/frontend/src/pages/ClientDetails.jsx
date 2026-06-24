@@ -11,6 +11,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import Questionnaire from './Questionnaire';
 import ScreeningPanel from '../components/ScreeningPanel';
+import {
+    FiCheckCircle, FiXCircle, FiAlertTriangle, FiClock,
+    FiUser, FiCreditCard, FiShield, FiUsers,
+    FiRefreshCw, FiFolder, FiFlag, FiClipboard, FiPhone
+} from 'react-icons/fi';
 
 const TabButton = ({ active, label, onClick, icon }) => (
     <button
@@ -211,7 +216,7 @@ const ClientDetails = () => {
                     })
                 }}>
                     <div style={{ fontSize: '1.5rem' }}>
-                        {client.status === 'APPROVED' ? '✅' : client.status === 'REJECTED' ? '❌' : client.status === 'IN_REVIEW' ? '⚠️' : '⏳'}
+                        {client.status === 'APPROVED' ? <FiCheckCircle /> : client.status === 'REJECTED' ? <FiXCircle /> : client.status === 'IN_REVIEW' ? <FiAlertTriangle /> : <FiClock />}
                     </div>
                     <div>
                         <h4 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>
@@ -271,11 +276,11 @@ const ClientDetails = () => {
                     borderBottom: '1px solid rgba(255,255,255,0.1)', 
                     background: 'rgba(255,255,255,0.02)'
                 }}>
-                    <TabButton active={activeTab === 'overview'} label="Overview" icon="👤" onClick={() => setActiveTab('overview')} />
-                    <TabButton active={activeTab === 'financials'} label="Financials" icon="💳" onClick={() => setActiveTab('financials')} />
-                    <TabButton active={activeTab === 'compliance'} label="Compliance & Risk" icon="🛡️" onClick={() => setActiveTab('compliance')} />
-                    <TabButton active={activeTab === 'parties'} label="Parties" icon="👥" onClick={() => setActiveTab('parties')} />
-                    <TabButton active={activeTab === 'activity'} label="Activity & Audit" icon="📜" onClick={() => setActiveTab('activity')} />
+                    <TabButton active={activeTab === 'overview'} label="Overview" icon={<FiUser />} onClick={() => setActiveTab('overview')} />
+                    <TabButton active={activeTab === 'financials'} label="Financials" icon={<FiCreditCard />} onClick={() => setActiveTab('financials')} />
+                    <TabButton active={activeTab === 'compliance'} label="Compliance & Risk" icon={<FiShield />} onClick={() => setActiveTab('compliance')} />
+                    <TabButton active={activeTab === 'parties'} label="Parties" icon={<FiUsers />} onClick={() => setActiveTab('parties')} />
+                    <TabButton active={activeTab === 'activity'} label="Activity & Audit" icon={<FiClock />} onClick={() => setActiveTab('activity')} />
                 </div>
 
             <div style={{ padding: '2rem' }}>
@@ -402,7 +407,7 @@ const ClientDetails = () => {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                         <h3 style={{ margin: 0 }}>Client Risk Pulse</h3>
                                         <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button onClick={() => setIsRiskHistoryOpen(true)} className="btn-icon" title="History">🕒</button>
+                                            <button onClick={() => setIsRiskHistoryOpen(true)} className="btn-icon" title="History"><FiClock /></button>
                                             {hasPermission('MANAGE_RISK') && (
                                                 <button
                                                     onClick={async () => {
@@ -424,7 +429,7 @@ const ClientDetails = () => {
                                                     className={`btn-icon ${runningAssessment ? 'spinning' : ''}`}
                                                     title="Refresh Risk"
                                                 >
-                                                    🔄
+                                                    <FiRefreshCw />
                                                 </button>
                                             )}
                                         </div>
@@ -531,10 +536,10 @@ const ClientDetails = () => {
                                 borderBottom: '1px solid rgba(255,255,255,0.1)', 
                                 background: 'rgba(255,255,255,0.02)'
                             }}>
-                                <TabButton active={activeActivityTab === 'cases'} icon="📂" label="Cases" onClick={() => setActiveActivityTab('cases')} />
-                                <TabButton active={activeActivityTab === 'changes'} icon="🔄" label="Changes" onClick={() => setActiveActivityTab('changes')} />
-                                <TabButton active={activeActivityTab === 'onboarding'} icon="🚀" label="Milestones" onClick={() => setActiveActivityTab('onboarding')} />
-                                <TabButton active={activeActivityTab === 'audit'} icon="📋" label="Audit" onClick={() => setActiveActivityTab('audit')} />
+                                <TabButton active={activeActivityTab === 'cases'} icon={<FiFolder />} label="Cases" onClick={() => setActiveActivityTab('cases')} />
+                                <TabButton active={activeActivityTab === 'changes'} icon={<FiRefreshCw />} label="Changes" onClick={() => setActiveActivityTab('changes')} />
+                                <TabButton active={activeActivityTab === 'onboarding'} icon={<FiFlag />} label="Milestones" onClick={() => setActiveActivityTab('onboarding')} />
+                                <TabButton active={activeActivityTab === 'audit'} icon={<FiClipboard />} label="Audit" onClick={() => setActiveActivityTab('audit')} />
                             </div>
 
                             {activeActivityTab === 'cases' && (
@@ -813,9 +818,9 @@ const ClientDetails = () => {
 
                         {/* Modal Tabs */}
                         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)', marginBottom: '1rem' }}>
-                            <TabButton active={activePartyTab === 'identity'} label="Identity" icon="👤" onClick={() => setActivePartyTab('identity')} />
-                            <TabButton active={activePartyTab === 'risk'} label="Tax & Risk" icon="🛡️" onClick={() => setActivePartyTab('risk')} />
-                            <TabButton active={activePartyTab === 'contact'} label="Contact & IDs" icon="📇" onClick={() => setActivePartyTab('contact')} />
+                            <TabButton active={activePartyTab === 'identity'} label="Identity" icon={<FiUser />} onClick={() => setActivePartyTab('identity')} />
+                            <TabButton active={activePartyTab === 'risk'} label="Tax & Risk" icon={<FiShield />} onClick={() => setActivePartyTab('risk')} />
+                            <TabButton active={activePartyTab === 'contact'} label="Contact & IDs" icon={<FiPhone />} onClick={() => setActivePartyTab('contact')} />
                         </div>
 
                         {/* Tab Content */}

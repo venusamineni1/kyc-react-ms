@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FiCheck, FiX, FiShield, FiAlertTriangle, FiInfo } from 'react-icons/fi';
 
 // Signal severity levels
 const LEVEL = {
@@ -10,9 +11,9 @@ const LEVEL = {
 
 function SignalRow({ icon, title, detail, level }) {
     const colors = {
-        pass:    { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.25)',  text: '#10b981', icon: '✓' },
+        pass:    { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.25)',  text: '#10b981', icon: <FiCheck size={12} /> },
         warn:    { bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.25)',  text: '#f59e0b', icon: '!' },
-        fail:    { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.25)',   text: '#ef4444', icon: '✗' },
+        fail:    { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.25)',   text: '#ef4444', icon: <FiX size={12} /> },
         pending: { bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.25)', text: '#64748b', icon: '…' },
     };
     const c = colors[level] || colors.pending;
@@ -47,7 +48,7 @@ export default function FraudSignalsPanel({ caseId, document }) {
     useEffect(() => {
         if (!document) { setSignals(null); return; }
         setLoading(true);
-        fetch(`/api/cases/${caseId}/documents/${document.documentID}/signals`, {
+        fetch(`/api/v1/cases/${caseId}/documents/${document.documentID}/signals`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
             .then(r => r.ok ? r.json() : null)
@@ -68,7 +69,7 @@ export default function FraudSignalsPanel({ caseId, document }) {
                     border: '1px solid rgba(245,158,11,0.3)',
                     fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em',
                     padding: '2px 7px', borderRadius: '4px', textTransform: 'uppercase'
-                }}>🛡 Tika · PDFBox · OpenCV</span>
+                }}><FiShield style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Tika · PDFBox · OpenCV</span>
                 {signals && (failCount > 0 || warnCount > 0) && (
                     <span style={{
                         fontSize: '0.75rem', fontWeight: 600,
@@ -128,7 +129,7 @@ export default function FraudSignalsPanel({ caseId, document }) {
                         borderRadius: '7px', padding: '8px 12px',
                         fontSize: '0.78rem', color: '#60a5fa', lineHeight: 1.5
                     }}>
-                        ℹ Signals will populate automatically once the <strong>document-service</strong> backend is deployed with Tess4J, Tika, PDFBox and OpenCV.
+                        <FiInfo style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Signals will populate automatically once the <strong>document-service</strong> backend is deployed with Tess4J, Tika, PDFBox and OpenCV.
                     </div>
                 </div>
             )}
@@ -164,8 +165,8 @@ export default function FraudSignalsPanel({ caseId, document }) {
                             color: failCount > 0 ? '#ef4444' : '#f59e0b'
                         }}>
                             {failCount > 0
-                                ? `⚠ ${failCount} signal${failCount > 1 ? 's' : ''} require analyst review before approval.`
-                                : `ℹ ${warnCount} signal${warnCount > 1 ? 's' : ''} noted — review recommended.`}
+                                ? <><FiAlertTriangle style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {failCount} signal{failCount > 1 ? 's' : ''} require analyst review before approval.</>
+                                : <><FiInfo style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {warnCount} signal{warnCount > 1 ? 's' : ''} noted — review recommended.</>}
                         </div>
                     )}
                 </div>

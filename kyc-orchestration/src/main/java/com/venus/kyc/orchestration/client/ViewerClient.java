@@ -15,7 +15,7 @@ import java.util.UUID;
 public class ViewerClient {
 
     private final RestTemplate restTemplate;
-    private static final String VIEWER_URL = "http://VIEWER/api/prospects/onboard";
+    private static final String VIEWER_URL = "http://VIEWER/api/v1/prospects/onboard";
 
     public String onboardUser(KycPrecheckRequest request) {
         log.info("Calling ViewerService at {}", VIEWER_URL);

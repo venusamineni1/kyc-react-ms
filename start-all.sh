@@ -14,6 +14,13 @@ NC='\033[0m' # No Color
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
+# Gradle 8.12 cannot run on newer JDKs (e.g. "Unsupported class file major version 69").
+# Use the bundled JDK 21 if present so any Gradle fallback below works regardless of the system default JDK.
+BUNDLED_JDK="$ROOT_DIR/jdk-21.0.2+13/Contents/Home"
+if [ -d "$BUNDLED_JDK" ]; then
+    export JAVA_HOME="$BUNDLED_JDK"
+fi
+
 # Configuration
 STARTUP_TIMEOUT=120  # seconds to wait for each service to start
 EUREKA_WAIT=10       # extra time to wait for Eureka after it starts

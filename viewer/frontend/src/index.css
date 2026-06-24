@@ -150,6 +150,144 @@ tr:hover td {
   border-color: var(--primary-color);
 }
 
+.btn-danger {
+  background: var(--danger-color);
+  color: #1a0505;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #ef4444;
+}
+
+.btn-ghost {
+  background: none;
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--hover-bg);
+  color: var(--text-color);
+  border-color: var(--text-color);
+  transform: none;
+  box-shadow: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Status Badge - single source of truth for status/category labels app-wide.
+   Variant classes (active/pending/rejected/suspended/info/up/down) are reused
+   across Dashboard, ClientDetails, CaseList, CaseDetails, TaskInbox, etc. */
+.status-badge,
+.status-badge-modern,
+.status-badge-lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.status-badge-modern {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.status-badge-lg {
+  padding: 6px 16px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.status-badge.active,
+.status-badge.up,
+.status-badge.approved,
+.status-badge-modern.active,
+.status-badge-modern.success,
+.status-badge-lg.approved {
+  background: color-mix(in srgb, var(--success-color) 15%, transparent);
+  color: var(--success-color);
+  border-color: color-mix(in srgb, var(--success-color) 35%, transparent);
+}
+
+.status-badge.rejected,
+.status-badge.down,
+.status-badge-modern.rejected,
+.status-badge-modern.danger,
+.status-badge-lg.rejected {
+  background: color-mix(in srgb, var(--danger-color) 15%, transparent);
+  color: var(--danger-color);
+  border-color: color-mix(in srgb, var(--danger-color) 35%, transparent);
+}
+
+.status-badge.pending,
+.status-badge.suspended,
+.status-badge-modern.pending,
+.status-badge-modern.warning,
+.status-badge-lg.pending {
+  background: color-mix(in srgb, var(--warning-color) 15%, transparent);
+  color: var(--warning-color);
+  border-color: color-mix(in srgb, var(--warning-color) 35%, transparent);
+}
+
+.status-badge.info,
+.status-badge-modern.info,
+.status-badge-lg.info {
+  background: color-mix(in srgb, var(--info-color) 15%, transparent);
+  color: var(--info-color);
+  border-color: color-mix(in srgb, var(--info-color) 35%, transparent);
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.breadcrumb-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+.breadcrumb-current {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.breadcrumb-separator {
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
 /* Accessibility */
 :focus-visible {
   outline: 2px solid var(--primary-color);

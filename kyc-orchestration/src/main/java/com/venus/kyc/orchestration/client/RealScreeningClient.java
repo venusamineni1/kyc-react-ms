@@ -1,6 +1,7 @@
 package com.venus.kyc.orchestration.client;
 
 import com.venus.kyc.orchestration.dto.KycPrecheckRequest;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,6 +25,7 @@ public class RealScreeningClient implements ScreeningClientInterface {
     }
 
     @Override
+    @CircuitBreaker(name = "screeningService", fallbackMethod = "initiateScreeningFallback")
     public ScreeningResult initiateScreening(KycPrecheckRequest request) {
         log.info("Calling RealScreeningClient for screening service");
 
@@ -37,7 +39,7 @@ public class RealScreeningClient implements ScreeningClientInterface {
             // Call screening-service and get its response format
             @SuppressWarnings("unchecked")
             java.util.Map<String, Object> serviceResponse = restTemplate.postForObject(
-                "http://screening-service/api/internal/screening/initiate",
+                "http://screening-service/api/v1/internal/screening/initiate",
                 entity,
                 java.util.Map.class
             );
@@ -64,5 +66,14 @@ public class RealScreeningClient implements ScreeningClientInterface {
             log.error("Failed to call screening service: {}", e.getMessage());
             throw new RuntimeException("Screening service call failed: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Invoked when the screening-service call times out, errors repeatedly, or the circuit is open.
+     * A hit/no-hit result must never be guessed, so this fails loudly rather than assuming "NoHit".
+     */
+    private ScreeningResult initiateScreeningFallback(KycPrecheckRequest request, Throwable t) {
+        log.error("Screening service unavailable (circuit breaker): {}", t.getMessage());
+        throw new RuntimeException("Screening service unavailable: " + t.getMessage(), t);
     }
 }

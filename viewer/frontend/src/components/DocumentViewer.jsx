@@ -8,6 +8,7 @@ import '@react-pdf-viewer/highlight/lib/styles/index.css';
 import { Annotorious, ImageAnnotator, ImageAnnotationPopup, useAnnotator } from '@annotorious/react';
 import '@annotorious/react/annotorious-react.css';
 import { caseService } from '../services/caseService';
+import { FiFileText, FiImage, FiFile, FiAlertTriangle, FiEdit3 } from 'react-icons/fi';
 
 const WORKER_URL = '/pdfjs/pdf.worker.min.js';
 
@@ -232,7 +233,7 @@ export default function DocumentViewer({ docs, caseId, currentUser, onUploadNew,
     const [highlightNote, setHighlightNote] = useState('');
 
     const selected = selectedDoc;
-    const rawDocUrl = selected ? `/api/cases/documents/${selected.documentID}` : null;
+    const rawDocUrl = selected ? `/api/v1/cases/documents/${selected.documentID}` : null;
     const { blobUrl, fetchError } = useAuthenticatedBlobUrl(rawDocUrl);
     const docAnnotations = (selected && annotations[selected.documentID]) || [];
 
@@ -361,7 +362,7 @@ export default function DocumentViewer({ docs, caseId, currentUser, onUploadNew,
                 border: '2px dashed var(--glass-border)', borderRadius: '10px',
                 padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)'
             }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📄</div>
+                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}><FiFileText /></div>
                 <p>No documents uploaded yet.</p>
                 <button
                     onClick={onUploadNew}
@@ -395,7 +396,7 @@ export default function DocumentViewer({ docs, caseId, currentUser, onUploadNew,
                             transition: 'all 0.15s'
                         }}
                     >
-                        <span>{isPdf(doc.documentName) ? '📋' : isImage(doc.documentName) ? '🖼️' : '📎'}</span>
+                        <span style={{ display: 'flex', alignItems: 'center' }}>{isPdf(doc.documentName) ? <FiFileText size={13} /> : isImage(doc.documentName) ? <FiImage size={13} /> : <FiFile size={13} />}</span>
                         <span>{doc.documentName}</span>
                         <span style={{
                             fontSize: '0.7rem', background: 'rgba(255,255,255,0.1)',
@@ -448,7 +449,7 @@ export default function DocumentViewer({ docs, caseId, currentUser, onUploadNew,
                             justifyContent: 'center', flexDirection: 'column', gap: '12px',
                             color: 'var(--text-secondary)', padding: '2rem', textAlign: 'center'
                         }}>
-                            <div style={{ fontSize: '2rem' }}>⚠️</div>
+                            <div style={{ fontSize: '2rem', display: 'flex', justifyContent: 'center' }}><FiAlertTriangle /></div>
                             <div style={{ fontWeight: 600, color: '#ef4444' }}>Failed to load document</div>
                             <div style={{ fontSize: '0.82rem' }}>{fetchError}</div>
                         </div>
@@ -481,7 +482,7 @@ export default function DocumentViewer({ docs, caseId, currentUser, onUploadNew,
                             alignItems: 'center', justifyContent: 'center', gap: '16px',
                             color: 'var(--text-secondary)'
                         }}>
-                            <div style={{ fontSize: '3rem' }}>📎</div>
+                            <div style={{ fontSize: '3rem', display: 'flex', justifyContent: 'center' }}><FiFile /></div>
                             <div style={{ fontWeight: 600 }}>{selected?.documentName}</div>
                             <a
                                 href={blobUrl}
@@ -524,7 +525,7 @@ export default function DocumentViewer({ docs, caseId, currentUser, onUploadNew,
                                 overflow: 'hidden'
                             }}
                         >
-                            <span>🖊</span>
+                            <span style={{ display: 'flex' }}><FiEdit3 /></span>
                             {showAnnotations && (
                                 <>
                                     <span>Annotations</span>

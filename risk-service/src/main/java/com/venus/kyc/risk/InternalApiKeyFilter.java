@@ -29,7 +29,7 @@ public class InternalApiKeyFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (path.startsWith("/api/internal/")) {
+        if (path.startsWith("/api/internal/") || path.startsWith("/api/v1/internal/")) {
             String key = request.getHeader(HEADER);
             if (key == null || !key.equals(expectedKey)) {
                 log.warn("Rejected internal request to {} — missing or invalid X-Internal-Api-Key", path);

@@ -7,6 +7,7 @@ import Modal from '../components/Modal';
 import { useNotification } from '../contexts/NotificationContext';
 import { caseService } from '../services/caseService';
 import { clientService } from '../services/clientService';
+import { FiUser, FiInbox } from 'react-icons/fi';
 
 const AdHocTaskList = () => {
     const { user } = useAuth();
@@ -207,7 +208,7 @@ const AdHocTaskList = () => {
                                         </td>
                                         <td style={{ padding: '1.25rem 1.5rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>👤</div>
+                                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}><FiUser /></div>
                                                 <span style={{ fontSize: '0.9rem' }}>{activeTab === 'inbox' ? t.owner : t.assignee}</span>
                                             </div>
                                         </td>
@@ -240,7 +241,7 @@ const AdHocTaskList = () => {
                     </div>
                 ) : (
                     <div style={{ padding: '6rem', textAlign: 'center', color: '#64748b' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1.5rem', opacity: 0.5 }}>📫</div>
+                        <div style={{ fontSize: '3rem', marginBottom: '1.5rem', opacity: 0.5, display: 'flex', justifyContent: 'center' }}><FiInbox /></div>
                         <h3>No activity here</h3>
                         <p>Tasks categorized as {activeTab} will appear in this control panel.</p>
                     </div>

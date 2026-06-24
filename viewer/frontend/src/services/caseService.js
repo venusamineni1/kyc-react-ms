@@ -73,8 +73,8 @@ export const caseService = {
 
     uploadDocument: async (caseId, formData) => {
         const token = localStorage.getItem('token');
-        // Manually prepend /api since we are bypassing apiClient which handles the base URL
-        const response = await fetch(`/api${API_BASE_URL}/${caseId}/documents`, {
+        // Manually prepend /api/v1 since we are bypassing apiClient which handles the base URL
+        const response = await fetch(`/api/v1${API_BASE_URL}/${caseId}/documents`, {
             method: 'POST',
             body: formData,
             headers: {

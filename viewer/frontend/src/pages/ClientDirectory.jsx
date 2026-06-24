@@ -4,6 +4,7 @@ import { clientService } from '../services/clientService';
 import Pagination from '../components/Pagination';
 import Button from '../components/Button';
 import { useNotification } from '../contexts/NotificationContext';
+import { FiSearch, FiAlertTriangle } from 'react-icons/fi';
 
 const ClientDirectory = () => {
     const { notify } = useNotification();
@@ -126,7 +127,7 @@ const ClientDirectory = () => {
                                 boxSizing: 'border-box'
                             }}
                         />
-                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>🔍</span>
+                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', display: 'flex' }}><FiSearch /></span>
                     </div>
                 </div>
 
@@ -151,7 +152,7 @@ const ClientDirectory = () => {
                             ) : error ? (
                                 <tr>
                                     <td colSpan="5" style={{ padding: '4rem', textAlign: 'center', color: '#ef4444' }}>
-                                        <div style={{ marginBottom: '1rem' }}>⚠️ Error loading clients</div>
+                                        <div style={{ marginBottom: '1rem' }}><FiAlertTriangle style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Error loading clients</div>
                                         <div>{error}</div>
                                     </td>
                                 </tr>

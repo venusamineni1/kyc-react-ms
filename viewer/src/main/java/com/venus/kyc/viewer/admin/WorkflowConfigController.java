@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/admin/workflow")
+@RequestMapping({"/api/admin/workflow", "/api/v1/admin/workflow"})
 @Tag(name = "Workflow Configuration", description = "Admin endpoints for reading and updating the CMMN workflow definition")
 public class WorkflowConfigController {
 

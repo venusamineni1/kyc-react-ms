@@ -3,6 +3,7 @@ import { batchService } from '../services/batchService';
 import { clientService } from '../services/clientService';
 import { useNotification } from '../contexts/NotificationContext';
 import './BatchPipeline.css';
+import { FiCheck } from 'react-icons/fi';
 
 const BatchPipeline = () => {
     const { notify } = useNotification();
@@ -141,7 +142,7 @@ const BatchPipeline = () => {
                         <div className={`step-circle 
                             ${currentStep > index ? 'completed' : ''} 
                             ${currentStep === index ? 'active' : ''}`}>
-                            {currentStep > index ? '✓' : index + 1}
+                            {currentStep > index ? <FiCheck /> : index + 1}
                         </div>
                         <span className={`step-label 
                             ${currentStep > index ? 'completed' : ''} 

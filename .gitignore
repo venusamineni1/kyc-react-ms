@@ -17,6 +17,14 @@ build/
 *.iml
 .DS_Store
 .gradle/
+bin/
+
+# Local JDK distributions (large binaries, not project source)
+jdk-*/
+jdk-*.tar.gz
+
+# Claude Code worktrees (local tooling state)
+.claude/worktrees/
 
 # Logs
 *.log

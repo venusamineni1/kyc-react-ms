@@ -32,10 +32,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/api/users/me").authenticated()
-                        .requestMatchers("/api/users/role/**").authenticated()
-                        .requestMatchers("/api/users/**").hasAuthority("MANAGE_USERS")
-                        .requestMatchers("/api/permissions/**").hasAuthority("MANAGE_PERMISSIONS")
+                        .requestMatchers("/api/users/me", "/api/v1/users/me").authenticated()
+                        .requestMatchers("/api/users/role/**", "/api/v1/users/role/**").authenticated()
+                        .requestMatchers("/api/users/**", "/api/v1/users/**").hasAuthority("MANAGE_USERS")
+                        .requestMatchers("/api/permissions/**", "/api/v1/permissions/**").hasAuthority("MANAGE_PERMISSIONS")
                         .anyRequest().authenticated() // All other endpoints require auth
                 )
                 // Note: We are NOT using JWT Filter here for /auth/login because we issue the

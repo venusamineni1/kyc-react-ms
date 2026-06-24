@@ -16,7 +16,7 @@ function Login() {
 
         try {
             // Direct call to Gateway which routes to auth-service
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch('/api/v1/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -65,8 +65,9 @@ function Login() {
 
                 <form onSubmit={handleSubmit} className="login-form">
                     <div className="form-group">
-                        <label>Username</label>
+                        <label htmlFor="login-username">Username</label>
                         <input
+                            id="login-username"
                             type="text"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
@@ -76,8 +77,9 @@ function Login() {
                     </div>
 
                     <div className="form-group">
-                        <label>Password</label>
+                        <label htmlFor="login-password">Password</label>
                         <input
+                            id="login-password"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}

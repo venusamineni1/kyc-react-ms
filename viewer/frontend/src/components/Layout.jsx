@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useInbox } from '../contexts/InboxContext';
 import Button from './Button';
+import { FiMenu, FiShield, FiClock, FiGrid } from 'react-icons/fi';
 
 const Layout = ({ children }) => {
     const { user, logout, hasPermission } = useAuth();
@@ -63,7 +64,11 @@ const Layout = ({ children }) => {
                     )}
 
                 <div style={{ position: 'relative' }} ref={menuRef}>
-                    <Button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{
+                    <Button
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                        aria-expanded={isMenuOpen}
+                        style={{
                         minWidth: 'auto',
                         padding: '0.5rem',
                         background: 'transparent',
@@ -74,11 +79,7 @@ const Layout = ({ children }) => {
                         justifyContent: 'center',
                         position: 'relative' // For absolute badge
                     }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                        <FiMenu size={22} />
                         {inboxCount > 0 && (
                             <span style={{
                                 position: 'absolute',
@@ -152,19 +153,19 @@ const Layout = ({ children }) => {
                             )}
                             {hasPermission('MANAGE_CONFIG') && (
                                 <Link to="/admin/control-center" className="btn btn-secondary" style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} onClick={() => setIsMenuOpen(false)}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>
+                                    <FiShield size={14} />
                                     Admin Settings
                                 </Link>
                             )}
                             {hasPermission('MANAGE_CONFIG') && (
                                 <Link to="/admin/jobs" className="btn btn-secondary" style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} onClick={() => setIsMenuOpen(false)}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <FiClock size={14} />
                                     Job Scheduler
                                 </Link>
                             )}
                             {hasPermission('MANAGE_CONFIG') && (
                                 <Link to="/admin/workflow-config" className="btn btn-secondary" style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} onClick={() => setIsMenuOpen(false)}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+                                    <FiGrid size={14} />
                                     Workflow Config
                                 </Link>
                             )}
@@ -188,7 +189,7 @@ const Layout = ({ children }) => {
 
                             <hr style={{ width: '100%', border: 'none', borderTop: '1px solid var(--glass-border)', margin: '0.2rem 0' }} />
 
-                            <Button onClick={() => { logout(); setIsMenuOpen(false); }} style={{ backgroundColor: '#ff5555', width: '100%' }}>
+                            <Button variant="danger" onClick={() => { logout(); setIsMenuOpen(false); }} style={{ width: '100%' }}>
                                 Logout
                             </Button>
                         </div>

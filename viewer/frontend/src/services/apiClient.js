@@ -1,6 +1,6 @@
 const apiClient = {
     // Base URL could come from env vars in the future
-    BASE_URL: '/api',
+    BASE_URL: '/api/v1',
 
     /**
      * Generic fetch wrapper

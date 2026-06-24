@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { clientService } from '../services/clientService';
 import Button from '../components/Button';
 import { useNotification } from '../contexts/NotificationContext';
+import { FiSettings } from 'react-icons/fi';
 
 const AdminMaterialConfig = () => {
     const [configs, setConfigs] = useState([]);
@@ -162,7 +163,7 @@ const AdminMaterialConfig = () => {
                                                         }}
                                                         title="Edit Rule"
                                                     >
-                                                        ⚙️
+                                                        <FiSettings />
                                                     </button>
                                                 </div>
                                             )}

@@ -36,7 +36,7 @@ public class AuthController {
     }
 
     @Operation(summary = "User login", description = "Authenticates a user with username/password and returns a JWT access token with role and permissions")
-    @PostMapping("/api/auth/login")
+    @PostMapping({"/api/auth/login", "/api/v1/auth/login"})
     public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
         String username = request.username();
         String password = request.password();
@@ -88,7 +88,7 @@ public class AuthController {
     }
 
     @Operation(summary = "User logout", description = "Logs out the current user and records the action in the audit trail")
-    @PostMapping("/api/auth/logout")
+    @PostMapping({"/api/auth/logout", "/api/v1/auth/logout"})
     public ResponseEntity<Void> logout(org.springframework.security.core.Authentication authentication) {
         if (authentication != null) {
             userAuditService.log(authentication.getName(), "LOGOUT", "User logged out");

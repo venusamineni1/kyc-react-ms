@@ -1,4 +1,5 @@
 import React from 'react';
+import { FiX } from 'react-icons/fi';
 import { useNotification } from '../contexts/NotificationContext';
 import '../styles/Toast.css';
 
@@ -10,7 +11,7 @@ const ToastContainer = () => {
             {notifications.map(n => (
                 <div key={n.id} className={`toast toast-${n.type} slide-in`}>
                     <div className="toast-content">{n.message}</div>
-                    <button className="toast-close" onClick={() => removeNotification(n.id)}>×</button>
+                    <button className="toast-close" onClick={() => removeNotification(n.id)} aria-label="Dismiss notification"><FiX size={14} /></button>
                 </div>
             ))}
         </div>

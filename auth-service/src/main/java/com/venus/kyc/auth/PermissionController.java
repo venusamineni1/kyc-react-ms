@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/permissions")
+@RequestMapping({"/api/permissions", "/api/v1/permissions"})
 @Tag(name = "Permission Management", description = "Endpoints for managing role-based permissions and access control")
 public class PermissionController {
 

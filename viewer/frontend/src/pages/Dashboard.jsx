@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { FiFolder, FiSearch, FiCheckCircle, FiZap } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { useInbox } from '../contexts/InboxContext';
 import { clientService } from '../services/clientService';
@@ -38,7 +39,9 @@ const Dashboard = () => {
     const { inboxCount } = useInbox();
     const [recentChanges, setRecentChanges] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
+    const [changesError, setChangesError] = React.useState(null);
     const [kpi, setKpi] = React.useState({ open: 0, inReview: 0, approvedMonth: 0, pendingChanges: 0 });
+    const [kpiError, setKpiError] = React.useState(null);
 
     React.useEffect(() => {
         if (hasPermission('VIEW_CHANGES')) {
@@ -48,8 +51,12 @@ const Dashboard = () => {
                     const content = data.content || [];
                     setRecentChanges(content);
                     setKpi(k => ({ ...k, pendingChanges: data.totalElements || content.length }));
+                    setChangesError(null);
                 })
-                .catch(err => console.error('Dashboard changes fetch failed', err))
+                .catch(err => {
+                    console.error('Dashboard changes fetch failed', err);
+                    setChangesError('Unable to load recent material changes.');
+                })
                 .finally(() => setLoading(false));
         }
     }, [hasPermission]);
@@ -65,38 +72,54 @@ const Dashboard = () => {
                     const inReview = cases.filter(c => (c.status || '').includes('REVIEW')).length;
                     const approvedMonth = cases.filter(c => c.status === 'APPROVED' && new Date(c.createdDate) >= startOfMonth).length;
                     setKpi(k => ({ ...k, open, inReview, approvedMonth }));
+                    setKpiError(null);
                 })
-                .catch(() => {});
+                .catch(err => {
+                    console.error('Dashboard KPI fetch failed', err);
+                    setKpiError('Unable to load case metrics.');
+                });
         }
     }, [hasPermission]);
 
     const kpiCards = [
-        { label: 'Open Cases', value: kpi.open, color: '#4facfe', icon: '📂' },
-        { label: 'In Review', value: kpi.inReview, color: '#faad14', icon: '🔍' },
-        { label: 'Approved This Month', value: kpi.approvedMonth, color: '#52c41a', icon: '✅' },
-        { label: 'Pending Changes', value: kpi.pendingChanges, color: '#ff4d4f', icon: '⚡' },
+        { label: 'Open Cases', value: kpi.open, color: '#4facfe', Icon: FiFolder },
+        { label: 'In Review', value: kpi.inReview, color: '#faad14', Icon: FiSearch },
+        { label: 'Approved This Month', value: kpi.approvedMonth, color: '#52c41a', Icon: FiCheckCircle },
+        { label: 'Pending Changes', value: kpi.pendingChanges, color: '#ff4d4f', Icon: FiZap },
     ];
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {/* KPI summary row */}
             {hasPermission('MANAGE_CASES') && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    {kpiCards.map((card, i) => (
-                        <div key={i} className="glass-section" style={{ padding: '1.25rem 1.5rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: `4px solid ${card.color}` }}>
-                            <div style={{ fontSize: '1.75rem', background: 'rgba(255,255,255,0.05)', width: '46px', height: '46px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                {card.icon}
+                <div>
+                    <h2 style={{ fontSize: '1.1rem', margin: '0 0 0.75rem 0', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Overview
+                    </h2>
+                    {kpiError && (
+                        <p style={{ color: 'var(--danger-color)', fontSize: '0.85rem', marginTop: 0, marginBottom: '0.75rem' }}>{kpiError}</p>
+                    )}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                        {kpiCards.map((card, i) => (
+                            <div key={i} className="glass-section" style={{ padding: '1.25rem 1.5rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: `4px solid ${card.color}` }}>
+                                <div style={{ fontSize: '1.4rem', color: card.color, background: 'rgba(255,255,255,0.05)', width: '46px', height: '46px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <card.Icon />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.label}</div>
+                                    <div style={{ fontSize: '1.75rem', fontWeight: 700, color: card.color }}>{card.value}</div>
+                                </div>
                             </div>
-                            <div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.label}</div>
-                                <div style={{ fontSize: '1.75rem', fontWeight: 700, color: card.color }}>{card.value}</div>
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             )}
 
-            <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
+            <div>
+                <h2 style={{ fontSize: '1.1rem', margin: '0 0 0.75rem 0', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Quick Access
+                </h2>
+                <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
                 <DashboardCard
                     to="/clients"
                     id="clientsCard"
@@ -177,6 +200,7 @@ const Dashboard = () => {
                     color="#6c757d"
                     permission="MANAGE_CONFIG"
                 />
+                </div>
             </div>
 
             {hasPermission('VIEW_CHANGES') && (
@@ -187,6 +211,8 @@ const Dashboard = () => {
                     </div>
                     {loading ? (
                         <p style={{ color: 'var(--text-secondary)' }}>Loading latest changes...</p>
+                    ) : changesError ? (
+                        <p style={{ color: 'var(--danger-color)' }}>{changesError}</p>
                     ) : recentChanges.length > 0 ? (
                         <table style={{ fontSize: '0.85rem' }}>
                             <thead>

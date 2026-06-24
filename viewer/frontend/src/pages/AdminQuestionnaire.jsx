@@ -3,6 +3,7 @@ import Button from '../components/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import apiClient from '../services/apiClient';
+import { FiX } from 'react-icons/fi';
 
 const AdminQuestionnaire = () => {
     const { hasPermission } = useAuth();
@@ -149,7 +150,7 @@ const AdminQuestionnaire = () => {
                                             <td>{q.displayOrder}</td>
                                             <td>
                                                 <Button variant="secondary" style={{ padding: '0.1rem 0.4rem', marginRight: '0.5rem' }} onClick={() => openQuestionModal(section.sectionID, q)}>Edit</Button>
-                                                <Button variant="secondary" style={{ padding: '0.1rem 0.4rem' }} onClick={() => handleDeleteQuestion(q.questionID)}>✕</Button>
+                                                <Button variant="secondary" aria-label="Delete question" style={{ padding: '0.1rem 0.4rem' }} onClick={() => handleDeleteQuestion(q.questionID)}><FiX /></Button>
                                             </td>
                                         </tr>
                                     ))}

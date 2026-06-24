@@ -1,5 +1,6 @@
 package com.venus.kyc.orchestration.client;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,6 +24,7 @@ public class RealRiskClient implements RiskClientInterface {
     }
 
     @Override
+    @CircuitBreaker(name = "riskService", fallbackMethod = "calculateRiskFallback")
     public RiskResult calculateRisk(Object riskPayload) {
         log.info("Calling RealRiskClient for risk service");
 
@@ -36,7 +38,7 @@ public class RealRiskClient implements RiskClientInterface {
             // Call risk-service and get its response
             @SuppressWarnings("unchecked")
             java.util.Map<String, Object> serviceResponse = restTemplate.postForObject(
-                "http://risk-service/api/internal/risk/calculate",
+                "http://risk-service/api/v1/internal/risk/calculate",
                 entity,
                 java.util.Map.class
             );
@@ -123,5 +125,14 @@ public class RealRiskClient implements RiskClientInterface {
         }
 
         return null;
+    }
+
+    /**
+     * Invoked when the risk-service call times out, errors repeatedly, or the circuit is open.
+     * Risk rating must never be guessed, so this fails loudly rather than returning a default rating.
+     */
+    private RiskResult calculateRiskFallback(Object riskPayload, Throwable t) {
+        log.error("Risk service unavailable (circuit breaker): {}", t.getMessage());
+        throw new RuntimeException("Risk service unavailable: " + t.getMessage(), t);
     }
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auditService } from '../services/auditService';
 import Button from '../components/Button';
+import { FiFileText, FiKey, FiBarChart2, FiSettings, FiAlertTriangle } from 'react-icons/fi';
 
 const AuditHistory = () => {
     const [audits, setAudits] = useState([]);
@@ -56,10 +57,10 @@ const AuditHistory = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
                 {[
-                    { label: 'Total Events', value: stats.total, color: '#3b82f6', icon: '📄' },
-                    { label: 'Auth Events', value: stats.security, color: '#10b981', icon: '🔑' },
-                    { label: 'Case Ops', value: stats.operations, color: '#8b5cf6', icon: '📊' },
-                    { label: 'Config Changes', value: stats.admin, color: '#f59e0b', icon: '⚙️' }
+                    { label: 'Total Events', value: stats.total, color: '#3b82f6', icon: <FiFileText /> },
+                    { label: 'Auth Events', value: stats.security, color: '#10b981', icon: <FiKey /> },
+                    { label: 'Case Ops', value: stats.operations, color: '#8b5cf6', icon: <FiBarChart2 /> },
+                    { label: 'Config Changes', value: stats.admin, color: '#f59e0b', icon: <FiSettings /> }
                 ].map((s, idx) => (
                     <div key={idx} className="glass-section" style={{ padding: '1.25rem', marginBottom: 0, borderLeft: `4px solid ${s.color}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
@@ -140,7 +141,7 @@ const AuditHistory = () => {
             </div>
             {error && (
                 <div style={{ marginTop: '1.5rem', padding: '1rem', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#f87171', fontSize: '0.875rem' }}>
-                    ⚠️ {error}
+                    <FiAlertTriangle style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {error}
                 </div>
             )}
         </div>

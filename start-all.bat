@@ -9,6 +9,15 @@ set STARTUP_TIMEOUT=120
 set EUREKA_WAIT=10
 set "LOGS=%ROOT%logs"
 
+:: Gradle 8.12 cannot run on newer JDKs (e.g. "Unsupported class file major version 69").
+:: Use a bundled JDK 21 if one is present alongside this script (look for jdk-21*\bin\java.exe).
+:: This only matters for the Gradle bootRun fallback in :svc below - prebuilt JARs run fine
+:: under any modern JRE via "java -jar".
+for /d %%D in ("%ROOT%jdk-21*") do (
+    if exist "%%~fD\bin\java.exe" set "JAVA_HOME=%%~fD"
+)
+if defined JAVA_HOME echo Using bundled JDK 21 at %JAVA_HOME% for any Gradle fallback builds.
+
 if not exist "%LOGS%" mkdir "%LOGS%"
 
 echo === KYC Microservices Stack Startup ===

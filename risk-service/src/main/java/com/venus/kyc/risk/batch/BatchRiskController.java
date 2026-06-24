@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/internal/risk/batch")
+@RequestMapping({"/api/internal/risk/batch", "/api/v1/internal/risk/batch"})
 @Tag(name = "Batch Risk Processing", description = "Endpoints for batch risk assessment including JSONL generation, file compression, and SFTP upload")
 public class BatchRiskController {
 

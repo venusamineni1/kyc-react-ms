@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/documents")
+@RequestMapping({"/api/documents", "/api/v1/documents"})
 @Tag(name = "Document Management", description = "Endpoints for uploading, downloading, and versioning case documents")
 public class DocumentController {
 

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/services")
+@RequestMapping({"/api/services", "/api/v1/services"})
 @CrossOrigin(origins = "http://localhost:5173")
 @Tag(name = "Service Control", description = "Endpoints for monitoring and controlling backend service instances")
 public class ServiceControlController {

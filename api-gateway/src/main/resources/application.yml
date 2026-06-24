@@ -22,10 +22,17 @@ spring:
           filters:
             - RewritePath=/api/risk/(?<remaining>.*), /api/internal/risk/${remaining}
             - AddRequestHeader=X-Internal-Api-Key, ${internal.api.key:dev-internal-kyc-key-change-in-prod}
+        - id: risk-service-v1
+          uri: lb://risk-service
+          predicates:
+            - Path=/api/v1/risk/**
+          filters:
+            - RewritePath=/api/v1/risk/(?<remaining>.*), /api/v1/internal/risk/${remaining}
+            - AddRequestHeader=X-Internal-Api-Key, ${internal.api.key:dev-internal-kyc-key-change-in-prod}
         - id: screening-service-batch
           uri: lb://screening-service
           predicates:
-            - Path=/api/internal/screening/**
+            - Path=/api/internal/screening/**,/api/v1/internal/screening/**
           filters:
             - AddRequestHeader=X-Internal-Api-Key, ${internal.api.key:dev-internal-kyc-key-change-in-prod}
         - id: auth-service-login
@@ -34,14 +41,20 @@ spring:
             - Path=/api/auth/**
           filters:
             - StripPrefix=1
+        - id: auth-service-login-v1
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - StripPrefix=2
         - id: auth-service-api
           uri: lb://auth-service
           predicates:
-            - Path=/api/users/**, /api/permissions/**
+            - Path=/api/users/**,/api/permissions/**,/api/v1/users/**,/api/v1/permissions/**
         - id: core-viewer
           uri: lb://viewer-core
           predicates:
-            - Path=/api/**, /login, /logout, /
+            - Path=/api/**,/login,/logout,/
         - id: core-viewer-catchall
           uri: lb://viewer-core
           predicates:

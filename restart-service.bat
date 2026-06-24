@@ -3,6 +3,12 @@ setlocal enabledelayedexpansion
 
 set ROOT_DIR=%~dp0
 
+REM Gradle 8.12 cannot run on newer JDKs (e.g. "Unsupported class file major version 69").
+REM Use a bundled JDK 21 if one is present alongside this script (look for jdk-21*\bin\java.exe).
+for /d %%D in ("%ROOT_DIR%jdk-21*") do (
+    if exist "%%~fD\bin\java.exe" set "JAVA_HOME=%%~fD"
+)
+
 if "%~1"=="" (
     echo Usage: restart-service.bat ^<service-name^>
     echo Available services: registry, auth, risk, screening, document, viewer, gateway

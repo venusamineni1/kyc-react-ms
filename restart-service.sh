@@ -9,6 +9,13 @@ RED='\033[0;31m'
 NC='\033[0m'
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Gradle 8.12 cannot run on newer JDKs (e.g. "Unsupported class file major version 69").
+# Use the bundled JDK 21 if present so the bootRun below works regardless of the system default JDK.
+BUNDLED_JDK="$ROOT_DIR/jdk-21.0.2+13/Contents/Home"
+if [ -d "$BUNDLED_JDK" ]; then
+    export JAVA_HOME="$BUNDLED_JDK"
+fi
+
 if [ -z "$SERVICE" ]; then
     echo "Usage: $0 <service-name>"
     echo "Available services: registry, auth, risk, screening, document, viewer, gateway"

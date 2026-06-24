@@ -2,6 +2,13 @@
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PORT=8084
 
+# Gradle 8.12 cannot run on newer JDKs (e.g. "Unsupported class file major version 69").
+# Use the bundled JDK 21 if present so the bootRun below works regardless of the system default JDK.
+BUNDLED_JDK="$ROOT_DIR/jdk-21.0.2+13/Contents/Home"
+if [ -d "$BUNDLED_JDK" ]; then
+    export JAVA_HOME="$BUNDLED_JDK"
+fi
+
 echo "Restarting Auth Service..."
 PID=$(lsof -t -i:$PORT)
 if [ -n "$PID" ]; then

@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * Secured under MANAGE_CONFIG permission via SecurityConfig.
  */
 @RestController
-@RequestMapping("/api/internal/scheduler")
+@RequestMapping({"/api/internal/scheduler", "/api/v1/internal/scheduler"})
 public class JobSchedulerController {
 
     private final StorageProvider storageProvider;

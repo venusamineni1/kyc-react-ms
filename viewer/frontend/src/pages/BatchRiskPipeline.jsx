@@ -3,6 +3,7 @@ import { riskBatchService } from '../services/riskBatchService';
 import { clientService } from '../services/clientService';
 import { useNotification } from '../contexts/NotificationContext';
 import './BatchPipeline.css'; // Reusing existing CSS
+import { FiCheck } from 'react-icons/fi';
 
 const BatchRiskPipeline = () => {
     const { notify } = useNotification();
@@ -109,7 +110,7 @@ const BatchRiskPipeline = () => {
                         <div className={`step-circle 
                             ${currentStep > index ? 'completed' : ''} 
                             ${currentStep === index ? 'active' : ''}`}>
-                            {currentStep > index ? '✓' : index + 1}
+                            {currentStep > index ? <FiCheck /> : index + 1}
                         </div>
                         <span className={`step-label 
                             ${currentStep > index ? 'completed' : ''} 

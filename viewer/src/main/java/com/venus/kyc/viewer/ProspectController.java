@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/prospects")
+@RequestMapping({"/api/prospects", "/api/v1/prospects"})
 public class ProspectController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProspectController.class);

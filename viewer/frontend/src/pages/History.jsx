@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { batchService } from '../services/batchService';
 import { useNotification } from '../contexts/NotificationContext';
-import { FaLayerGroup, FaFilter, FaCalendarAlt, FaSync, FaSearch } from 'react-icons/fa';
+import { FiLayers, FiFilter, FiCalendar, FiRefreshCw, FiSearch, FiSettings, FiX } from 'react-icons/fi';
 import './History.css'; // Assuming we might want specific styles
 
 const History = () => {
@@ -133,7 +133,7 @@ const History = () => {
                 {/* Service Filter */}
                 <div className="flex items-center gap-3" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                     <div className="text-gray-400" title="Service Type">
-                        <FaLayerGroup size={14} />
+                        <FiLayers size={14} />
                     </div>
                     <div className="flex gap-3" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                         <label className="flex items-center cursor-pointer text-sm font-medium hover:text-white transition-colors">
@@ -164,7 +164,7 @@ const History = () => {
                 {/* Status Filter */}
                 <div className="flex items-center gap-3" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                     <div className="text-gray-400" title="Status">
-                        <FaFilter size={14} />
+                        <FiFilter size={14} />
                     </div>
                     <select
                         value={filters.status}
@@ -187,7 +187,7 @@ const History = () => {
                 {/* Date Filter */}
                 <div className="flex items-center gap-3" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                     <div className="text-gray-400" title="Date Range">
-                        <FaCalendarAlt size={14} />
+                        <FiCalendar size={14} />
                     </div>
                     <div className="flex items-center gap-2" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                         <input
@@ -210,7 +210,7 @@ const History = () => {
 
                 <div className="ml-auto pl-4 border-l border-gray-700">
                     <button onClick={loadHistory} className="btn-icon-only" title="Refresh Data">
-                        <FaSync size={14} />
+                        <FiRefreshCw size={14} />
                     </button>
                 </div>
             </div>
@@ -279,7 +279,7 @@ const History = () => {
                                                 cursor: 'pointer', whiteSpace: 'nowrap',
                                             }}
                                         >
-                                            ⚙ Snapshot #{run.mappingSnapshotID}
+                                            <FiSettings style={{ verticalAlign: 'middle', marginRight: '3px' }} /> Snapshot #{run.mappingSnapshotID}
                                         </button>
                                     ) : run.service === 'Screening' ? (
                                         <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>No snapshot</span>
@@ -293,7 +293,7 @@ const History = () => {
                 </table>
                 {filteredHistory.length === 0 && (
                     <div className="p-12 text-center text-muted flex flex-col items-center gap-3">
-                        <FaSearch size={24} className="text-gray-600" />
+                        <FiSearch size={24} className="text-gray-600" />
                         <p>No records found matching your filters.</p>
                     </div>
                 )}
@@ -321,10 +321,10 @@ const History = () => {
                                     By: {snapshotModal.snapshot.createdBy} ({snapshotModal.snapshot.source})
                                 </p>
                             </div>
-                            <button onClick={() => setSnapshotModal(null)} style={{
+                            <button onClick={() => setSnapshotModal(null)} aria-label="Close" style={{
                                 background: 'none', border: 'none', color: 'var(--text-secondary)',
-                                fontSize: '1.2rem', cursor: 'pointer', padding: '0.25rem',
-                            }}>✕</button>
+                                fontSize: '1.2rem', cursor: 'pointer', padding: '0.25rem', display: 'flex',
+                            }}><FiX /></button>
                         </div>
 
                         <div style={{ overflowX: 'auto' }}>

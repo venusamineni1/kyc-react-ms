@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FiType, FiCheck, FiX } from 'react-icons/fi';
 
 // Simulated OCR data shape returned by document-service
 // In production this comes from GET /api/cases/{caseId}/documents/{docId}/ocr
@@ -60,7 +61,7 @@ export default function OcrDataPanel({ caseId, document }) {
         setLoading(true);
         setError(null);
         // Fetch OCR results for selected document
-        fetch(`/api/cases/${caseId}/documents/${document.documentID}/ocr`, {
+        fetch(`/api/v1/cases/${caseId}/documents/${document.documentID}/ocr`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
             .then(r => {
@@ -89,7 +90,7 @@ export default function OcrDataPanel({ caseId, document }) {
                     border: '1px solid rgba(16,185,129,0.3)',
                     fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em',
                     padding: '2px 7px', borderRadius: '4px', textTransform: 'uppercase'
-                }}>🔤 OCR · MRZ Parser</span>
+                }}><FiType style={{ verticalAlign: 'middle', marginRight: '4px' }} /> OCR · MRZ Parser</span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                     {document.documentName}
                 </span>
@@ -153,7 +154,7 @@ export default function OcrDataPanel({ caseId, document }) {
                                 color: ocrData.mrzCheckDigits === 'PASS' ? '#10b981' : '#ef4444',
                                 display: 'flex', alignItems: 'center', gap: '8px'
                             }}>
-                                <span>{ocrData.mrzCheckDigits === 'PASS' ? '✓' : '✗'}</span>
+                                <span style={{ display: 'flex' }}>{ocrData.mrzCheckDigits === 'PASS' ? <FiCheck /> : <FiX />}</span>
                                 <span>MRZ Check Digits: <strong>{ocrData.mrzCheckDigits}</strong></span>
                             </div>
                         )}

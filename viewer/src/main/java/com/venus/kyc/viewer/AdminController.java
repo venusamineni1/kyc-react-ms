@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping({"/api", "/api/v1"})
 @Tag(name = "Admin Management", description = "Admin endpoints for user and permission management")
 public class AdminController {
 
