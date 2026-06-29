@@ -191,6 +191,38 @@ public class ScreeningService {
         return screeningRepository.getLatestScreeningLog(clientId);
     }
 
+    /**
+     * Full append-only NRTS interaction trail for a screening, bridged via screening-service's
+     * by-process-id endpoint. viewer only ever knows the NRTS process ID (stored as
+     * ExternalRequestID on its own local ScreeningLog row) — not screening-service's internal
+     * LogID — so this looks the local log up first, then proxies using that process ID.
+     */
+    public List<java.util.Map<String, Object>> getInteractionTimeline(Long logId) {
+        ScreeningLog log = screeningRepository.findById(logId);
+        if (log == null || log.externalRequestID() == null) {
+            return Collections.emptyList();
+        }
+
+        Long processId;
+        try {
+            processId = Long.parseLong(log.externalRequestID());
+        } catch (NumberFormatException e) {
+            // No-Hit logs store a synthetic "NO_HIT_<timestamp>" id — never had any NRTS interaction.
+            return Collections.emptyList();
+        }
+
+        String url = this.screeningServiceUrl + "/process/" + processId + "/interactions";
+        try {
+            return restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(new org.springframework.core.ParameterizedTypeReference<List<java.util.Map<String, Object>>>() {
+                    });
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
     public List<ScreeningResult> getScreeningResults(Long logId) {
         return screeningRepository.getResultsByLogId(logId);
     }

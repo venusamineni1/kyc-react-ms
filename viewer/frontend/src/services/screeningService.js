@@ -33,5 +33,15 @@ export const screeningService = {
      */
     async getHistory(clientId) {
         return apiClient.get(`/screening/history/${clientId}`);
+    },
+
+    /**
+     * Get the full append-only NRTS interaction timeline for one screening log
+     * (every real submit/poll/details call screening-service exchanged with NRTS).
+     * @param {number} logId - viewer's local ScreeningLogs.LogID
+     * @returns {Promise<Array>} Array of interaction records, ordered chronologically
+     */
+    async getInteractionTimeline(logId) {
+        return apiClient.get(`/screening/${logId}/timeline`);
     }
 };

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { screeningService } from '../services/screeningService';
 import { useNotification } from '../contexts/NotificationContext';
-import { FiUser, FiGlobe, FiAlertTriangle, FiShield, FiClock, FiPlay, FiSearch, FiCheck } from 'react-icons/fi';
+import { FiUser, FiGlobe, FiAlertTriangle, FiShield, FiClock, FiPlay, FiSearch, FiCheck, FiActivity } from 'react-icons/fi';
+import ScreeningTimelineModal from './ScreeningTimelineModal';
 
 const ScreeningCard = ({ title, context, result, onRun }) => {
     const isHit = result.status === 'HIT';
@@ -110,6 +111,9 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission, latestScreening, 
     const [analyzeModalOpen, setAnalyzeModalOpen] = useState(false);
     const [analyzeResult, setAnalyzeResult] = useState(null);
     const [loadingAnalyze, setLoadingAnalyze] = useState(false);
+
+    // Interaction Timeline State
+    const [timelineLogId, setTimelineLogId] = useState(null);
 
     // Auto-polling effect
     useEffect(() => {
@@ -453,9 +457,20 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission, latestScreening, 
                                         </div>
                                         <div style={{ fontSize: '0.75rem', color: '#888' }}>ID: {h.externalRequestID || h.externalRequestId}</div>
                                     </div>
-                                    <div>
-                                        <button 
-                                            onClick={() => handleAnalyze(h.externalRequestID || h.externalRequestId)} 
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                        <button
+                                            onClick={() => setTimelineLogId(h.logID ?? h.logId)}
+                                            title="View full NRTS interaction timeline"
+                                            style={{
+                                                background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                                                color: '#fff', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer',
+                                                fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px'
+                                            }}
+                                        >
+                                            <FiActivity size={13} /> Timeline
+                                        </button>
+                                        <button
+                                            onClick={() => handleAnalyze(h.externalRequestID || h.externalRequestId)}
                                             style={{
                                                 background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
                                                 color: '#fff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem'
@@ -532,6 +547,10 @@ const ScreeningPanel = ({ clientId, clientData, hasPermission, latestScreening, 
                     </div>
                 )
             }
+
+            {timelineLogId != null && (
+                <ScreeningTimelineModal logId={timelineLogId} onClose={() => setTimelineLogId(null)} />
+            )}
         </div >
     );
 };

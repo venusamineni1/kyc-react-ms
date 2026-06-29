@@ -44,6 +44,14 @@ public class ScreeningController {
         return ResponseEntity.ok(service.getHistory(clientId));
     }
 
+    @Operation(summary = "Get full NRTS interaction timeline for a screening",
+               description = "Every real submit/poll/details call screening-service exchanged with NRTS for this screening log, in order.")
+    @GetMapping("/{logId}/timeline")
+    public ResponseEntity<List<java.util.Map<String, Object>>> getInteractionTimeline(
+            @Parameter(description = "Viewer ScreeningLogs.LogID") @PathVariable Long logId) {
+        return ResponseEntity.ok(service.getInteractionTimeline(logId));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(Exception e) {
         return ResponseEntity.internalServerError().body("Error: " + e.getMessage());

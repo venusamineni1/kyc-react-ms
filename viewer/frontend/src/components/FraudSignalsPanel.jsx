@@ -9,6 +9,63 @@ const LEVEL = {
     PENDING: 'pending',
 };
 
+/** PASS=100, WARN=50, FAIL=0; PENDING signals are excluded (nothing to score yet). */
+function computeTrustScore(signals) {
+    if (!signals) return null;
+    const scoreMap = { pass: 100, warn: 50, fail: 0 };
+    const levels = [
+        signals.mrzCheckDigits, signals.pdfSignature, signals.exifMetadata,
+        signals.photoZoneEla, signals.faceDetected, signals.barcodeOcrMatch,
+    ].filter(Boolean).map(s => (s.level || '').toLowerCase()).filter(l => l in scoreMap);
+    if (levels.length === 0) return null;
+    const avg = levels.reduce((sum, l) => sum + scoreMap[l], 0) / levels.length;
+    return Math.round(avg);
+}
+
+function TrustScoreGauge({ score }) {
+    const [animatedScore, setAnimatedScore] = useState(0);
+    useEffect(() => {
+        if (score === null) return;
+        const id = requestAnimationFrame(() => setAnimatedScore(score));
+        return () => cancelAnimationFrame(id);
+    }, [score]);
+
+    if (score === null) return null;
+
+    const color = score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+    const label = score >= 80 ? 'Low Risk' : score >= 50 ? 'Review Recommended' : 'High Risk';
+    const radius = 42;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference * (1 - animatedScore / 100);
+
+    return (
+        <div style={{
+            display: 'flex', alignItems: 'center', gap: '14px',
+            padding: '10px 14px', background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px',
+        }}>
+            <svg width="96" height="96" viewBox="0 0 96 96" style={{ flexShrink: 0 }}>
+                <circle cx="48" cy="48" r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+                <circle
+                    cx="48" cy="48" r={radius} fill="none" stroke={color} strokeWidth="8"
+                    strokeLinecap="round" strokeDasharray={circumference}
+                    strokeDashoffset={offset} transform="rotate(-90 48 48)"
+                    style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.4s' }}
+                />
+                <text x="48" y="52" textAnchor="middle" fontSize="22" fontWeight="700" fill={color}>
+                    {animatedScore}
+                </text>
+            </svg>
+            <div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Document Trust Score
+                </div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color, marginTop: '2px' }}>{label}</div>
+            </div>
+        </div>
+    );
+}
+
 function SignalRow({ icon, title, detail, level }) {
     const colors = {
         pass:    { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.25)',  text: '#10b981', icon: <FiCheck size={12} /> },
@@ -16,7 +73,7 @@ function SignalRow({ icon, title, detail, level }) {
         fail:    { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.25)',   text: '#ef4444', icon: <FiX size={12} /> },
         pending: { bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.25)', text: '#64748b', icon: '…' },
     };
-    const c = colors[level] || colors.pending;
+    const c = colors[(level || '').toLowerCase()] || colors.pending;
     return (
         <div style={{
             display: 'flex', alignItems: 'flex-start', gap: '10px',
@@ -57,8 +114,13 @@ export default function FraudSignalsPanel({ caseId, document }) {
             .finally(() => setLoading(false));
     }, [caseId, document?.documentID]);
 
-    const warnCount  = signals ? Object.values(signals).filter(s => s.level === LEVEL.WARN).length : 0;
-    const failCount  = signals ? Object.values(signals).filter(s => s.level === LEVEL.FAIL).length : 0;
+    const signalLevels = signals ? [
+        signals.mrzCheckDigits, signals.pdfSignature, signals.exifMetadata,
+        signals.photoZoneEla, signals.faceDetected, signals.barcodeOcrMatch,
+    ].filter(Boolean).map(s => (s.level || '').toLowerCase()) : [];
+    const warnCount = signalLevels.filter(l => l === LEVEL.WARN).length;
+    const failCount = signalLevels.filter(l => l === LEVEL.FAIL).length;
+    const trustScore = computeTrustScore(signals);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -69,7 +131,7 @@ export default function FraudSignalsPanel({ caseId, document }) {
                     border: '1px solid rgba(245,158,11,0.3)',
                     fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em',
                     padding: '2px 7px', borderRadius: '4px', textTransform: 'uppercase'
-                }}><FiShield style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Tika · PDFBox · OpenCV</span>
+                }}><FiShield style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Tika · PDFBox · ELA</span>
                 {signals && (failCount > 0 || warnCount > 0) && (
                     <span style={{
                         fontSize: '0.75rem', fontWeight: 600,
@@ -114,7 +176,7 @@ export default function FraudSignalsPanel({ caseId, document }) {
                     />
                     <SignalRow
                         title="Photo Zone Analysis"
-                        detail="Awaiting OpenCV ELA check"
+                        detail="Awaiting ELA check"
                         level={LEVEL.PENDING}
                     />
                     <SignalRow
@@ -129,7 +191,7 @@ export default function FraudSignalsPanel({ caseId, document }) {
                         borderRadius: '7px', padding: '8px 12px',
                         fontSize: '0.78rem', color: '#60a5fa', lineHeight: 1.5
                     }}>
-                        <FiInfo style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Signals will populate automatically once the <strong>document-service</strong> backend is deployed with Tess4J, Tika, PDFBox and OpenCV.
+                        <FiInfo style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Signals will populate automatically once the <strong>document-service</strong> backend is deployed with Tess4J, Tika, PDFBox, and ELA analysis.
                     </div>
                 </div>
             )}
@@ -137,6 +199,7 @@ export default function FraudSignalsPanel({ caseId, document }) {
             {/* Live signals from API */}
             {signals && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                    <TrustScoreGauge score={trustScore} />
                     {signals.mrzCheckDigits && (
                         <SignalRow title="MRZ Check Digits" detail={signals.mrzCheckDigits.detail} level={signals.mrzCheckDigits.level} />
                     )}
@@ -147,7 +210,19 @@ export default function FraudSignalsPanel({ caseId, document }) {
                         <SignalRow title="EXIF Metadata" detail={signals.exifMetadata.detail} level={signals.exifMetadata.level} />
                     )}
                     {signals.photoZoneEla && (
-                        <SignalRow title="Photo Zone (ELA)" detail={signals.photoZoneEla.detail} level={signals.photoZoneEla.level} />
+                        <>
+                            <SignalRow title="Photo Zone (ELA)" detail={signals.photoZoneEla.detail} level={signals.photoZoneEla.level} />
+                            {signals.photoZoneElaHeatmap && (
+                                <img
+                                    src={`data:image/png;base64,${signals.photoZoneElaHeatmap}`}
+                                    alt="ELA heatmap — bright regions indicate elevated compression error, a possible sign of localized editing"
+                                    style={{
+                                        width: '220px', maxWidth: '100%', borderRadius: '6px',
+                                        border: '1px solid rgba(255,255,255,0.12)', marginTop: '-2px',
+                                    }}
+                                />
+                            )}
+                        </>
                     )}
                     {signals.faceDetected && (
                         <SignalRow title="Face Detection" detail={signals.faceDetected.detail} level={signals.faceDetected.level} />

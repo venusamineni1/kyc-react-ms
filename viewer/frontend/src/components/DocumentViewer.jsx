@@ -150,8 +150,39 @@ function NotePopup({ autoFocus, annotation, onCreateBody, onAnnotationSaved }) {
     );
 }
 
+// Auto-detected barcode region, drawn as a plain sibling overlay (not an Annotorious
+// annotation) so it can never be confused with or accidentally deleted as a user note.
+function BarcodeOverlay({ box }) {
+    if (!box || !box.width || !box.height || !box.imageWidth || !box.imageHeight) return null;
+    const pct = (n, total) => `${(n / total) * 100}%`;
+    return (
+        <div
+            title="Auto-detected barcode"
+            style={{
+                position: 'absolute',
+                left: pct(box.x, box.imageWidth),
+                top: pct(box.y, box.imageHeight),
+                width: pct(box.width, box.imageWidth),
+                height: pct(box.height, box.imageHeight),
+                border: '2px dashed #22d3ee',
+                borderRadius: '3px',
+                boxShadow: '0 0 0 1px rgba(34,211,238,0.3), 0 0 12px rgba(34,211,238,0.35)',
+                pointerEvents: 'none',
+            }}
+        >
+            <span style={{
+                position: 'absolute', top: '-22px', left: '-2px',
+                background: '#22d3ee', color: '#0a1929', fontSize: '0.68rem', fontWeight: 700,
+                padding: '1px 6px', borderRadius: '3px', whiteSpace: 'nowrap',
+            }}>
+                Barcode Detected
+            </span>
+        </div>
+    );
+}
+
 // Must be rendered inside <Annotorious> to use useAnnotator
-function AnnotoriousImageInner({ url, name, docAnnotations, onAnnotationSaved }) {
+function AnnotoriousImageInner({ url, name, docAnnotations, onAnnotationSaved, barcodeBox }) {
     const anno = useAnnotator();
 
     // Load existing geometric annotations into the canvas when ready
@@ -163,17 +194,20 @@ function AnnotoriousImageInner({ url, name, docAnnotations, onAnnotationSaved })
 
     return (
         <>
-            <ImageAnnotator tool="rectangle">
-                <img
-                    src={url}
-                    alt={name}
-                    style={{ maxWidth: '100%', borderRadius: '4px', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
-                />
-            </ImageAnnotator>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+                <ImageAnnotator tool="rectangle">
+                    <img
+                        src={url}
+                        alt={name}
+                        style={{ maxWidth: '100%', borderRadius: '4px', boxShadow: '0 4px 24px rgba(0,0,0,0.5)', display: 'block' }}
+                    />
+                </ImageAnnotator>
+                <BarcodeOverlay box={barcodeBox} />
+            </div>
 
             {/* Popup shown after user draws a shape — user enters a note and saves */}
             <ImageAnnotationPopup popup={(props) => (
-                <NotePopup 
+                <NotePopup
                     autoFocus
                     annotation={props.annotation}
                     onCreateBody={props.onCreateBody}
@@ -184,7 +218,20 @@ function AnnotoriousImageInner({ url, name, docAnnotations, onAnnotationSaved })
     );
 }
 
-function AnnotoriousImageViewer({ url, name, docAnnotations, onAnnotationSaved }) {
+function AnnotoriousImageViewer({ url, name, docAnnotations, onAnnotationSaved, caseId, documentId }) {
+    const [barcodeBox, setBarcodeBox] = useState(null);
+
+    useEffect(() => {
+        setBarcodeBox(null);
+        if (!caseId || !documentId) return;
+        fetch(`/api/v1/cases/${caseId}/documents/${documentId}/ocr`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => setBarcodeBox(data?.barcodeBoundingBox || null))
+            .catch(() => setBarcodeBox(null));
+    }, [caseId, documentId]);
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             {/* Toolbar — download only (zoom/rotate omitted: CSS transforms break Annotorious coordinates) */}
@@ -209,6 +256,7 @@ function AnnotoriousImageViewer({ url, name, docAnnotations, onAnnotationSaved }
                         name={name}
                         docAnnotations={docAnnotations}
                         onAnnotationSaved={onAnnotationSaved}
+                        barcodeBox={barcodeBox}
                     />
                 </Annotorious>
             </div>
@@ -280,6 +328,25 @@ export default function DocumentViewer({ docs, caseId, currentUser, onUploadNew,
         await persistAnnotation(noteText, annotation, 'Region');
     };
 
+    // Auto-detected barcode region for PDFs — fetched the same way as the image path,
+    // but positioned via the highlight plugin's page-relative coordinate system instead
+    // of plain percentage CSS, since PDF.js pages have their own zoom/rotation transform.
+    const [pdfBarcodeBox, setPdfBarcodeBox] = useState(null);
+    useEffect(() => {
+        setPdfBarcodeBox(null);
+        if (!caseId || !selected?.documentID || !isPdf(selected?.documentName)) return;
+        fetch(`/api/v1/cases/${caseId}/documents/${selected.documentID}/ocr`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data?.barcodeBoundingBox && data.barcodePageIndex != null) {
+                    setPdfBarcodeBox({ box: data.barcodeBoundingBox, pageIndex: data.barcodePageIndex });
+                }
+            })
+            .catch(() => setPdfBarcodeBox(null));
+    }, [caseId, selected?.documentID, selected?.documentName]);
+
     // PDF highlight plugin — renders a note popup on text selection
     const highlightNoteRef = useRef('');
     const renderHighlightTarget = (props) => (
@@ -330,6 +397,11 @@ export default function DocumentViewer({ docs, caseId, currentUser, onUploadNew,
     const renderHighlights = (props) => {
         const docAnns = (annotations[selected?.documentID] || [])
             .filter(a => a.geometry && a.label === 'Highlight');
+
+        const showBarcodeBox = pdfBarcodeBox && pdfBarcodeBox.pageIndex === props.pageIndex
+            && pdfBarcodeBox.box.width && pdfBarcodeBox.box.height
+            && pdfBarcodeBox.box.imageWidth && pdfBarcodeBox.box.imageHeight;
+
         return (
             <>
                 {docAnns.flatMap((ann, i) =>
@@ -342,6 +414,36 @@ export default function DocumentViewer({ docs, caseId, currentUser, onUploadNew,
                             }} title={ann.body} />
                         ))
                 )}
+                {showBarcodeBox && (() => {
+                    const { box } = pdfBarcodeBox;
+                    const area = {
+                        pageIndex: props.pageIndex,
+                        left: (box.x / box.imageWidth) * 100,
+                        top: (box.y / box.imageHeight) * 100,
+                        width: (box.width / box.imageWidth) * 100,
+                        height: (box.height / box.imageHeight) * 100,
+                    };
+                    return (
+                        <div
+                            title="Auto-detected barcode"
+                            style={{
+                                ...props.getCssProperties(area, props.rotation),
+                                border: '2px dashed #22d3ee',
+                                borderRadius: '3px',
+                                boxShadow: '0 0 0 1px rgba(34,211,238,0.3), 0 0 12px rgba(34,211,238,0.35)',
+                                pointerEvents: 'none',
+                            }}
+                        >
+                            <span style={{
+                                position: 'absolute', top: '-22px', left: '-2px',
+                                background: '#22d3ee', color: '#0a1929', fontSize: '0.68rem', fontWeight: 700,
+                                padding: '1px 6px', borderRadius: '3px', whiteSpace: 'nowrap',
+                            }}>
+                                Barcode Detected
+                            </span>
+                        </div>
+                    );
+                })()}
             </>
         );
     };
@@ -473,6 +575,8 @@ export default function DocumentViewer({ docs, caseId, currentUser, onUploadNew,
                             name={selected?.documentName}
                             docAnnotations={docAnnotations}
                             onAnnotationSaved={handleImageAnnotationSaved}
+                            caseId={caseId}
+                            documentId={selected?.documentID}
                         />
                     )}
                     {/* Other file types */}

@@ -48,6 +48,24 @@ public class ScreeningRepository {
         return ((Number) keyHolder.getKeys().get("RESULTID")).longValue();
     }
 
+    public ScreeningLog findById(Long logId) {
+        return jdbcClient.sql(
+                "SELECT LogID, ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, SourceType, CreatedAt FROM ScreeningLogs WHERE LogID = :logId")
+                .param("logId", logId)
+                .query((rs, rowNum) -> new ScreeningLog(
+                        rs.getLong("LogID"),
+                        rs.getLong("ClientID"),
+                        rs.getString("RequestPayload"),
+                        rs.getString("ResponsePayload"),
+                        rs.getString("OverallStatus"),
+                        rs.getString("ExternalRequestID"),
+                        rs.getString("SourceType"),
+                        rs.getObject("CreatedAt", java.time.LocalDateTime.class)
+                ))
+                .optional()
+                .orElse(null);
+    }
+
     public ScreeningLog getLatestScreeningLog(Long clientId) {
         return jdbcClient.sql(
                 "SELECT LogID, ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, SourceType, CreatedAt FROM ScreeningLogs WHERE ClientID = :clientID ORDER BY CreatedAt DESC LIMIT 1")
