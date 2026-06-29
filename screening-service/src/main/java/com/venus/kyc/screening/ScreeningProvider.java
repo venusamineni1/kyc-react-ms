@@ -12,9 +12,11 @@ public interface ScreeningProvider {
      * statusCheckDelayMs before calling /nrts/get_status once to get context info.
      *
      * @param request the internal screening request
+     * @param screeningLogId the ScreeningLogs row already created for this request, so the
+     *                        real implementation can attach its NRTS interaction history to it
      * @return InitiateScreeningResponse with result ("Hot"/"No-Hit"), processId, reqId, alertContexts
      */
-    ScreeningDTOs.InitiateScreeningResponse initiate(ScreeningDTOs.ScreeningInternalRequest request);
+    ScreeningDTOs.InitiateScreeningResponse initiate(ScreeningDTOs.ScreeningInternalRequest request, Long screeningLogId);
 
     /**
      * Endpoint 2 — Poll current investigation status for a process.

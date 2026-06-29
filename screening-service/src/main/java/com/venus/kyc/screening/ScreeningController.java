@@ -117,6 +117,33 @@ public class ScreeningController {
         return ResponseEntity.ok(service.getHistory(clientId));
     }
 
+    @Operation(
+        summary = "Get full NRTS interaction history for a screening request",
+        description = """
+            Returns every real request/response exchanged with NRTS for this screening log
+            (submit, every status poll, alert details fetch, document fetches) — not just
+            the final outcome. Ordered chronologically.
+            """
+    )
+    @GetMapping("/log/{logId}/interactions")
+    public ResponseEntity<List<ScreeningNrtsInteraction>> getInteractions(
+            @Parameter(description = "ScreeningLogs.LogID") @PathVariable Long logId) {
+        return ResponseEntity.ok(service.getInteractions(logId));
+    }
+
+    @Operation(
+        summary = "Get full NRTS interaction history by NRTS process ID",
+        description = """
+            Same as /log/{logId}/interactions, but looked up by the NRTS process ID instead —
+            for callers (e.g. viewer-core) that only know the process ID, not the internal LogID.
+            """
+    )
+    @GetMapping("/process/{processId}/interactions")
+    public ResponseEntity<List<ScreeningNrtsInteraction>> getInteractionsByProcessId(
+            @Parameter(description = "NRTS process ID") @PathVariable Long processId) {
+        return ResponseEntity.ok(service.getInteractionsByProcessId(processId));
+    }
+
     // ── Exception handler ─────────────────────────────────────────────────────
 
     @ExceptionHandler(Exception.class)

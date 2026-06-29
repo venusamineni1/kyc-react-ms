@@ -1,7 +1,9 @@
 package com.venus.kyc.screening.nrts;
 
 import com.venus.kyc.screening.ScreeningDTOs;
+import com.venus.kyc.screening.ScreeningLog;
 import com.venus.kyc.screening.ScreeningProvider;
+import com.venus.kyc.screening.ScreeningRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,6 +20,10 @@ import java.util.stream.Collectors;
  *
  * Depends on NrtsPayloadCodec (not a concrete XML/JSON class) so that a
  * format change from XML to JSON is isolated to NrtsJsonCodec only.
+ *
+ * Every real NRTS call is recorded as an append-only row in ScreeningNrtsInteractions
+ * (via ScreeningInteractionRepository, which encrypts the payload columns) — this is the
+ * full audit trail of what NRTS actually said, at every step, not just the final outcome.
  */
 @Component
 @ConditionalOnProperty(name = "nrts.mock", havingValue = "false")
@@ -29,19 +35,25 @@ public class NrtsScreeningProvider implements ScreeningProvider {
     private final NrtsHttpClient httpClient;
     private final NrtsPayloadCodec codec;
     private final NrtsJsonParser jsonParser;
+    private final NrtsInteractionRecorder interactionRecorder;
+    private final ScreeningRepository screeningRepository;
 
     public NrtsScreeningProvider(NrtsConfig config, NrtsHttpClient httpClient,
-                                  NrtsPayloadCodec codec, NrtsJsonParser jsonParser) {
+                                  NrtsPayloadCodec codec, NrtsJsonParser jsonParser,
+                                  NrtsInteractionRecorder interactionRecorder,
+                                  ScreeningRepository screeningRepository) {
         this.config = config;
         this.httpClient = httpClient;
         this.codec = codec;
         this.jsonParser = jsonParser;
+        this.interactionRecorder = interactionRecorder;
+        this.screeningRepository = screeningRepository;
     }
 
     // ── Endpoint 1: Initiate ─────────────────────────────────────────────────
 
     @Override
-    public ScreeningDTOs.InitiateScreeningResponse initiate(ScreeningDTOs.ScreeningInternalRequest request) {
+    public ScreeningDTOs.InitiateScreeningResponse initiate(ScreeningDTOs.ScreeningInternalRequest request, Long screeningLogId) {
         // 1. Build format-agnostic record and serialize
         NrtsRecord record = toNrtsRecord(request);
         String payload = codec.serializeSubmit(config.srcId(), List.of(record));
@@ -50,6 +62,8 @@ public class NrtsScreeningProvider implements ScreeningProvider {
         // 2. Submit to NRTS
         NrtsHttpClient.NrtsRawResponse submitResponse = httpClient.submit(payload);
         log.info("NRTS submit HTTP {}", submitResponse.httpStatus());
+        interactionRecorder.record(screeningLogId, request.clientId(), null, null, null,
+                "SUBMIT", submitResponse.httpStatus(), payload, submitResponse.body(), false);
 
         NrtsPayloadCodec.SubmitResult submitResult = codec.parseSubmitResponse(submitResponse.body());
 
@@ -74,8 +88,8 @@ public class NrtsScreeningProvider implements ScreeningProvider {
         }
 
         Long processId = submitResult.processId();
-        NrtsPayloadCodec.StatusResult statusResult =
-                codec.parseStatusResponse(httpClient.getStatus(processId).body());
+        NrtsHttpClient.NrtsRawResponse statusResponse = httpClient.getStatus(processId);
+        NrtsPayloadCodec.StatusResult statusResult = codec.parseStatusResponse(statusResponse.body());
 
         NrtsPayloadCodec.ClientResult client = statusResult.clients().isEmpty()
                 ? null : statusResult.clients().get(0);
@@ -87,6 +101,10 @@ public class NrtsScreeningProvider implements ScreeningProvider {
 
         Long reqId = client != null ? client.reqId() : null;
 
+        interactionRecorder.record(screeningLogId, request.clientId(), null, processId, reqId,
+                "STATUS_POLL", statusResponse.httpStatus(), "GET /nrts/get_status/" + processId,
+                statusResponse.body(), statusResult.isFinalized());
+
         log.info("NRTS initiate: Hot — processId={}, reqId={}, contexts={}", processId, reqId, alertContexts);
         return new ScreeningDTOs.InitiateScreeningResponse("Hot", processId, reqId, alertContexts);
     }
@@ -95,8 +113,8 @@ public class NrtsScreeningProvider implements ScreeningProvider {
 
     @Override
     public ScreeningDTOs.ScreeningStatusResponse checkStatus(long processId) {
-        NrtsPayloadCodec.StatusResult result =
-                codec.parseStatusResponse(httpClient.getStatus(processId).body());
+        NrtsHttpClient.NrtsRawResponse statusResponse = httpClient.getStatus(processId);
+        NrtsPayloadCodec.StatusResult result = codec.parseStatusResponse(statusResponse.body());
 
         NrtsPayloadCodec.ClientResult client = result.clients().isEmpty()
                 ? null : result.clients().get(0);
@@ -104,10 +122,18 @@ public class NrtsScreeningProvider implements ScreeningProvider {
         List<ScreeningDTOs.ContextResult> contextResults = client == null
                 ? Collections.emptyList()
                 : client.alerts().stream()
-                        .map(a -> new ScreeningDTOs.ContextResult(a.context(), a.status(), a.statusId()))
+                        .map(a -> new ScreeningDTOs.ContextResult(a.context(), a.status(), buildAlertMessage(a)))
                         .collect(Collectors.toList());
 
         Long reqId = client != null ? client.reqId() : null;
+
+        // Every poll is recorded, not just the final one — the log row already exists by now
+        // (created during initiate()), so it can be resolved by NrtsProcessId.
+        ScreeningLog existingLog = screeningRepository.findLogByNrtsProcessId(processId);
+        interactionRecorder.record(existingLog != null ? existingLog.logID() : null,
+                existingLog != null ? existingLog.clientID() : null,
+                null, processId, reqId, "STATUS_POLL", statusResponse.httpStatus(),
+                "GET /nrts/get_status/" + processId, statusResponse.body(), result.isFinalized());
 
         return new ScreeningDTOs.ScreeningStatusResponse(
                 String.valueOf(processId),
@@ -123,6 +149,12 @@ public class NrtsScreeningProvider implements ScreeningProvider {
     @Override
     public ScreeningDTOs.AlertDetailsResponse getAlertDetails(long reqId) {
         NrtsHttpClient.NrtsRawResponse raw = httpClient.getDetails(reqId);
+
+        // Resolve the owning log via the per-context result rows (1 client = 1 ReqId).
+        Long logId = screeningRepository.findLogIdByNrtsReqId(reqId);
+        interactionRecorder.record(logId, null, null, null, reqId, "ALERT_DETAILS", raw.httpStatus(),
+                "GET /nrts/get_final_request_details/" + reqId, raw.body(), true);
+
         return jsonParser.parseDetailsResponse(reqId, raw.body());
     }
 
@@ -130,7 +162,26 @@ public class NrtsScreeningProvider implements ScreeningProvider {
 
     @Override
     public ResponseEntity<byte[]> getDocument(String documentId) {
-        return httpClient.getDocument(documentId);
+        ResponseEntity<byte[]> response = httpClient.getDocument(documentId);
+
+        // No reliable correlation key back to a ScreeningLogID from a Filenet documentId alone,
+        // so this is recorded unlinked (ScreeningLogID null) — still queryable by documentId/time.
+        // The binary body itself isn't stored here; document-service already has a BLOB-versioned
+        // pattern if full binary audit is needed.
+        interactionRecorder.record(null, null, null, null, null, "DOCUMENT_FETCH",
+                response.getStatusCode().value(), "GET /nrts/get_document/" + documentId,
+                "[binary, " + (response.getBody() != null ? response.getBody().length : 0) + " bytes]", true);
+
+        return response;
+    }
+
+    /**
+     * NRTS get_status only returns a numeric StatusId per alert, not free-text — synthesize a
+     * readable message from it instead of surfacing the bare code to analysts (e.g. "17").
+     */
+    private String buildAlertMessage(ScreeningDTOs.AlertContext alert) {
+        if (!"HIT".equalsIgnoreCase(alert.status()) || alert.statusId() == null) return null;
+        return alert.context() + " match flagged by NRTS (status code " + alert.statusId() + ")";
     }
 
     // ── Mapping ───────────────────────────────────────────────────────────────

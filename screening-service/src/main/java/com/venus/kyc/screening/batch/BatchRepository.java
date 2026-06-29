@@ -1,5 +1,6 @@
 package com.venus.kyc.screening.batch;
 
+import com.venus.kyc.screening.crypto.PiiCryptoService;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -13,9 +14,11 @@ import java.util.Map;
 public class BatchRepository {
 
     private final JdbcClient jdbcClient;
+    private final PiiCryptoService crypto;
 
-    public BatchRepository(JdbcClient jdbcClient) {
+    public BatchRepository(JdbcClient jdbcClient, PiiCryptoService crypto) {
         this.jdbcClient = jdbcClient;
+        this.crypto = crypto;
     }
 
     public Long saveBatchRun(BatchRun run) {
@@ -91,7 +94,7 @@ public class BatchRepository {
                 .param("batchId", result.batchID())
                 .param("recordId", result.recordID())
                 .param("matchId", result.matchID())
-                .param("matchName", result.matchName())
+                .param("matchName", crypto.encrypt(result.matchName()))
                 .param("matchScore", result.matchScore())
                 .param("status", result.status())
                 .update();

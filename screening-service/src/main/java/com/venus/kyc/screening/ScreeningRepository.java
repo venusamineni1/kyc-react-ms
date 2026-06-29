@@ -1,5 +1,6 @@
 package com.venus.kyc.screening;
 
+import com.venus.kyc.screening.crypto.PiiCryptoService;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -13,9 +14,11 @@ import java.util.Map;
 public class ScreeningRepository {
 
     private final JdbcClient jdbcClient;
+    private final PiiCryptoService crypto;
 
-    public ScreeningRepository(JdbcClient jdbcClient) {
+    public ScreeningRepository(JdbcClient jdbcClient, PiiCryptoService crypto) {
         this.jdbcClient = jdbcClient;
+        this.crypto = crypto;
     }
 
     // ── ScreeningLogs ─────────────────────────────────────────────────────────
@@ -23,15 +26,14 @@ public class ScreeningRepository {
     public Long saveLog(ScreeningLog log) {
         String sql = """
                 INSERT INTO ScreeningLogs
-                  (ClientID, RequestPayload, ResponsePayload, OverallStatus, ExternalRequestID, CreatedAt, NrtsProcessId)
-                VALUES (:clientId, :requestPayload, :responsePayload, :overallStatus, :externalRequestID, :createdAt, :nrtsProcessId)
+                  (ClientID, RequestPayload, OverallStatus, ExternalRequestID, CreatedAt, NrtsProcessId)
+                VALUES (:clientId, :requestPayload, :overallStatus, :externalRequestID, :createdAt, :nrtsProcessId)
                 """;
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcClient.sql(sql)
                 .param("clientId", log.clientID())
-                .param("requestPayload", log.requestPayload())
-                .param("responsePayload", log.responsePayload())
+                .param("requestPayload", crypto.encrypt(log.requestPayload()))
                 .param("overallStatus", log.overallStatus())
                 .param("externalRequestID", log.externalRequestID())
                 .param("createdAt", log.createdAt() != null ? log.createdAt() : LocalDateTime.now())
@@ -41,14 +43,16 @@ public class ScreeningRepository {
         return extractKey(keyHolder, "LOGID");
     }
 
-    public void updateLog(Long logId, String responsePayload, String overallStatus) {
+    /** Marks a log finalized. The real NRTS response is recorded separately, per-interaction,
+     *  in ScreeningInteractionRepository — this no longer overwrites a "response payload". */
+    public void updateLog(Long logId, String overallStatus) {
         jdbcClient.sql("""
                 UPDATE ScreeningLogs
-                SET ResponsePayload = :responsePayload, OverallStatus = :overallStatus
+                SET OverallStatus = :overallStatus, FinalizedAt = :finalizedAt
                 WHERE LogID = :logId
                 """)
-                .param("responsePayload", responsePayload)
                 .param("overallStatus", overallStatus)
+                .param("finalizedAt", LocalDateTime.now())
                 .param("logId", logId)
                 .update();
     }
@@ -61,25 +65,57 @@ public class ScreeningRepository {
                 .update();
     }
 
-    public ScreeningLog findLogByExternalId(String externalId) {
-        return jdbcClient.sql("SELECT * FROM ScreeningLogs WHERE ExternalRequestID = :externalId")
-                .param("externalId", externalId)
-                .query(ScreeningLog.class)
+    /** Fills in the outcome of the initial NRTS submit call on the preliminary log row
+     *  created up front by ScreeningService (so interactions could be linked to it from
+     *  the very first NRTS call). */
+    public void finalizeInitiatedLog(Long logId, String externalRequestId, String overallStatus, Long nrtsProcessId) {
+        jdbcClient.sql("""
+                UPDATE ScreeningLogs
+                SET ExternalRequestID = :externalRequestId, OverallStatus = :overallStatus, NrtsProcessId = :nrtsProcessId
+                WHERE LogID = :logId
+                """)
+                .param("externalRequestId", externalRequestId)
+                .param("overallStatus", overallStatus)
+                .param("nrtsProcessId", nrtsProcessId)
+                .param("logId", logId)
+                .update();
+    }
+
+    /** Resolves the owning ScreeningLogID for a NRTS ReqId, via the per-context result rows. */
+    public Long findLogIdByNrtsReqId(Long nrtsReqId) {
+        return jdbcClient.sql("SELECT ScreeningLogID FROM ScreeningResults WHERE NrtsReqId = :nrtsReqId LIMIT 1")
+                .param("nrtsReqId", nrtsReqId)
+                .query(Long.class)
                 .optional().orElse(null);
     }
 
+    public ScreeningLog findLogByExternalId(String externalId) {
+        return decryptLog(jdbcClient.sql("SELECT * FROM ScreeningLogs WHERE ExternalRequestID = :externalId")
+                .param("externalId", externalId)
+                .query(ScreeningLog.class)
+                .optional().orElse(null));
+    }
+
     public ScreeningLog findLogByNrtsProcessId(Long nrtsProcessId) {
-        return jdbcClient.sql("SELECT * FROM ScreeningLogs WHERE NrtsProcessId = :nrtsProcessId")
+        return decryptLog(jdbcClient.sql("SELECT * FROM ScreeningLogs WHERE NrtsProcessId = :nrtsProcessId")
                 .param("nrtsProcessId", nrtsProcessId)
                 .query(ScreeningLog.class)
-                .optional().orElse(null);
+                .optional().orElse(null));
     }
 
     public List<ScreeningLog> findLogsByClientId(Long clientId) {
         return jdbcClient.sql("SELECT * FROM ScreeningLogs WHERE ClientID = :clientId ORDER BY CreatedAt DESC")
                 .param("clientId", clientId)
                 .query(ScreeningLog.class)
-                .list();
+                .list()
+                .stream().map(this::decryptLog).toList();
+    }
+
+    private ScreeningLog decryptLog(ScreeningLog log) {
+        if (log == null) return null;
+        return new ScreeningLog(log.logID(), log.clientID(), crypto.decrypt(log.requestPayload()),
+                log.responsePayload(), log.overallStatus(), log.externalRequestID(),
+                log.createdAt(), log.nrtsProcessId());
     }
 
     // ── ScreeningResults ──────────────────────────────────────────────────────

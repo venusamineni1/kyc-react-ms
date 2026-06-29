@@ -1,6 +1,7 @@
 package com.venus.kyc.screening.batch;
 
 import com.venus.kyc.screening.batch.model.Client;
+import com.venus.kyc.screening.crypto.PiiCryptoService;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -11,14 +12,20 @@ import java.util.List;
  * Repository for the BatchScreeningStaging table — used only in persist-first mode (Mode B).
  * Stores all client records from the CSV before orchestration begins, enabling
  * crash-safe resumable dispatch.
+ *
+ * The genuinely sensitive PII columns (name, DOB, ID number, address, place of birth) are
+ * encrypted at rest via PiiCryptoService — operational columns (Status, ProcessingStatus,
+ * RunGroupId, etc.) stay plaintext since they're not PII and need to stay queryable.
  */
 @Repository
 public class BatchScreeningStagingRepository {
 
     private final JdbcClient jdbcClient;
+    private final PiiCryptoService crypto;
 
-    public BatchScreeningStagingRepository(JdbcClient jdbcClient) {
+    public BatchScreeningStagingRepository(JdbcClient jdbcClient, PiiCryptoService crypto) {
         this.jdbcClient = jdbcClient;
+        this.crypto = crypto;
     }
 
     /** Bulk-insert a chunk of Client records with the given runGroupId. */
@@ -42,34 +49,34 @@ public class BatchScreeningStagingRepository {
                     .param("runGroupId", runGroupId)
                     .param("clientId", c.clientID())
                     .param("titlePrefix", c.titlePrefix())
-                    .param("firstName", c.firstName())
-                    .param("middleName", c.middleName())
-                    .param("lastName", c.lastName())
+                    .param("firstName", crypto.encrypt(c.firstName()))
+                    .param("middleName", crypto.encrypt(c.middleName()))
+                    .param("lastName", crypto.encrypt(c.lastName()))
                     .param("titleSuffix", c.titleSuffix())
                     .param("citizenship1", c.citizenship1())
                     .param("citizenship2", c.citizenship2())
                     .param("onboardingDate", c.onboardingDate())
                     .param("status", c.status())
-                    .param("nameAtBirth", c.nameAtBirth())
-                    .param("nickName", c.nickName())
+                    .param("nameAtBirth", crypto.encrypt(c.nameAtBirth()))
+                    .param("nickName", crypto.encrypt(c.nickName()))
                     .param("gender", c.gender())
-                    .param("dateOfBirth", c.dateOfBirth())
+                    .param("dateOfBirth", crypto.encrypt(c.dateOfBirth() != null ? c.dateOfBirth().toString() : null))
                     .param("language", c.language())
                     .param("occupation", c.occupation())
                     .param("countryOfTax", c.countryOfTax())
                     .param("sourceOfFundsCountry", c.sourceOfFundsCountry())
                     .param("fatcaStatus", c.fatcaStatus())
                     .param("crsStatus", c.crsStatus())
-                    .param("addressLine1", c.addressLine1())
+                    .param("addressLine1", crypto.encrypt(c.addressLine1()))
                     .param("city", c.city())
                     .param("zipCode", c.zipCode())
                     .param("province", c.province())
                     .param("country", c.country())
                     .param("nationality", c.nationality())
                     .param("legDocType", c.legDocType())
-                    .param("idNumber", c.idNumber())
-                    .param("placeOfBirth", c.placeOfBirth())
-                    .param("cityOfBirth", c.cityOfBirth())
+                    .param("idNumber", crypto.encrypt(c.idNumber()))
+                    .param("placeOfBirth", crypto.encrypt(c.placeOfBirth()))
+                    .param("cityOfBirth", crypto.encrypt(c.cityOfBirth()))
                     .param("countryOfBirth", c.countryOfBirth())
                     .update();
         }
@@ -90,39 +97,42 @@ public class BatchScreeningStagingRepository {
                 .param("runGroupId", runGroupId)
                 .param("lastSeenId", lastSeenId)
                 .param("pageSize", pageSize)
-                .query((rs, rowNum) -> new Client(
+                .query((rs, rowNum) -> {
+                    String decryptedDob = crypto.decrypt(rs.getString("DateOfBirth"));
+                    return new Client(
                         rs.getLong("ClientId"),
                         rs.getString("TitlePrefix"),
-                        rs.getString("FirstName"),
-                        rs.getString("MiddleName"),
-                        rs.getString("LastName"),
+                        crypto.decrypt(rs.getString("FirstName")),
+                        crypto.decrypt(rs.getString("MiddleName")),
+                        crypto.decrypt(rs.getString("LastName")),
                         rs.getString("TitleSuffix"),
                         rs.getString("Citizenship1"),
                         rs.getString("Citizenship2"),
                         rs.getDate("OnboardingDate") != null ? rs.getDate("OnboardingDate").toLocalDate() : null,
                         rs.getString("Status"),
-                        rs.getString("NameAtBirth"),
-                        rs.getString("NickName"),
+                        crypto.decrypt(rs.getString("NameAtBirth")),
+                        crypto.decrypt(rs.getString("NickName")),
                         rs.getString("Gender"),
-                        rs.getDate("DateOfBirth") != null ? rs.getDate("DateOfBirth").toLocalDate() : null,
+                        decryptedDob != null ? java.time.LocalDate.parse(decryptedDob) : null,
                         rs.getString("Language"),
                         rs.getString("Occupation"),
                         rs.getString("CountryOfTax"),
                         rs.getString("SourceOfFundsCountry"),
                         rs.getString("FatcaStatus"),
                         rs.getString("CrsStatus"),
-                        rs.getString("AddressLine1"),
+                        crypto.decrypt(rs.getString("AddressLine1")),
                         rs.getString("City"),
                         rs.getString("ZipCode"),
                         rs.getString("Province"),
                         rs.getString("Country"),
                         rs.getString("Nationality"),
                         rs.getString("LegDocType"),
-                        rs.getString("IdNumber"),
-                        rs.getString("PlaceOfBirth"),
-                        rs.getString("CityOfBirth"),
+                        crypto.decrypt(rs.getString("IdNumber")),
+                        crypto.decrypt(rs.getString("PlaceOfBirth")),
+                        crypto.decrypt(rs.getString("CityOfBirth")),
                         rs.getString("CountryOfBirth")
-                ))
+                    );
+                })
                 .list();
     }
 
