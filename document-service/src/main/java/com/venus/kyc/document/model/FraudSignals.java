@@ -5,6 +5,7 @@ public class FraudSignals {
     private Signal pdfSignature;
     private Signal exifMetadata;
     private Signal photoZoneEla;
+    private String photoZoneElaHeatmap; // Base64 PNG; null if ELA couldn't run
     private Signal faceDetected;
     private Signal barcodeOcrMatch;
 
@@ -21,6 +22,9 @@ public class FraudSignals {
 
     public Signal getPhotoZoneEla() { return photoZoneEla; }
     public void setPhotoZoneEla(Signal s) { this.photoZoneEla = s; }
+
+    public String getPhotoZoneElaHeatmap() { return photoZoneElaHeatmap; }
+    public void setPhotoZoneElaHeatmap(String s) { this.photoZoneElaHeatmap = s; }
 
     public Signal getFaceDetected() { return faceDetected; }
     public void setFaceDetected(Signal s) { this.faceDetected = s; }

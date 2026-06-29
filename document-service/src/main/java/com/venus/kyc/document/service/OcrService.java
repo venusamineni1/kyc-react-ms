@@ -107,6 +107,9 @@ public class OcrService {
             OcrResult pageResult = analyseImage(pageBytes);
             String pageLabel = mockMode ? "OCR/Mock" : "OCR/Scanned-PDF (page " + (i + 1) + ")";
             pageResult.setSource(pageLabel);
+            if (pageResult.getBarcodeBoundingBox() != null) {
+                pageResult.setBarcodePageIndex(i);
+            }
 
             if (hasMrzFields(pageResult)) {
                 // MRZ found — stop immediately, no need to check further pages
@@ -133,8 +136,10 @@ public class OcrService {
 
     private OcrResult analyseImage(byte[] data) {
         // 1. Barcode decode (fast — before slow OCR)
-        List<String> barcodes = barcodeService.decodeAllBarcodes(data);
-        String barcodeText = barcodes.isEmpty() ? null : String.join("\n", barcodes);
+        List<BarcodeService.BarcodeHit> barcodeHits = barcodeService.decodeAllBarcodesWithBounds(data);
+        String barcodeText = barcodeHits.isEmpty() ? null
+                : barcodeHits.stream().map(BarcodeService.BarcodeHit::text)
+                        .reduce((a, b) -> a + "\n" + b).orElse(null);
 
         // 2. OCR
         String rawText = mockMode ? mockOcrText() : runTesseract(data);
@@ -152,6 +157,12 @@ public class OcrService {
         // 4. Enrich with barcode / AAMVA data
         if (barcodeText != null) {
             result.setBarcodeData(barcodeText);
+            BarcodeService.BarcodeHit firstHit = barcodeHits.get(0);
+            if (firstHit.width() > 0 && firstHit.height() > 0) {
+                result.setBarcodeBoundingBox(new com.venus.kyc.document.model.BarcodeBoundingBox(
+                        firstHit.x(), firstHit.y(), firstHit.width(), firstHit.height(),
+                        firstHit.imageWidth(), firstHit.imageHeight()));
+            }
             Map<String, String> aamva = barcodeService.parseAamva(barcodeText);
             if (!aamva.isEmpty()) {
                 enrichFromAamva(result, aamva);

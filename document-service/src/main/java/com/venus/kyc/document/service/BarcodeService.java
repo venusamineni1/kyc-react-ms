@@ -54,6 +54,23 @@ public class BarcodeService {
      * @return list of decoded barcode texts; empty if none found or image unreadable
      */
     public List<String> decodeAllBarcodes(byte[] imageData) {
+        return decodeAllBarcodesWithBounds(imageData).stream().map(BarcodeHit::text).toList();
+    }
+
+    /**
+     * One detected barcode's decoded text plus its location, in pixel coordinates relative to
+     * the original (unscaled) image — even when decoding succeeded on a downscaled candidate.
+     */
+    public record BarcodeHit(String text, int x, int y, int width, int height, int imageWidth, int imageHeight) {}
+
+    /**
+     * Attempt to decode all barcodes in an image, also returning each one's bounding box
+     * (for drawing an auto-detected region overlay on the source image).
+     *
+     * @param imageData raw image bytes (JPEG / PNG / BMP)
+     * @return list of decoded barcodes with bounds; empty if none found or image unreadable
+     */
+    public List<BarcodeHit> decodeAllBarcodesWithBounds(byte[] imageData) {
         if (imageData == null || imageData.length == 0) return List.of();
         try {
             BufferedImage image = readImage(imageData);
@@ -64,8 +81,10 @@ public class BarcodeService {
             // produce ~3000-4000px images). Scaling to ~1500px on the long side is the sweet spot.
             for (double scale : candidateScales(image)) {
                 BufferedImage candidate = scale == 1.0 ? image : scaleImage(image, scale);
-                List<String> found = tryDecodeImage(candidate);
-                if (!found.isEmpty()) return found;
+                Result[] found = tryDecodeImageRaw(candidate);
+                if (found.length > 0) {
+                    return toBarcodeHits(found, scale, image.getWidth(), image.getHeight());
+                }
             }
             return List.of();
 
@@ -73,6 +92,35 @@ public class BarcodeService {
             log.warn("Barcode decode failed: {}", e.getMessage());
             return List.of();
         }
+    }
+
+    /** Converts raw ZXing results (in candidate-image pixel space) to original-image-space bounding boxes. */
+    private List<BarcodeHit> toBarcodeHits(Result[] results, double scale, int origWidth, int origHeight) {
+        List<BarcodeHit> hits = new ArrayList<>();
+        for (Result r : results) {
+            if (r.getText() == null || r.getText().isBlank()) continue;
+            ResultPoint[] points = r.getResultPoints();
+            if (points == null || points.length == 0) {
+                // Decoded but no geometry available — keep the text, skip the box.
+                hits.add(new BarcodeHit(r.getText(), 0, 0, 0, 0, origWidth, origHeight));
+                continue;
+            }
+            float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE, maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+            for (ResultPoint p : points) {
+                if (p == null) continue;
+                minX = Math.min(minX, p.getX());
+                minY = Math.min(minY, p.getY());
+                maxX = Math.max(maxX, p.getX());
+                maxY = Math.max(maxY, p.getY());
+            }
+            // Points are in the (possibly downscaled) candidate image's pixel space — scale back up.
+            int x = (int) Math.round(minX / scale);
+            int y = (int) Math.round(minY / scale);
+            int w = (int) Math.round((maxX - minX) / scale);
+            int h = (int) Math.round((maxY - minY) / scale);
+            hits.add(new BarcodeHit(r.getText(), x, y, w, h, origWidth, origHeight));
+        }
+        return hits;
     }
 
     /** Returns the scale factors to try, starting at 1.0 and adding downscale steps for large images. */
@@ -83,19 +131,14 @@ public class BarcodeService {
         return new double[]{1.0, 0.5, 0.33, 0.25};
     }
 
-    private List<String> tryDecodeImage(BufferedImage image) {
+    private Result[] tryDecodeImageRaw(BufferedImage image) {
         try {
             LuminanceSource source = new BufferedImageLuminanceSource(image);
             BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
             MultipleBarcodeReader multiReader = new GenericMultipleBarcodeReader(new MultiFormatReader());
-            Result[] results = multiReader.decodeMultiple(bitmap, HINTS);
-            List<String> decoded = new ArrayList<>();
-            for (Result r : results) {
-                if (r.getText() != null && !r.getText().isBlank()) decoded.add(r.getText());
-            }
-            return decoded;
+            return multiReader.decodeMultiple(bitmap, HINTS);
         } catch (NotFoundException e) {
-            return List.of();
+            return new Result[0];
         }
     }
 

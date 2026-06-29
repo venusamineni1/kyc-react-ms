@@ -29,17 +29,20 @@ public class FraudSignalService {
     private final OcrService     ocrService;
     private final BarcodeService barcodeService;
     private final MrzParserService mrzParser;
+    private final ElaService     elaService;
 
     public FraudSignalService(TikaService tikaService,
                                PdfBoxService pdfBoxService,
                                OcrService ocrService,
                                BarcodeService barcodeService,
-                               MrzParserService mrzParser) {
+                               MrzParserService mrzParser,
+                               ElaService elaService) {
         this.tikaService    = tikaService;
         this.pdfBoxService  = pdfBoxService;
         this.ocrService     = ocrService;
         this.barcodeService = barcodeService;
         this.mrzParser      = mrzParser;
+        this.elaService     = elaService;
     }
 
     /**
@@ -61,9 +64,10 @@ public class FraudSignalService {
         // 3. EXIF / metadata tampering
         signals.setExifMetadata(tikaService.analyseExifSignal(data));
 
-        // 4. Photo-zone Error Level Analysis — not yet implemented (requires CV library)
-        signals.setPhotoZoneEla(new Signal(SignalLevel.PENDING,
-                "ELA analysis not available — requires computer-vision module."));
+        // 4. Photo-zone Error Level Analysis
+        ElaService.ElaResult elaResult = elaService.analyse(data, mimeType);
+        signals.setPhotoZoneEla(elaResult.signal());
+        signals.setPhotoZoneElaHeatmap(elaResult.heatmapPngBase64());
 
         // 5. Face detection — not yet implemented
         signals.setFaceDetected(new Signal(SignalLevel.PENDING,

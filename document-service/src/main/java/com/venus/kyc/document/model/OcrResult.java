@@ -14,6 +14,8 @@ public class OcrResult {
     private String rawMrz;
     private String rawText;          // full extracted text (PDF or OCR)
     private String barcodeData;      // decoded PDF417/QR if present
+    private BarcodeBoundingBox barcodeBoundingBox; // pixel location of the decoded barcode, if known
+    private Integer barcodePageIndex; // 0-based PDF page the barcode was found on; null for single-image documents
     private String source;           // "PDF_TEXT", "OCR", "MRZ", "BARCODE", "MOCK"
 
     public OcrResult() {}
@@ -56,6 +58,12 @@ public class OcrResult {
 
     public String getBarcodeData() { return barcodeData; }
     public void setBarcodeData(String barcodeData) { this.barcodeData = barcodeData; }
+
+    public BarcodeBoundingBox getBarcodeBoundingBox() { return barcodeBoundingBox; }
+    public void setBarcodeBoundingBox(BarcodeBoundingBox barcodeBoundingBox) { this.barcodeBoundingBox = barcodeBoundingBox; }
+
+    public Integer getBarcodePageIndex() { return barcodePageIndex; }
+    public void setBarcodePageIndex(Integer barcodePageIndex) { this.barcodePageIndex = barcodePageIndex; }
 
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
