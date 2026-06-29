@@ -105,8 +105,8 @@ class KycOrchestrationServiceTest {
         KycTransactionAudit savedAudit = buildSavedAudit(1L);
         when(kycAuditService.saveInitial(any())).thenReturn(savedAudit);
         when(viewerClient.onboardUser(any())).thenReturn("usr-001");
-        when(screeningClient.initiateScreening(any())).thenReturn(buildScreeningResult("NoHit"));
-        when(riskClient.calculateRisk(any())).thenReturn(buildRiskResult("LOW"));
+        when(screeningClient.initiateScreening(any(), any())).thenReturn(buildScreeningResult("NoHit"));
+        when(riskClient.calculateRisk(any(), any())).thenReturn(buildRiskResult("LOW"));
 
         KycPrecheckResponse response = service.initiatePrecheck(buildRequest());
 
@@ -121,8 +121,8 @@ class KycOrchestrationServiceTest {
         KycTransactionAudit savedAudit = buildSavedAudit(1L);
         when(kycAuditService.saveInitial(any())).thenReturn(savedAudit);
         when(viewerClient.onboardUser(any())).thenReturn("usr-001");
-        when(screeningClient.initiateScreening(any())).thenReturn(buildScreeningResult("Hit"));
-        when(riskClient.calculateRisk(any())).thenReturn(buildRiskResult("LOW"));
+        when(screeningClient.initiateScreening(any(), any())).thenReturn(buildScreeningResult("Hit"));
+        when(riskClient.calculateRisk(any(), any())).thenReturn(buildRiskResult("LOW"));
 
         KycPrecheckResponse response = service.initiatePrecheck(buildRequest());
 
@@ -134,8 +134,8 @@ class KycOrchestrationServiceTest {
         KycTransactionAudit savedAudit = buildSavedAudit(1L);
         when(kycAuditService.saveInitial(any())).thenReturn(savedAudit);
         when(viewerClient.onboardUser(any())).thenReturn("usr-001");
-        when(screeningClient.initiateScreening(any())).thenReturn(buildScreeningResult("NoHit"));
-        when(riskClient.calculateRisk(any())).thenReturn(buildRiskResult("HIGH"));
+        when(screeningClient.initiateScreening(any(), any())).thenReturn(buildScreeningResult("NoHit"));
+        when(riskClient.calculateRisk(any(), any())).thenReturn(buildRiskResult("HIGH"));
 
         KycPrecheckResponse response = service.initiatePrecheck(buildRequest());
 
@@ -147,8 +147,8 @@ class KycOrchestrationServiceTest {
         KycTransactionAudit savedAudit = buildSavedAudit(1L);
         when(kycAuditService.saveInitial(any())).thenReturn(savedAudit);
         when(viewerClient.onboardUser(any())).thenReturn("usr-001");
-        when(screeningClient.initiateScreening(any())).thenReturn(buildScreeningResult("NoHit"));
-        when(riskClient.calculateRisk(any())).thenReturn(buildRiskResult("UNKNOWN"));
+        when(screeningClient.initiateScreening(any(), any())).thenReturn(buildScreeningResult("NoHit"));
+        when(riskClient.calculateRisk(any(), any())).thenReturn(buildRiskResult("UNKNOWN"));
 
         KycPrecheckResponse response = service.initiatePrecheck(buildRequest());
 
@@ -160,8 +160,8 @@ class KycOrchestrationServiceTest {
         KycTransactionAudit savedAudit = buildSavedAudit(1L);
         when(kycAuditService.saveInitial(any())).thenReturn(savedAudit);
         when(viewerClient.onboardUser(any())).thenReturn("usr-001");
-        when(screeningClient.initiateScreening(any())).thenReturn(buildScreeningResult("NoHit"));
-        when(riskClient.calculateRisk(any())).thenReturn(buildRiskResult("LOW"));
+        when(screeningClient.initiateScreening(any(), any())).thenReturn(buildScreeningResult("NoHit"));
+        when(riskClient.calculateRisk(any(), any())).thenReturn(buildRiskResult("LOW"));
 
         KycPrecheckResponse response = service.initiatePrecheck(buildRequest());
 
@@ -174,8 +174,8 @@ class KycOrchestrationServiceTest {
         KycTransactionAudit savedAudit = buildSavedAudit(1L);
         when(kycAuditService.saveInitial(any())).thenReturn(savedAudit);
         when(viewerClient.onboardUser(any())).thenReturn("usr-001");
-        when(screeningClient.initiateScreening(any())).thenReturn(buildScreeningResult("NoHit"));
-        when(riskClient.calculateRisk(any())).thenReturn(buildRiskResult("LOW"));
+        when(screeningClient.initiateScreening(any(), any())).thenReturn(buildScreeningResult("NoHit"));
+        when(riskClient.calculateRisk(any(), any())).thenReturn(buildRiskResult("LOW"));
 
         service.initiatePrecheck(buildRequest());
 

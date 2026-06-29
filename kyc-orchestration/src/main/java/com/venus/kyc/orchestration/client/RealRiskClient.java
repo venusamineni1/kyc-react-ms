@@ -1,7 +1,9 @@
 package com.venus.kyc.orchestration.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.venus.kyc.orchestration.domain.KycOrchestrationEvent;
+import com.venus.kyc.orchestration.repository.KycOrchestrationEventRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpEntity;
@@ -16,16 +18,22 @@ public class RealRiskClient implements RiskClientInterface {
 
     private final RestTemplate restTemplate;
     private final String internalApiKey;
+    private final KycOrchestrationEventRepository eventRepository;
+    private final ObjectMapper objectMapper;
 
     public RealRiskClient(RestTemplate restTemplate,
-                          @org.springframework.beans.factory.annotation.Value("${internal.api.key}") String internalApiKey) {
+                          @org.springframework.beans.factory.annotation.Value("${internal.api.key}") String internalApiKey,
+                          KycOrchestrationEventRepository eventRepository,
+                          ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
         this.internalApiKey = internalApiKey;
+        this.eventRepository = eventRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Override
     @CircuitBreaker(name = "riskService", fallbackMethod = "calculateRiskFallback")
-    public RiskResult calculateRisk(Object riskPayload) {
+    public RiskResult calculateRisk(Object riskPayload, Long transactionId) {
         log.info("Calling RealRiskClient for risk service");
 
         HttpHeaders headers = new HttpHeaders();
@@ -42,6 +50,10 @@ public class RealRiskClient implements RiskClientInterface {
                 entity,
                 java.util.Map.class
             );
+
+            // Record the full raw response as an append-only event before extracting just the
+            // fields below — this is the data that used to be discarded once parsed.
+            recordEvent(transactionId, serviceResponse);
 
             // Transform to orchestration format
             RiskResult result = new RiskResult();
@@ -127,11 +139,25 @@ public class RealRiskClient implements RiskClientInterface {
         return null;
     }
 
+    private void recordEvent(Long transactionId, java.util.Map<String, Object> serviceResponse) {
+        try {
+            KycOrchestrationEvent event = new KycOrchestrationEvent();
+            event.setKycTransactionId(transactionId);
+            event.setEventType("RISK_RESULT");
+            event.setSource("risk-service");
+            event.setDownstreamResponse(objectMapper.writeValueAsString(serviceResponse));
+            eventRepository.save(event);
+        } catch (Exception e) {
+            // Never let audit-trail persistence break the actual orchestration flow.
+            log.error("Failed to record RISK_RESULT event for transactionId={}: {}", transactionId, e.getMessage(), e);
+        }
+    }
+
     /**
      * Invoked when the risk-service call times out, errors repeatedly, or the circuit is open.
      * Risk rating must never be guessed, so this fails loudly rather than returning a default rating.
      */
-    private RiskResult calculateRiskFallback(Object riskPayload, Throwable t) {
+    private RiskResult calculateRiskFallback(Object riskPayload, Long transactionId, Throwable t) {
         log.error("Risk service unavailable (circuit breaker): {}", t.getMessage());
         throw new RuntimeException("Risk service unavailable: " + t.getMessage(), t);
     }

@@ -18,7 +18,7 @@ public class MockRiskClient implements RiskClientInterface {
     private static final String RISK_URL = "http://RISK-SERVICE/api/internal/risk/calculate";
 
     @Override
-    public RiskResult calculateRisk(Object riskPayload) {
+    public RiskResult calculateRisk(Object riskPayload, Long transactionId) {
         log.info("Calling MockRiskClient (mocked response) for {}", RISK_URL);
         RiskResult result = new RiskResult();
         result.setRiskRequestId(UUID.randomUUID().toString());

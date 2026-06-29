@@ -7,7 +7,11 @@ import lombok.Data;
  */
 public interface RiskClientInterface {
 
-    RiskResult calculateRisk(Object riskPayload);
+    /**
+     * @param transactionId the KycTransactionAudit row id for this precheck — real implementations
+     *                       use it to link the recorded KycOrchestrationEvent back to the transaction
+     */
+    RiskResult calculateRisk(Object riskPayload, Long transactionId);
 
     @Data
     class RiskResult {

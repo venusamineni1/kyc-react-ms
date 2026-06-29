@@ -20,7 +20,7 @@ public class MockScreeningClient implements ScreeningClientInterface {
     private static final String SCREENING_URL = "http://SCREENING-SERVICE/api/internal/screening/initiate";
 
     @Override
-    public ScreeningResult initiateScreening(KycPrecheckRequest request) {
+    public ScreeningResult initiateScreening(KycPrecheckRequest request, Long transactionId) {
         log.info("Calling MockScreeningClient (mocked response) for {}", SCREENING_URL);
         ScreeningResult result = new ScreeningResult();
         result.setScreeningRequestId(UUID.randomUUID().toString());

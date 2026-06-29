@@ -125,7 +125,7 @@ public class KycOrchestrationService {
 
         // ScreeningClient (NLS/NRTS) — fired off in parallel
         CompletableFuture<ScreeningClientInterface.ScreeningResult> screeningFuture = CompletableFuture.supplyAsync(
-                () -> screeningClient.initiateScreening(request), kycOrchestrationExecutor);
+                () -> screeningClient.initiateScreening(request, savedAudit.getId()), kycOrchestrationExecutor);
 
         // 3. Await screening result before risk (sequential dependency per KYC-I-16)
         LocalDateTime screeningStartAt = LocalDateTime.now();
@@ -138,7 +138,7 @@ public class KycOrchestrationService {
         // Build proper risk request from KycPrecheckRequest (matching manual risk format)
         LocalDateTime riskStartAt = LocalDateTime.now();
         Object riskRequest = buildRiskRequest(request);
-        RiskClientInterface.RiskResult riskResult = riskClient.calculateRisk(riskRequest);
+        RiskClientInterface.RiskResult riskResult = riskClient.calculateRisk(riskRequest, savedAudit.getId());
         LocalDateTime riskEndAt = LocalDateTime.now();
 
         log.info("Risk rating complete for client={}: rating={}", request.getUniqueClientID(), riskResult.getRiskRating());

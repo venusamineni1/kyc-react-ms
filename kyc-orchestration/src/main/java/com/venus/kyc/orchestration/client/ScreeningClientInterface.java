@@ -10,7 +10,11 @@ import java.util.List;
  */
 public interface ScreeningClientInterface {
 
-    ScreeningResult initiateScreening(KycPrecheckRequest request);
+    /**
+     * @param transactionId the KycTransactionAudit row id for this precheck — real implementations
+     *                       use it to link the recorded KycOrchestrationEvent back to the transaction
+     */
+    ScreeningResult initiateScreening(KycPrecheckRequest request, Long transactionId);
 
     @Data
     class ScreeningResult {
