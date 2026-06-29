@@ -47,7 +47,8 @@ public class CaseService {
             String status,
             Date startTime,
             Date endTime,
-            String itemType) {
+            String itemType,
+            String taskDefinitionKey) {
     }
 
     @Transactional
@@ -152,6 +153,7 @@ public class CaseService {
             Map<String, Object> map = new HashMap<>();
             map.put("taskId", task.getId());
             map.put("name", task.getName());
+            map.put("taskDefinitionKey", task.getTaskDefinitionKey());
             map.put("createTime", task.getCreateTime());
             map.put("caseInstanceId", task.getScopeId()); // CMMN Case Instance ID
             map.put("assignee", task.getAssignee());
@@ -612,7 +614,8 @@ public class CaseService {
                     item.getState(),
                     item.getCreateTime(),
                     item.getEndedTime(),
-                    item.getPlanItemDefinitionType()));
+                    item.getPlanItemDefinitionType(),
+                    item.getPlanItemDefinitionId()));
         }
 
         // 2. Get Runtime Plan Items (Active/Available/Enabled)
@@ -632,7 +635,8 @@ public class CaseService {
                         item.getState(),
                         item.getCreateTime(),
                         null,
-                        item.getPlanItemDefinitionType()));
+                        item.getPlanItemDefinitionType(),
+                        item.getPlanItemDefinitionId()));
             }
         }
 

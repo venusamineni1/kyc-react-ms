@@ -5,6 +5,7 @@ import Pagination from '../components/Pagination';
 import Button from '../components/Button';
 import { FiUser } from 'react-icons/fi';
 import { useNotification } from '../contexts/NotificationContext';
+import { getAgingInfo, AGING_BADGE_VARIANT } from '../utils/caseAging';
 
 const ALL_STATUSES = [
     'PROCESSING', 'KYC_ANALYST', 'REVIEWER_REVIEW', 'AFC_REVIEW', 'ACO_REVIEW', 'APPROVED', 'REJECTED'
@@ -258,13 +259,14 @@ const CaseList = () => {
                                         <th>Client Name</th>
                                         <th>Status</th>
                                         <th>Created Date</th>
+                                        <th>Age</th>
                                         <th>Assigned To</th>
                                         <th style={{ textAlign: 'right' }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {cases.length === 0 ? (
-                                        <tr><td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No cases match the current filters.</td></tr>
+                                        <tr><td colSpan="8" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No cases match the current filters.</td></tr>
                                     ) : cases.map(kycCase => (
                                         <tr key={kycCase.caseID} className="table-row-hover"
                                             style={{ background: selectedCases.has(kycCase.caseID) ? 'var(--hover-bg)' : undefined }}>
@@ -293,6 +295,18 @@ const CaseList = () => {
                                             </td>
                                             <td style={{ color: 'var(--text-secondary)' }}>
                                                 {new Date(kycCase.createdDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                            </td>
+                                            <td>
+                                                {(() => {
+                                                    const aging = getAgingInfo(kycCase.createdDate, kycCase.status);
+                                                    if (aging.days === null) return null;
+                                                    return (
+                                                        <span className={`status-badge-modern ${AGING_BADGE_VARIANT[aging.level]}`} title={`${aging.days} day(s) since case creation`}>
+                                                            <span className="status-dot"></span>
+                                                            {aging.days}d
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                             <td>
                                                 {kycCase.assignedTo ? (

@@ -30,8 +30,10 @@ const wrapText = (text, maxLen = 14) => {
     return lines;
 };
 
-const WorkflowDiagram = ({ config }) => {
+const WorkflowDiagram = ({ config, currentStageKeys = null, completedStageKeys = null, availableActionKeys = null }) => {
     if (!config || !config.stages || config.stages.length === 0) return null;
+
+    const isLive = currentStageKeys !== null || completedStageKeys !== null || availableActionKeys !== null;
 
     const stages = config.stages;
     const N = stages.length;
@@ -104,6 +106,8 @@ const WorkflowDiagram = ({ config }) => {
     const C_TEXT    = '#f1f5f9';
     const C_SUB     = '#94a3b8';
     const C_ARROW   = '#64748b';
+    const C_DONE    = '#22c55e';
+    const C_PENDING = '#475569';
 
     // IDs for marker defs (unique per instance to avoid SVG conflicts)
     const uid = Math.random().toString(36).slice(2, 7);
@@ -164,15 +168,36 @@ const WorkflowDiagram = ({ config }) => {
                     const bx    = stageLeft(i);
                     const by    = MAIN_Y - BOX_H / 2;
                     const cx    = stageCX(i);
-                    const color = i === N - 1 ? C_FINAL : C_STAGE;
+                    const isDone    = isLive && completedStageKeys && completedStageKeys.has(stage.taskDefinitionKey);
+                    const isCurrent = isLive && currentStageKeys && currentStageKeys.has(stage.taskDefinitionKey);
+                    let color = i === N - 1 ? C_FINAL : C_STAGE;
+                    if (isLive) {
+                        color = isDone ? C_DONE : isCurrent ? (i === N - 1 ? C_FINAL : C_STAGE) : C_PENDING;
+                    }
                     const nameLines = wrapText(stage.name, 15);
                     const roleLabel = formatRole(stage.candidateGroup);
 
                     return (
                         <g key={stage.taskDefinitionKey}>
                             <rect x={bx} y={by} width={BOX_W} height={BOX_H}
-                                rx={BOX_RX} fill={color} filter={`url(#sh-${uid})`}
-                                stroke={i === N - 1 ? '#a5b4fc' : 'none'} strokeWidth="1.5" />
+                                rx={BOX_RX} fill={color}
+                                filter={`url(#sh-${uid})`}
+                                opacity={isLive && !isDone && !isCurrent ? 0.55 : 1}
+                                stroke={isCurrent ? '#fbbf24' : i === N - 1 ? '#a5b4fc' : 'none'}
+                                strokeWidth={isCurrent ? '2.5' : '1.5'}>
+                                {isCurrent && (
+                                    <animate attributeName="opacity" values="1;0.7;1" dur="1.6s" repeatCount="indefinite" />
+                                )}
+                            </rect>
+
+                            {isDone && (
+                                <text x={bx + BOX_W - 10} y={by + 4} textAnchor="end"
+                                    fontSize="13" fontWeight="700" fill="#fff">✓</text>
+                            )}
+                            {isCurrent && (
+                                <text x={cx} y={by - 8} textAnchor="middle"
+                                    fontSize="8" fontWeight="700" fill="#fbbf24">IN PROGRESS</text>
+                            )}
 
                             {nameLines.map((line, li) => {
                                 const total = nameLines.length;
@@ -439,49 +464,59 @@ const WorkflowDiagram = ({ config }) => {
                             const EVT_W  = 60;
                             const EVT_H  = 30;
                             const TASK_W = ACT_BOX_W - EVT_W - 16;
+                            const isAvailableNow = isLive && availableActionKeys && availableActionKeys.has(action.eventListenerKey);
+                            const dim = isLive && availableActionKeys && !isAvailableNow;
+                            const actColor = dim ? C_PENDING : C_DISC;
 
                             return (
-                                <g key={action.eventListenerKey}>
+                                <g key={action.eventListenerKey} opacity={dim ? 0.45 : 1}>
                                     <rect x={ax} y={ay - EVT_H / 2}
                                         width={EVT_W} height={EVT_H} rx="15"
-                                        fill="none" stroke={C_DISC} strokeWidth="1.5"
+                                        fill="none" stroke={actColor} strokeWidth="1.5"
                                         strokeDasharray="4 3" />
                                     {evtLines.map((line, li) => (
                                         <text key={li}
                                             x={ax + EVT_W / 2}
                                             y={ay + (li - (evtLines.length - 1) / 2) * 11}
                                             textAnchor="middle" dominantBaseline="middle"
-                                            fontSize="8" fill={C_DISC}>
+                                            fontSize="8" fill={actColor}>
                                             {line}
                                         </text>
                                     ))}
                                     <line x1={ax + EVT_W} y1={ay}
                                         x2={ax + EVT_W + 8} y2={ay}
-                                        stroke={C_DISC} strokeWidth="1.2"
+                                        stroke={actColor} strokeWidth="1.2"
                                         strokeDasharray="3 2"
                                         markerEnd={`url(#${M_DISC})`} />
                                     <rect x={ax + EVT_W + 16} y={ay - ACT_BOX_H / 2}
                                         width={TASK_W} height={ACT_BOX_H} rx="6"
-                                        fill={C_DISC} fillOpacity="0.15"
-                                        stroke={C_DISC} strokeWidth="1.5"
+                                        fill={actColor} fillOpacity="0.15"
+                                        stroke={actColor} strokeWidth="1.5"
                                         strokeDasharray="4 3" />
                                     {taskLines.map((line, li) => (
                                         <text key={li}
                                             x={ax + EVT_W + 16 + TASK_W / 2}
                                             y={ay + (li - (taskLines.length - 1) / 2) * 12}
                                             textAnchor="middle" dominantBaseline="middle"
-                                            fontSize="9" fontWeight="600" fill={C_DISC}>
+                                            fontSize="9" fontWeight="600" fill={actColor}>
                                             {line}
                                         </text>
                                     ))}
-                                    {action.candidateGroup && action.taskKey !== 'ht_clientComm' && (
+                                    {isAvailableNow && (
+                                        <text x={ax + EVT_W + 16 + TASK_W / 2}
+                                            y={ay + ACT_BOX_H / 2 + 11}
+                                            textAnchor="middle" fontSize="8" fontWeight="700" fill="#fbbf24">
+                                            AVAILABLE NOW
+                                        </text>
+                                    )}
+                                    {!isAvailableNow && action.candidateGroup && action.taskKey !== 'ht_clientComm' && (
                                         <text x={ax + EVT_W + 16 + TASK_W / 2}
                                             y={ay + ACT_BOX_H / 2 + 11}
                                             textAnchor="middle" fontSize="8" fill={C_SUB}>
                                             {formatRole(action.candidateGroup.split(',')[0])}
                                         </text>
                                     )}
-                                    {action.taskKey === 'ht_clientComm' && (
+                                    {!isAvailableNow && action.taskKey === 'ht_clientComm' && (
                                         <text x={ax + EVT_W + 16 + TASK_W / 2}
                                             y={ay + ACT_BOX_H / 2 + 11}
                                             textAnchor="middle" fontSize="8" fill={C_SUB}>

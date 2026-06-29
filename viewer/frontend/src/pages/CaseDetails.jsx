@@ -16,6 +16,8 @@ import ScreeningPanel from '../components/ScreeningPanel';
 import DocumentViewer from '../components/DocumentViewer';
 import OcrDataPanel from '../components/OcrDataPanel';
 import FraudSignalsPanel from '../components/FraudSignalsPanel';
+import LiveWorkflowDiagram from '../components/LiveWorkflowDiagram';
+import { getAgingInfo } from '../utils/caseAging';
 
 const CaseDetails = () => {
     const { id } = useParams();
@@ -459,6 +461,16 @@ const CaseDetails = () => {
                             <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem', color: 'rgba(255,255,255,0.6)' }}>
                                 <span><strong>Type:</strong> {kycCase.reason || 'Onboarding'}</span>
                                 <span><strong>Created:</strong> {new Date(kycCase.createdDate).toLocaleDateString()}</span>
+                                {(() => {
+                                    const aging = getAgingInfo(kycCase.createdDate, kycCase.status);
+                                    if (aging.days === null || aging.level === 'ok') return null;
+                                    const color = aging.level === 'overdue' ? '#ef4444' : '#f59e0b';
+                                    return (
+                                        <span style={{ color, fontWeight: 600 }}>
+                                            {aging.level === 'overdue' ? '⚠ ' : ''}{aging.days}d open
+                                        </span>
+                                    );
+                                })()}
                                 <span><strong>Assignee:</strong> {kycCase.assignedTo || 'Unassigned'}</span>
                             </div>
                         </div>
@@ -496,8 +508,12 @@ const CaseDetails = () => {
             <div className="tab-content">
                 {activeTab === 'flow' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        {/* Legacy Workflow Steps Visualization */}
-                        {kycCase.workflowType !== 'CMMN' && (
+                        {/* Workflow Visualization — collapsible so it doesn't push case details below the fold */}
+                        {kycCase.workflowType === 'CMMN' ? (
+                            <section className="glass-section">
+                                <LiveWorkflowDiagram caseId={id} />
+                            </section>
+                        ) : (
                             <section className="glass-section">
                                 <h3 style={{ marginBottom: '1.5rem' }}>Process Flow</h3>
                                 <div className="workflow-stepper">
@@ -1054,15 +1070,15 @@ const CaseDetails = () => {
                             onUploadNew={() => { setIsViewerModalOpen(false); setIsDocModalOpen(true); }}
                             hideSelector
                         />
-                        {/* Right: OCR + Fraud Signals */}
+                        {/* Right: Fraud Signals (score first, always visible) + OCR */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', maxHeight: '680px' }}>
-                            <div className="glass-section" style={{ padding: '14px 16px' }}>
-                                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700 }}>Extracted Document Data</h4>
-                                <OcrDataPanel caseId={id} document={viewerModalDoc} />
-                            </div>
                             <div className="glass-section" style={{ padding: '14px 16px' }}>
                                 <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700 }}>Verification &amp; Fraud Signals</h4>
                                 <FraudSignalsPanel caseId={id} document={viewerModalDoc} />
+                            </div>
+                            <div className="glass-section" style={{ padding: '14px 16px' }}>
+                                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700 }}>Extracted Document Data</h4>
+                                <OcrDataPanel caseId={id} document={viewerModalDoc} />
                             </div>
                         </div>
                     </div>
